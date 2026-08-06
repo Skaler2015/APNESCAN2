@@ -311,12 +311,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .kc-x{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;cursor:pointer;color:#c0455a;flex:none}
 .kc-x:hover{background:#fee2e2}
 .kc-sec{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--muted-2);text-transform:uppercase;margin:12px 0 2px;padding:4px 6px 3px;border-bottom:1px solid var(--border-2)}
-.mn-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-2);border-radius:8px;margin-bottom:6px;font-size:13px}
-.mn-row .mn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+.mn-row{display:flex;align-items:center;gap:8px;padding:6px 11px;border-bottom:1px solid var(--border-2);font-size:13px;cursor:pointer;color:#3b4254}
+.mn-row:last-child{border-bottom:0}
+.mn-row:hover{background:#f4f5f9}
+.mn-row.sel{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
 .mn-row .mn-edit{border:0;background:none;font:inherit;color:var(--text);flex:1;min-width:0;padding:2px 4px;border-bottom:1px solid var(--accent);outline:none}
-.mn-row .mn-x{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;cursor:pointer;color:#dc2626;flex:none}
-.mn-row .mn-x:hover{background:#fee2e2}
+.mn-row .mn-ok{color:var(--good);font-weight:700;cursor:pointer;padding:0 4px}
 .mn-empty{padding:14px;color:var(--muted);font-size:12px;text-align:center}
+.mn-b{padding:8px 12px;font-size:12px}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -696,8 +698,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 <!-- Rename a scanned page -->
 <div class="cam-overlay" id="rnOverlay">
   <div class="cam-box" style="max-width:420px;text-align:left">
-    <h3>✏️ Rename <span id="rnPageNo"></span></h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Name for this page:</p>
+    <h3>Rename</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Name for <span id="rnPageNo">this page</span>:</p>
     <input id="rnInput" list="rnSuggest" placeholder="Type a name…" autocomplete="off"
       style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
     <datalist id="rnSuggest"></datalist>
@@ -716,14 +718,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 <!-- Manage suggested names -->
 <div class="cam-overlay" id="mnOverlay">
   <div class="cam-box" style="max-width:440px;text-align:left">
-    <h3>🗂️ Manage suggested names</h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">These names are offered when renaming and used for auto-naming. Click a name to edit, ✕ to remove.</p>
-    <div class="dp-search" style="margin:0"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search names…"></div>
-    <div id="mnList" style="max-height:44vh;overflow:auto;margin-top:10px"></div>
-    <div class="cam-actions">
-      <div class="cam-btn" id="mnAdd" style="margin-right:auto">＋ Add</div>
-      <div class="cam-btn no" id="mnClear">Clear all</div>
-      <div class="cam-btn primary" id="mnClose">Close</div>
+    <h3>Manage suggested names</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">These are the names suggested when renaming. Select to remove / edit.</p>
+    <div class="dp-search" style="margin:0"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search…"></div>
+    <div id="mnList" style="max-height:44vh;overflow:auto;margin-top:10px;border:1px solid var(--border-2);border-radius:8px"></div>
+    <div class="cam-actions" style="flex-wrap:wrap">
+      <div class="cam-btn mn-b" id="mnAdd">＋ Add</div>
+      <div class="cam-btn mn-b" id="mnRemove">Remove</div>
+      <div class="cam-btn mn-b" id="mnEdit">Edit</div>
+      <div class="cam-btn mn-b" id="mnClear">Clear all</div>
+      <div class="cam-btn primary" id="mnClose" style="margin-left:auto">Close</div>
     </div>
   </div>
 </div>
@@ -1483,39 +1487,41 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var rnInp=byId('rnInput'); if(rnInp) rnInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doRename(); } });
   var rnManage=byId('rnManage'); if(rnManage) rnManage.addEventListener('click', openManageNames);
 
+  var mnSelected=null, mnEditing=null;
   function renderNames(){
     var list=byId('mnList'); if(!list) return; list.innerHTML='';
     var q=(byId('mnSearch')?byId('mnSearch').value:'').trim().toLowerCase();
+    if(mnSelected && nameSuggestions.indexOf(mnSelected)<0) mnSelected=null;
     var arr=nameSuggestions.filter(function(n){ return !q || n.toLowerCase().indexOf(q)>=0; });
     if(!arr.length){ list.innerHTML='<div class="mn-empty">'+(q?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; return; }
     arr.forEach(function(n){
-      var row=document.createElement('div'); row.className='mn-row';
-      var nm=document.createElement('span'); nm.className='mn-name'; nm.textContent=n; nm.title='Click to edit';
-      nm.addEventListener('click', function(){ startEditName(row, n); });
-      var x=document.createElement('div'); x.className='mn-x'; x.innerHTML='✕'; x.title='Remove';
-      x.addEventListener('click', function(){ if(bridge) send({cmd:'removeName', name:n}); });
-      row.appendChild(nm); row.appendChild(x);
+      var row=document.createElement('div'); row.className='mn-row'+(n===mnSelected?' sel':'');
+      if(n===mnEditing){
+        var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=n;
+        var ok=document.createElement('span'); ok.className='mn-ok'; ok.textContent='✓';
+        var save=function(){ var v=inp.value.trim(); mnEditing=null; if(bridge && v && v!==n){ send({cmd:'removeName', name:n}); send({cmd:'addName', name:v}); } else renderNames(); };
+        ok.addEventListener('click', save);
+        inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); if(e.key==='Escape'){ e.stopPropagation(); mnEditing=null; renderNames(); } });
+        row.appendChild(inp); row.appendChild(ok); list.appendChild(row); inp.focus(); inp.select();
+        return;
+      }
+      row.textContent=n; row.title='Click to select · double-click to edit';
+      row.addEventListener('click', function(){ mnSelected=(mnSelected===n?null:n); renderNames(); });
+      row.addEventListener('dblclick', function(){ mnSelected=n; mnEditing=n; renderNames(); });
       list.appendChild(row);
     });
   }
-  function startEditName(row, oldName){
-    row.innerHTML='';
-    var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=oldName;
-    var ok=document.createElement('div'); ok.className='mn-x'; ok.style.color='var(--good)'; ok.innerHTML='✓'; ok.title='Save';
-    function save(){ var v=inp.value.trim(); if(bridge && v && v!==oldName){ send({cmd:'removeName', name:oldName}); send({cmd:'addName', name:v}); } else { renderNames(); } }
-    ok.addEventListener('click', save);
-    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); if(e.key==='Escape'){ e.stopPropagation(); renderNames(); } });
-    row.appendChild(inp); row.appendChild(ok); inp.focus(); inp.select();
-  }
-  function openManageNames(){ overlay('mnOverlay', true); if(bridge) send({cmd:'getNames'}); renderNames(); }
+  function openManageNames(){ mnSelected=null; mnEditing=null; overlay('mnOverlay', true); if(bridge) send({cmd:'getNames'}); renderNames(); }
   var mnClose=byId('mnClose'); if(mnClose) mnClose.addEventListener('click', function(){ overlay('mnOverlay', false); });
   var mnSearch=byId('mnSearch'); if(mnSearch) mnSearch.addEventListener('input', renderNames);
-  var mnClear=byId('mnClear'); if(mnClear) mnClear.addEventListener('click', function(){ if(bridge) send({cmd:'clearNames'}); });
+  var mnClear=byId('mnClear'); if(mnClear) mnClear.addEventListener('click', function(){ if(bridge) send({cmd:'clearNames'}); mnSelected=null; mnEditing=null; });
+  var mnRemove=byId('mnRemove'); if(mnRemove) mnRemove.addEventListener('click', function(){ if(!mnSelected){ setStatus('Select a name to remove'); return; } if(bridge) send({cmd:'removeName', name:mnSelected}); mnSelected=null; });
+  var mnEdit=byId('mnEdit'); if(mnEdit) mnEdit.addEventListener('click', function(){ if(!mnSelected){ setStatus('Select a name to edit'); return; } mnEditing=mnSelected; renderNames(); });
   var mnAdd=byId('mnAdd'); if(mnAdd) mnAdd.addEventListener('click', function(){
     var list=byId('mnList'); if(!list) return;
     if(byId('mnAddInput')){ byId('mnAddInput').focus(); return; }
     var row=document.createElement('div'); row.className='mn-row';
-    row.innerHTML='<input id="mnAddInput" class="mn-edit" placeholder="New name"><div class="mn-x" id="mnAddOk" style="color:var(--good)">✓</div>';
+    row.innerHTML='<input id="mnAddInput" class="mn-edit" placeholder="New name"><span class="mn-ok" id="mnAddOk">✓</span>';
     list.insertBefore(row, list.firstChild);
     var inp=byId('mnAddInput'); if(inp) inp.focus();
     function add(){ var v=inp?inp.value.trim():''; if(v && bridge) send({cmd:'addName', name:v}); else renderNames(); }
