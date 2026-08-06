@@ -38,8 +38,40 @@ public class MainForm : Form
     private bool _busy;
     private bool _ocr;
     private int _selected = -1;
+    private readonly List<List<ProcessedImage>> _undo = new();
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
+
+    private void PushUndo()
+    {
+        try
+        {
+            _undo.Add(_pages.Select(p => p.Clone()).ToList());
+            while (_undo.Count > 8)
+            {
+                foreach (var p in _undo[0]) p.Dispose();
+                _undo.RemoveAt(0);
+            }
+        }
+        catch { /* undo is best-effort */ }
+    }
+
+    private async Task UndoAsync()
+    {
+        if (_undo.Count == 0)
+        {
+            Status("Nothing to undo");
+            return;
+        }
+        var snap = _undo[^1];
+        _undo.RemoveAt(_undo.Count - 1);
+        foreach (var p in _pages) p.Dispose();
+        _pages.Clear();
+        _pages.AddRange(snap);
+        _selected = _pages.Count - 1;
+        await RefreshAsync(false);
+        Status("Undone");
+    }
 
     // One-click update: manifest published to the "latest" GitHub release.
     private const string UpdateManifestUrl =
@@ -126,12 +158,16 @@ public class MainForm : Form
         int index = -1;
         double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
         string filePath = "";
+        string name = "";
+        string format = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
             var root = doc.RootElement;
             cmd = root.GetProperty("cmd").GetString() ?? "";
             if (root.TryGetProperty("path", out var fp) && fp.ValueKind == JsonValueKind.String) filePath = fp.GetString() ?? "";
+            if (root.TryGetProperty("name", out var nm) && nm.ValueKind == JsonValueKind.String) name = nm.GetString() ?? "";
+            if (root.TryGetProperty("format", out var ft) && ft.ValueKind == JsonValueKind.String) format = ft.GetString() ?? "";
             if (root.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number) deviceIndex = d.GetInt32();
             if (root.TryGetProperty("index", out var ix) && ix.ValueKind == JsonValueKind.Number) index = ix.GetInt32();
             if (root.TryGetProperty("x0", out var vx0) && vx0.ValueKind == JsonValueKind.Number) x0 = vx0.GetDouble();
@@ -181,6 +217,27 @@ public class MainForm : Form
             case "getAnalytics":
                 SendAnalytics();
                 break;
+            case "undo":
+                await UndoAsync();
+                break;
+            case "saveImages":
+                await SaveImagesAsync(format);
+                break;
+            case "openUrl":
+                OpenUrl(filePath);
+                break;
+            case "getStorage":
+                SendStorage();
+                break;
+            case "getProfiles":
+                SendProfiles();
+                break;
+            case "saveProfile":
+                SaveProfile(name, dpi, color, source, on);
+                break;
+            case "deleteProfile":
+                DeleteProfile(name);
+                break;
             case "getSettings":
                 SendSettings();
                 break;
@@ -200,12 +257,15 @@ public class MainForm : Form
                 StopPhoneServer();
                 break;
             case "rotateLeft":
+                PushUndo();
                 await RotatePageAsync(-90);
                 break;
             case "rotateRight":
+                PushUndo();
                 await RotatePageAsync(90);
                 break;
             case "deletePage":
+                PushUndo();
                 await DeletePageAsync();
                 break;
             case "select":
@@ -213,12 +273,15 @@ public class MainForm : Form
                 SendPreview();
                 break;
             case "moveLeft":
+                PushUndo();
                 await MovePageAsync(-1);
                 break;
             case "moveRight":
+                PushUndo();
                 await MovePageAsync(1);
                 break;
             case "crop":
+                PushUndo();
                 await CropPageAsync(x0, y0, x1, y1);
                 break;
             case "setOcr":
@@ -426,6 +489,7 @@ public class MainForm : Form
         try
         {
             Status("Scanning…");
+            PushUndo();
             var controller = new ScanController(_ctx);
             var options = new ScanOptions
             {
@@ -600,6 +664,7 @@ public class MainForm : Form
             var bytes = Convert.FromBase64String(b64);
             var temp = Path.Combine(Path.GetTempPath(), "apnescan_cam_" + Guid.NewGuid().ToString("N") + ".jpg");
             await File.WriteAllBytesAsync(temp, bytes);
+            PushUndo();
             var importer = new ImageImporter(_ctx);
             int added = 0;
             await foreach (var img in importer.Import(temp))
@@ -637,6 +702,7 @@ public class MainForm : Form
         try
         {
             Status("Importing…");
+            PushUndo();
             var imageImporter = new ImageImporter(_ctx);
             var pdfImporter = new PdfImporter(_ctx);
             int added = 0;
@@ -769,6 +835,7 @@ public class MainForm : Form
     {
         try
         {
+            PushUndo();
             var importer = new ImageImporter(_ctx);
             int added = 0;
             await foreach (var img in importer.Import(path))
@@ -861,6 +928,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
     private void ClearPages()
     {
+        if (_pages.Count > 0) PushUndo();
         foreach (var p in _pages)
         {
             p.Dispose();
@@ -971,7 +1039,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
     private static readonly (string Key, string Label)[] AnalyticsRows =
     {
-        ("scan", "Scan"), ("pdf", "PDF Save"), ("print", "Print"), ("import", "Import"), ("camera", "Camera")
+        ("scan", "Scan"), ("pdf", "PDF Save"), ("image", "Image Save"), ("print", "Print"), ("import", "Import"), ("camera", "Camera")
     };
 
     private static string AnalyticsFile => System.IO.Path.Combine(
@@ -1189,6 +1257,193 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             Status("Open error: " + ex.Message);
         }
+    }
+
+    // ---- Save current pages as JPG / PNG image files ------------------------
+
+    private async Task SaveImagesAsync(string format)
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to save — scan a page first");
+            return;
+        }
+        bool png = string.Equals(format, "png", StringComparison.OrdinalIgnoreCase);
+        var ext = png ? "png" : "jpg";
+        var fmt = png ? ImageFileFormat.Png : ImageFileFormat.Jpeg;
+        using var sfd = new SaveFileDialog
+        {
+            Filter = png ? "PNG image (*.png)|*.png" : "JPEG image (*.jpg)|*.jpg",
+            FileName = _pages.Count > 1 ? $"scan_1.{ext}" : $"scan.{ext}"
+        };
+        if (sfd.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+        try
+        {
+            Status("Saving image(s)…");
+            var dir = System.IO.Path.GetDirectoryName(sfd.FileName) ?? ".";
+            var baseName = System.IO.Path.GetFileNameWithoutExtension(sfd.FileName);
+            // A single page keeps the chosen name; multiple pages get _1, _2, …
+            if (_pages.Count == 1)
+            {
+                _pages[0].Save(sfd.FileName, fmt);
+            }
+            else
+            {
+                for (int i = 0; i < _pages.Count; i++)
+                {
+                    var p = System.IO.Path.Combine(dir, $"{baseName}_{i + 1}.{ext}");
+                    _pages[i].Save(p, fmt);
+                }
+            }
+            Bump("image", _pages.Count);
+            Post(new { type = "done", path = sfd.FileName });
+            Status($"Saved {_pages.Count} image(s) to {dir}");
+        }
+        catch (Exception ex)
+        {
+            Status("Save error: " + ex.Message);
+        }
+    }
+
+    // ---- Open a URL (help / repo / info links) ------------------------------
+
+    private void OpenUrl(string url)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(url) ||
+                !(url.StartsWith("http://") || url.StartsWith("https://")))
+            {
+                return;
+            }
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Status("Open error: " + ex.Message);
+        }
+    }
+
+    // ---- Storage: how much room ApneScan's files use ------------------------
+
+    private void SendStorage()
+    {
+        try
+        {
+            var appDir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ApneScan");
+            long used = 0;
+            int files = 0;
+            if (Directory.Exists(appDir))
+            {
+                foreach (var f in Directory.EnumerateFiles(appDir, "*", SearchOption.AllDirectories))
+                {
+                    try { used += new FileInfo(f).Length; files++; } catch { /* skip */ }
+                }
+            }
+            long free = 0, total = 0;
+            try
+            {
+                var drive = new DriveInfo(System.IO.Path.GetPathRoot(appDir) ?? "C:\\");
+                free = drive.AvailableFreeSpace;
+                total = drive.TotalSize;
+            }
+            catch { /* drive info best-effort */ }
+            Post(new
+            {
+                type = "storage",
+                used = FormatSize(used),
+                usedBytes = used,
+                files,
+                free = FormatSize(free),
+                total = FormatSize(total),
+                percent = total > 0 ? (int) Math.Round((total - free) * 100.0 / total) : 0
+            });
+        }
+        catch { /* best-effort */ }
+    }
+
+    // ---- Scan profiles: named presets of DPI/colour/source ------------------
+
+    private sealed class Profile
+    {
+        public string Name { get; set; } = "";
+        public int Dpi { get; set; } = 200;
+        public string Color { get; set; } = "color";
+        public string Source { get; set; } = "auto";
+        public bool Ocr { get; set; }
+    }
+
+    private static string ProfilesFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "profiles.json");
+
+    private static List<Profile> LoadProfiles()
+    {
+        try
+        {
+            if (File.Exists(ProfilesFile))
+            {
+                return JsonSerializer.Deserialize<List<Profile>>(File.ReadAllText(ProfilesFile)) ?? new();
+            }
+        }
+        catch { /* non-fatal */ }
+        return new();
+    }
+
+    private static void StoreProfiles(List<Profile> list)
+    {
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(ProfilesFile)!);
+        File.WriteAllText(ProfilesFile, JsonSerializer.Serialize(list));
+    }
+
+    private void SendProfiles()
+    {
+        try { Post(new { type = "profiles", items = LoadProfiles() }); }
+        catch { /* best-effort */ }
+    }
+
+    private void SaveProfile(string name, int dpi, string color, string source, bool ocr)
+    {
+        try
+        {
+            name = (name ?? "").Trim();
+            if (name.Length == 0)
+            {
+                Status("Give the profile a name first");
+                return;
+            }
+            var list = LoadProfiles();
+            list.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, new Profile { Name = name, Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr });
+            if (list.Count > 20)
+            {
+                list = list.GetRange(0, 20);
+            }
+            StoreProfiles(list);
+            SendProfiles();
+            Status($"Profile “{name}” saved");
+        }
+        catch (Exception ex)
+        {
+            Status("Profile error: " + ex.Message);
+        }
+    }
+
+    private void DeleteProfile(string name)
+    {
+        try
+        {
+            var list = LoadProfiles();
+            list.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            StoreProfiles(list);
+            SendProfiles();
+            Status($"Profile “{name}” removed");
+        }
+        catch { /* best-effort */ }
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });

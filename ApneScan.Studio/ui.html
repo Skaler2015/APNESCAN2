@@ -191,6 +191,23 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .set-row label{font-weight:600;font-size:13px}
 .set-row select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff;color:var(--text);min-width:150px}
 .set-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.menu{position:fixed;display:none;z-index:70;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(20,20,50,.18);padding:6px;min-width:190px}
+.menu.on{display:block}
+.menu .opt{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:7px;cursor:pointer;font-size:13px;color:#3b4254}
+.menu .opt:hover{background:#f4f5f9}
+.menu .opt svg{width:16px;height:16px}
+.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
+.tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
+.tool-card .ti{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+.tool-card b{font-size:12.5px}
+.tool-card small{display:block;color:var(--muted);font-size:10.5px;margin-top:1px}
+.prof-row{display:flex;align-items:center;gap:11px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.prof-row .pd{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.prof-row b{font-size:12.5px;display:block}
+.prof-row small{color:var(--muted);font-size:10.5px}
+.prof-row .apply{margin-left:auto;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer}
+.prof-row .del{background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;color:#dc2626}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -266,12 +283,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="item"><svg class="ic"><use href="#i-chart"/></svg><span class="lbl">Analytics</span></div>
         <div class="item"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
         <div class="sec">LIBRARY</div>
-        <div class="item"><svg class="ic"><use href="#i-folder"/></svg><span class="lbl">Profiles</span></div>
+        <div class="item" id="navProfiles"><svg class="ic"><use href="#i-folder"/></svg><span class="lbl">Profiles</span></div>
         <div class="item" id="navPhone"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">Phone to PC</span></div>
-        <div class="item"><svg class="ic"><use href="#i-wrench"/></svg><span class="lbl">Tools</span></div>
+        <div class="item" id="navTools"><svg class="ic"><use href="#i-wrench"/></svg><span class="lbl">Tools</span></div>
         <div class="sec">SYSTEM</div>
         <div class="item" id="navSettings"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
-        <div class="item"><svg class="ic"><use href="#i-help"/></svg><span class="lbl">Help &amp; Guide</span></div>
+        <div class="item" id="navHelp"><svg class="ic"><use href="#i-help"/></svg><span class="lbl">Help &amp; Guide</span></div>
         <div class="item" id="checkUpdate"><svg class="ic"><use href="#i-refresh"/></svg><span class="lbl">Check for updates</span></div>
       </nav>
       <div class="sfoot">
@@ -282,7 +299,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <tbody id="analyticsBody"></tbody>
           </table>
         </div>
-        <div class="storage">Storage used <b class="num">174 / 237 GB</b><div class="bar"><i></i></div></div>
+        <div class="storage">Storage used <b class="num" id="storageText">…</b><div class="bar"><i id="storageBar"></i></div></div>
         <div class="row"><span>Scanner · <b>WIA</b></span></div>
         <div class="row"><span>ApneScan · v<span id="curVer">1.0.0</span></span><span style="color:var(--good);font-weight:600">100% Free</span></div>
         <div id="updateLine" style="font-size:10.5px;color:var(--muted)">Checking for updates…</div>
@@ -291,8 +308,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
     <main class="workarea">
       <div class="toolbar">
-        <div class="tbtn on"><svg class="ic" style="stroke:#fff"><use href="#i-scan"/></svg><small>Scan</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
+        <div class="tbtn on" id="btnScanTb"><svg class="ic" style="stroke:#fff"><use href="#i-scan"/></svg><small>Scan</small></div>
+        <div class="tbtn" id="btnProfiles"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
         <div class="tbtn" id="btnOcr"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
         <div class="tbtn" id="btnImport"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
         <div class="tbtn" id="btnCamera"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
@@ -302,16 +319,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn" id="btnPrint"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
         <div class="tbtn" id="btnShare"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
         <div class="sep"></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
+        <div class="tbtn" id="btnEditor"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
         <div class="tbtn" id="btnRotate"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
+        <div class="tbtn" id="btnUndo"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
         <div class="tbtn" id="btnDelete"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
         <div class="tbtn" id="btnClear"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
         <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="searchInput" placeholder="Search documents…  (Ctrl+K)"><div class="search-drop" id="searchDrop"></div></div>
         <div class="status-pill"><span class="d"></span><span id="statusText">Starting…</span></div>
-        <div class="tr-ic"><svg class="ic"><use href="#i-mail"/></svg></div>
-        <div class="tr-ic"><svg class="ic"><use href="#i-help"/></svg></div>
-        <div class="tr-ic"><svg class="ic"><use href="#i-info"/></svg></div>
+        <div class="tr-ic" id="icMail" title="Share the current document"><svg class="ic"><use href="#i-mail"/></svg></div>
+        <div class="tr-ic" id="icHelp" title="Help &amp; guide"><svg class="ic"><use href="#i-help"/></svg></div>
+        <div class="tr-ic" id="icInfo" title="About ApneScan"><svg class="ic"><use href="#i-info"/></svg></div>
       </div>
 
       <div class="subbar">
@@ -333,9 +350,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="tool" id="btnCrop" title="Crop selected page"><svg class="ic"><use href="#i-crop"/></svg></div>
           <div class="tool" id="btnRotR"><svg class="ic"><use href="#i-rotate"/></svg></div>
           <div class="tool" id="btnRotL"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
-          <div class="tool"><svg class="ic"><use href="#i-print"/></svg></div>
-          <div class="tool g"><svg class="ic"><use href="#i-check"/></svg></div>
-          <div class="tool"><svg class="ic"><use href="#i-wrench"/></svg></div>
+          <div class="tool" id="btnPrintTr" title="Print"><svg class="ic"><use href="#i-print"/></svg></div>
+          <div class="tool g" id="btnUndoTr" title="Undo"><svg class="ic"><use href="#i-undo"/></svg></div>
+          <div class="tool" id="btnToolsTr" title="Tools"><svg class="ic"><use href="#i-wrench"/></svg></div>
         </div>
         <div class="pages"><svg class="ic" style="width:15px;height:15px"><use href="#i-doc"/></svg><span id="pageCount">1 pages</span></div>
       </div>
@@ -362,7 +379,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
             <div class="qc" id="qcPhoto"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
             <div class="qc" id="qcHistory"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
-            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>merge · split…</small></div>
+            <div class="qc" id="qcTools"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>save · print · share</small></div>
           </div>
           <div class="h3">Recent Files</div>
           <div class="grid-r" id="recentFiles"></div>
@@ -387,7 +404,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           </div>
           <div class="thumb-head"><span class="lbl2">Pages</span><span class="mv" id="btnMoveL" title="Move selected left">◀</span><span class="mv" id="btnMoveR" title="Move selected right">▶</span></div>
           <div class="rp-thumbs" id="thumbStrip"></div>
-          <div class="rp-open"><svg class="ic" style="width:16px;height:16px;stroke:#fff"><use href="#i-editor"/></svg>Open in Editor</div>
+          <div class="rp-open" id="btnOpenEditor"><svg class="ic" style="width:16px;height:16px;stroke:#fff"><use href="#i-editor"/></svg>Open in Editor</div>
         </aside>
       </div>
     </main>
@@ -455,6 +472,59 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
 <div class="cam-overlay" id="fsOverlay" style="background:rgba(8,10,16,.93)">
   <img id="fsImg" alt="Preview" style="max-width:94vw;max-height:92vh;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.5)">
+</div>
+
+<!-- Save-as dropdown menu (PDF / JPG / PNG) -->
+<div class="menu" id="saveMenu">
+  <div class="opt" data-fmt="pdf"><svg class="ic"><use href="#i-save"/></svg>Save as PDF…</div>
+  <div class="opt" data-fmt="jpg"><svg class="ic"><use href="#i-doc"/></svg>Save as JPG…</div>
+  <div class="opt" data-fmt="png"><svg class="ic"><use href="#i-doc"/></svg>Save as PNG…</div>
+</div>
+
+<!-- Tools -->
+<div class="cam-overlay" id="toolsOverlay">
+  <div class="cam-box" style="max-width:480px;text-align:left">
+    <h3>🧰 Tools</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 12px">Quick actions for the pages you've scanned or imported.</p>
+    <div class="tool-grid">
+      <div class="tool-card" data-tool="pdf"><div class="ti" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-save"/></svg></div><div><b>Save as PDF</b><small>one file, all pages</small></div></div>
+      <div class="tool-card" data-tool="jpg"><div class="ti" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-doc"/></svg></div><div><b>Save as JPG</b><small>one image per page</small></div></div>
+      <div class="tool-card" data-tool="png"><div class="ti" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-doc"/></svg></div><div><b>Save as PNG</b><small>sharp, lossless</small></div></div>
+      <div class="tool-card" data-tool="print"><div class="ti" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><div><b>Print</b><small>send to printer</small></div></div>
+      <div class="tool-card" data-tool="share"><div class="ti" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-share"/></svg></div><div><b>Share</b><small>WhatsApp, Email…</small></div></div>
+      <div class="tool-card" data-tool="clear"><div class="ti" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-clear"/></svg></div><div><b>Clear all</b><small>start fresh</small></div></div>
+    </div>
+    <div class="cam-actions"><div class="cam-btn primary" id="toolsClose">Close</div></div>
+  </div>
+</div>
+
+<!-- Scan profiles -->
+<div class="cam-overlay" id="profOverlay">
+  <div class="cam-box" style="max-width:480px;text-align:left">
+    <h3>🗂️ Scan Profiles</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Save the current scan settings as a named preset, then apply it in one click.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="profName" placeholder="Name (e.g. ECHS Color 300)" style="flex:1;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text)">
+      <div class="cam-btn primary" id="profSave">Save current</div>
+    </div>
+    <div id="profList" style="max-height:50vh;overflow:auto"></div>
+    <div class="cam-actions"><div class="cam-btn primary" id="profClose">Close</div></div>
+  </div>
+</div>
+
+<!-- About -->
+<div class="cam-overlay" id="aboutOverlay">
+  <div class="cam-box" style="max-width:400px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:16px;margin:4px auto 12px;background:linear-gradient(135deg,#ff7a5c,#f43f5e);display:grid;place-items:center;box-shadow:0 8px 20px rgba(244,63,94,.3)"><svg class="ic" style="stroke:#fff;width:34px;height:34px"><use href="#i-doc"/></svg></div>
+    <h3 style="margin:0">ApneScan Document Studio</h3>
+    <p style="color:var(--muted);font-size:12.5px;margin:6px 0 2px">Version <b id="aboutVer">1.0.0</b></p>
+    <p style="color:var(--muted);font-size:12.5px;margin:2px 0 8px">A fast, free scanner &amp; document studio for Windows.</p>
+    <p style="font-size:13px;margin:8px 0">© 2026 <b>Subhash Kaler</b></p>
+    <div class="cam-actions" style="justify-content:center">
+      <div class="cam-btn" id="aboutRepo">Website</div>
+      <div class="cam-btn primary" id="aboutClose">Close</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -667,6 +737,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='settings'){ applySettings(m); }
       else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
       else if(m.type==='analytics'){ renderAnalytics(m.rows); }
+      else if(m.type==='storage'){ renderStorage(m); }
+      else if(m.type==='profiles'){ renderProfiles(m.items); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
@@ -674,6 +746,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     send({cmd:'checkUpdate'});
     send({cmd:'getHistory'});
     send({cmd:'getAnalytics'});
+    send({cmd:'getStorage'});
+    send({cmd:'getProfiles'});
   } else {
     renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
     renderRecent([]);
@@ -796,6 +870,112 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
+
+  // ---------- newly wired small buttons ----------
+  var REPO='https://github.com/Skaler2015/APNESCAN2';
+  function openUrl(u){ if(bridge) send({cmd:'openUrl', path:u}); }
+  function doShare(){ setStatus('Preparing to share…'); if(bridge) send({cmd:'share'}); }
+  function overlay(id, on){ var ov=byId(id); if(ov) ov.classList[on?'add':'remove']('on'); }
+
+  // Undo
+  function doUndo(){ if(bridge) send({cmd:'undo'}); }
+  ['btnUndo','btnUndoTr'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doUndo); });
+
+  // Save-as dropdown (PDF / JPG / PNG)
+  var saveMenu=byId('saveMenu'), btnSave=byId('btnSave');
+  function closeSaveMenu(){ if(saveMenu) saveMenu.classList.remove('on'); }
+  function toggleSaveMenu(){
+    if(!saveMenu||!btnSave) return;
+    if(saveMenu.classList.contains('on')){ closeSaveMenu(); return; }
+    var r=btnSave.getBoundingClientRect();
+    saveMenu.style.left=r.left+'px';
+    saveMenu.style.top=(r.bottom+6)+'px';
+    saveMenu.classList.add('on');
+  }
+  if(btnSave){ btnSave.addEventListener('click', function(e){ e.stopPropagation(); toggleSaveMenu(); }); }
+  if(saveMenu){
+    saveMenu.querySelectorAll('.opt').forEach(function(o){
+      o.addEventListener('click', function(){
+        var f=o.getAttribute('data-fmt'); closeSaveMenu();
+        if(!bridge) return;
+        if(f==='pdf'){ setStatus('Saving…'); send({cmd:'savePdf'}); }
+        else { setStatus('Saving image(s)…'); send({cmd:'saveImages', format:f}); }
+      });
+    });
+  }
+  document.addEventListener('click', function(e){ if(saveMenu && saveMenu.classList.contains('on') && e.target!==btnSave && !saveMenu.contains(e.target) && !(btnSave&&btnSave.contains(e.target))){ closeSaveMenu(); } });
+
+  // Open in Editor / Editor button → large fullscreen view of the page
+  ['btnOpenEditor','btnEditor'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', function(){ openFs(); }); });
+
+  // Print (extra buttons)
+  var bpt=byId('btnPrintTr'); if(bpt) bpt.addEventListener('click', function(){ setStatus('Printing…'); if(bridge) send({cmd:'print'}); });
+
+  // Top-right icons: mail→share, help→repo, info→About
+  var iM=byId('icMail'); if(iM) iM.addEventListener('click', doShare);
+  var iH=byId('icHelp'); if(iH) iH.addEventListener('click', function(){ openUrl(REPO); });
+  var iI=byId('icInfo'); if(iI) iI.addEventListener('click', function(){ var av=byId('aboutVer'), cv=byId('curVer'); if(av&&cv) av.textContent=cv.textContent; overlay('aboutOverlay', true); });
+  var nHelp=byId('navHelp'); if(nHelp) nHelp.addEventListener('click', function(){ openUrl(REPO); });
+  var aboutClose=byId('aboutClose'); if(aboutClose) aboutClose.addEventListener('click', function(){ overlay('aboutOverlay', false); });
+  var aboutRepo=byId('aboutRepo'); if(aboutRepo) aboutRepo.addEventListener('click', function(){ openUrl(REPO); });
+
+  // Tools modal
+  function openTools(){ overlay('toolsOverlay', true); }
+  ['navTools','btnToolsTr','qcTools'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', openTools); });
+  var toolsClose=byId('toolsClose'); if(toolsClose) toolsClose.addEventListener('click', function(){ overlay('toolsOverlay', false); });
+  document.querySelectorAll('#toolsOverlay .tool-card').forEach(function(c){
+    c.addEventListener('click', function(){
+      var t=c.getAttribute('data-tool'); overlay('toolsOverlay', false);
+      if(!bridge) return;
+      if(t==='pdf'){ setStatus('Saving…'); send({cmd:'savePdf'}); }
+      else if(t==='jpg'){ setStatus('Saving image(s)…'); send({cmd:'saveImages', format:'jpg'}); }
+      else if(t==='png'){ setStatus('Saving image(s)…'); send({cmd:'saveImages', format:'png'}); }
+      else if(t==='print'){ setStatus('Printing…'); send({cmd:'print'}); }
+      else if(t==='share'){ doShare(); }
+      else if(t==='clear'){ send({cmd:'clear'}); }
+    });
+  });
+
+  // Profiles modal
+  function renderProfiles(items){
+    var l=byId('profList'); if(!l) return; l.innerHTML='';
+    if(!items||!items.length){ l.innerHTML='<div style="color:var(--muted);font-size:12.5px;padding:8px 2px">No profiles yet. Set your scan options above, type a name and press “Save current”.</div>'; return; }
+    items.forEach(function(p){
+      var colLabel=labelFor(colorOpts, p.Color), srcLabel=labelFor(srcOpts, p.Source);
+      var row=document.createElement('div'); row.className='prof-row';
+      row.innerHTML='<div class="pd"><svg class="ic" style="width:16px;height:16px"><use href="#i-profiles"/></svg></div>'+
+        '<div style="flex:1;min-width:0"><b>'+esc(p.Name)+'</b><small>'+p.Dpi+' dpi · '+esc(colLabel)+' · '+esc(srcLabel)+(p.Ocr?' · OCR':'')+'</small></div>'+
+        '<button class="apply">Apply</button><button class="del" title="Delete">✕</button>';
+      row.querySelector('.apply').addEventListener('click', function(){
+        settings.dpi=p.Dpi||settings.dpi; settings.color=p.Color||settings.color; settings.source=p.Source||settings.source;
+        var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
+        var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
+        var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
+        setOcr(!!p.Ocr, false); persistSettings();
+        overlay('profOverlay', false); setStatus('Profile “'+p.Name+'” applied');
+      });
+      row.querySelector('.del').addEventListener('click', function(){ if(bridge) send({cmd:'deleteProfile', name:p.Name}); });
+      l.appendChild(row);
+    });
+  }
+  function openProfiles(){ if(bridge) send({cmd:'getProfiles'}); overlay('profOverlay', true); }
+  ['navProfiles','btnProfiles'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', openProfiles); });
+  var profClose=byId('profClose'); if(profClose) profClose.addEventListener('click', function(){ overlay('profOverlay', false); });
+  var profSave=byId('profSave'); if(profSave) profSave.addEventListener('click', function(){
+    var ni=byId('profName'); var nm=ni?ni.value.trim():'';
+    if(!nm){ if(ni) ni.focus(); setStatus('Give the profile a name first'); return; }
+    if(bridge) send({cmd:'saveProfile', name:nm, dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn});
+    if(ni) ni.value='';
+  });
+
+  // Storage (real disk usage of ApneScan's files)
+  function renderStorage(m){
+    var t=byId('storageText'); if(t) t.textContent=(m.used||'0 B')+' · disk '+(m.free||'')+' free';
+    var b=byId('storageBar'); if(b) b.style.width=Math.max(2, Math.min(100, m.percent||0))+'%';
+  }
+
+  // Close any open modal with Escape
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
