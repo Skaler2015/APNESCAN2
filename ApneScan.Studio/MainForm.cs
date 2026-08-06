@@ -300,6 +300,9 @@ public class MainForm : Form
             case "openFile":
                 OpenFile(filePath);
                 break;
+            case "previewFile":
+                await PreviewFileAsync(filePath);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -1803,6 +1806,53 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         catch (Exception ex)
         {
             Status("Open error: " + ex.Message);
+        }
+    }
+
+    // Render the first page of a PDF/image to show in the right preview panel
+    // (without importing it into the current document).
+    private async Task PreviewFileAsync(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            Status("File not found");
+            return;
+        }
+        try
+        {
+            Status("Loading preview…");
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            var importer = ext == ".pdf"
+                ? new PdfImporter(_ctx).Import(path)
+                : new ImageImporter(_ctx).Import(path);
+            ProcessedImage? first = null;
+            await foreach (var img in importer)
+            {
+                first = img;
+                break; // first page is enough for a preview
+            }
+            if (first == null)
+            {
+                Status("Could not preview this file");
+                return;
+            }
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "apnescan_fp_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            first.Save(tmp);
+            first.Dispose();
+            var b64 = Convert.ToBase64String(await File.ReadAllBytesAsync(tmp));
+            try { File.Delete(tmp); } catch { /* best-effort */ }
+            Post(new
+            {
+                type = "filePreview",
+                dataUrl = "data:image/png;base64," + b64,
+                name = System.IO.Path.GetFileName(path)
+            });
+            Status("Preview: " + System.IO.Path.GetFileName(path));
+        }
+        catch (Exception ex)
+        {
+            Status("Preview error: " + ex.Message);
         }
     }
 

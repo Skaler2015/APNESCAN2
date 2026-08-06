@@ -811,6 +811,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var t=byId('scanTitle'); if(t) t.textContent='Ready to Scan';
     var s=byId('scanSub'); if(s) s.textContent='Place your document in the feeder and press Scan';
   }
+  // Preview a file from My Documents in the right panel (not added to pages)
+  function showFilePreview(url, name){
+    var img=byId('previewImg'), ph=byId('previewPage');
+    fitMode=true; zoom=1; showPreviewTab();
+    if(img){ img.src=url; img.style.display='block'; }
+    applyZoom();
+    if(ph){ ph.style.display='none'; }
+    var pc2=byId('pageCount2'); if(pc2) pc2.textContent=name||'Preview';
+  }
   function setCurVer(v){
     if(!v) return;
     var e=byId('curVer'); if(e) e.textContent=v;              // footer: "ApneScan · v1.0.16"
@@ -1045,6 +1054,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
       else if(m.type==='openDocsPanel'){ var dpn=byId('docsPanel'); if(dpn) dpn.classList.add('on'); }
+      else if(m.type==='filePreview'){ showFilePreview(m.dataUrl, m.name); }
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
     });
@@ -1332,7 +1342,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
   // My Documents — a file-manager panel over the sidebar
   var docsData={path:'',name:'',parent:'',entries:[]};
-  var docsFilter='all', docsSort='date', docsDir=-1, docsQuery='', docsSelected='';
+  var docsFilter='all', docsSort='date', docsDir=-1, docsQuery='', docsSelected='', docsSelectedFile='';
   function fmtBytes(b){ b=b||0; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return Math.round(b/1024)+' KB'; return b+' B'; }
   function renderFolder(m){
     docsData=m||{entries:[]}; docsSelected='';
@@ -1366,14 +1376,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     });
     if(!arr.length){ list.innerHTML='<div class="docs-empty">Nothing here yet</div>'; return; }
     arr.forEach(function(en){
-      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+(en.dir&&en.path===docsSelected?' sel':'');
+      var selCls=(en.dir&&en.path===docsSelected)||(!en.dir&&en.path===docsSelectedFile)?' sel':'';
+      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+selCls;
       var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
       r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg>'+
         '<div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>'+
         '<span class="fav'+(en.fav?' on':'')+'" title="Favorite">&#9733;</span>';
       r.querySelector('.fav').addEventListener('click', function(ev){ ev.stopPropagation(); en.fav=!en.fav; renderDocsList(); if(bridge) send({cmd:'toggleFav', path:en.path}); });
       if(!en.dir){ r.draggable=true; r.addEventListener('dragstart', function(ev){ try{ ev.dataTransfer.setData('text/apnescan-path', en.path); ev.dataTransfer.effectAllowed='copy'; }catch(_){} }); }
-      r.addEventListener('click', function(){ if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); renderDocsList(); } });
+      r.addEventListener('click', function(){
+        if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); docsSelectedFile=''; renderDocsList(); }
+        else { docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(bridge) send({cmd:'previewFile', path:en.path}); }
+      });
       r.addEventListener('dblclick', function(){ if(!bridge) return; if(en.dir) send({cmd:'listFolder', path:en.path}); else send({cmd:'openFile', path:en.path}); });
       list.appendChild(r);
     });
