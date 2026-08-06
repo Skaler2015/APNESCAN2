@@ -9,7 +9,7 @@
     <Identity Name="NAPS2Software.NAPS2-NotAnotherPDFScanner" Version="1.0.0.0"
               Publisher="CN=1D624E39-8523-4AAC-B3B6-1452E653A003" ProcessorArchitecture="x64" />
     <Properties>
-        <DisplayName>NAPS2 - Not Another PDF Scanner</DisplayName>
+        <DisplayName>ApneScan</DisplayName>
         <PublisherDisplayName>NAPS2 Software</PublisherDisplayName>
         <Description>Scan documents to PDF and more, as simply as possible.</Description>
         <Logo>Assets\scanner-150.png</Logo>
@@ -28,7 +28,7 @@
         <Application Id="NAPS2" Executable="NAPS2.exe"
                      uap10:RuntimeBehavior="win32App"
                      uap10:TrustLevel="mediumIL">
-            <uap3:VisualElements DisplayName="NAPS2 - Not Another PDF Scanner"
+            <uap3:VisualElements DisplayName="ApneScan"
                                  Description="Scan documents to PDF and more, as simply as possible."
                                  Square150x150Logo="Assets\scanner-150.png"
                                  Square44x44Logo="Assets\scanner-44.png"
@@ -67,7 +67,7 @@
         <Application Id="NAPS2.Console" Executable="NAPS2.Console.exe"
                      uap10:RuntimeBehavior="win32App"
                      uap10:TrustLevel="mediumIL">
-            <uap:VisualElements DisplayName="NAPS2 - Not Another PDF Scanner"
+            <uap:VisualElements DisplayName="ApneScan"
                                 Description="Scan documents to PDF and more, as simply as possible."
                                 Square150x150Logo="Assets\scanner-150.png"
                                 Square44x44Logo="Assets\scanner-44.png"
@@ -84,7 +84,7 @@
         <Application Id="NAPS2.Worker" Executable="lib\NAPS2.Worker.exe"
                      uap10:RuntimeBehavior="win32App"
                      uap10:TrustLevel="mediumIL">
-            <uap:VisualElements DisplayName="NAPS2 - Not Another PDF Scanner"
+            <uap:VisualElements DisplayName="ApneScan"
                                 Description="Scan documents to PDF and more, as simply as possible."
                                 Square150x150Logo="Assets\scanner-150.png"
                                 Square44x44Logo="Assets\scanner-44.png"

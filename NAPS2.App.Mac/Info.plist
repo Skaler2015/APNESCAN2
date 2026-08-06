@@ -5,7 +5,7 @@
 
     <!-- Basic metadata -->
     <key>CFBundleName</key>
-    <string>NAPS2</string>
+    <string>ApneScan</string>
     <key>CFBundleIdentifier</key>
     <string>com.naps2.desktop</string>
     <key>CFBundleShortVersionString</key>

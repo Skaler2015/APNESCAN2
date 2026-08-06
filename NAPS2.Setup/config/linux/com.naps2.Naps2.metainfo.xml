@@ -4,11 +4,11 @@
     <metadata_license>FSFAP</metadata_license>
     <project_license>GPL-2.0-or-later</project_license>
 
-    <name>NAPS2 - Not Another PDF Scanner</name>
+    <name>ApneScan</name>
     <summary>Scan documents to PDF and more, as simply as possible.</summary>
     <description>
         <p>
-            NAPS2 on Linux allows you to scan from USB (using SANE) and network scanners. Use your chosen settings, or
+            ApneScan on Linux allows you to scan from USB (using SANE) and network scanners. Use your chosen settings, or
             set up multiple profiles for different devices and configurations. Once you've finished scanning, you can
             save, email, or print with only a couple clicks. Save to PDF, TIFF, JPEG, PNG, or other file types.
         </p>
@@ -19,7 +19,7 @@
             tasks.
         </p>
         <p>
-            NAPS2 is available on Windows, Mac, and Linux. Share your scanners over the network so you can use them
+            ApneScan is available on Windows, Mac, and Linux. Share your scanners over the network so you can use them
             across devices and operating systems.
         </p>
     </description>
@@ -45,7 +45,7 @@
         <color type="primary">#6688aa</color>
     </branding>
     <keywords>
-        <keyword translate="no">NAPS2</keyword>
+        <keyword translate="no">ApneScan</keyword>
         <keyword translate="no">SANE</keyword>
         <keyword translate="no">ESCL</keyword>
         <keyword translate="no">PDF</keyword>

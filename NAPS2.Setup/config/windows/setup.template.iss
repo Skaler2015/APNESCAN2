@@ -2,8 +2,8 @@
 
 #include "..\config\windows\setup.languages.iss"
 
-#define AppShortName             "NAPS2"
-#define AppLongName              "NAPS2 - Not Another PDF Scanner"
+#define AppShortName             "ApneScan"
+#define AppLongName              "ApneScan"
 #define AppCompany               "NAPS2 Software"
 #define AppCopyrightStartYear    "2009"
 #define AppCopyrightEndYear      GetDateTimeString('yyyy','','')

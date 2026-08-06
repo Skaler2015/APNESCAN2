@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=NAPS2
+Name=ApneScan
 Comment=Not Another PDF Scanner
 Exec=naps2
 Icon=com.naps2.Naps2
