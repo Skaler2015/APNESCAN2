@@ -14,8 +14,8 @@
 
 	<RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
 
-        <Title>NAPS2 - Not Another PDF Scanner</Title>
-        <Product>NAPS2 - Not Another PDF Scanner</Product>
+        <Title>ApneScan</Title>
+        <Product>ApneScan</Product>
     </PropertyGroup>
 
     <Import Project="..\NAPS2.Setup\targets\CommonTargets.targets" />
