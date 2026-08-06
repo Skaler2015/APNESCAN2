@@ -127,6 +127,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .rc .thumb.p::after{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--accent)}
 .rc b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc small{color:var(--muted);font-size:10.5px}
+.grid-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:14px;margin-bottom:6px}
+.pg-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px;cursor:pointer;position:relative;transition:transform .12s,box-shadow .12s,border-color .12s}
+.pg-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#dcd6f5}
+.pg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.pg-card img{width:100%;height:158px;object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:7px;display:block}
+.pg-card .pn{position:absolute;top:13px;left:13px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;box-shadow:0 2px 5px rgba(109,40,217,.3)}
 .rightpanel{width:326px;flex:none;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
 .rp-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
 .rp-head b{font-size:13.5px}
@@ -372,6 +378,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <span><kbd>F3</kbd>–<kbd>F6</kbd> quick DPI</span>
             <span><kbd>Ctrl</kbd>+<kbd>P</kbd> print</span>
           </div>
+          <div class="h3" id="scannedHead" style="display:none;align-items:center;gap:8px">Scanned Pages <span class="badge num" id="scannedCount">0</span></div>
+          <div class="grid-pages" id="scannedGrid" style="display:none"></div>
           <div class="h3">Quick Actions</div>
           <div class="grid-q">
             <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
@@ -708,6 +716,32 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var kids=strip.children;
     for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
   }
+  // Center gallery of scanned pages (fills the main area after a scan)
+  function renderScanned(thumbs, selected){
+    var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
+    if(!grid) return;
+    grid.innerHTML='';
+    if(!thumbs||!thumbs.length){
+      if(head) head.style.display='none';
+      grid.style.display='none';
+      return;
+    }
+    if(head) head.style.display='flex';
+    grid.style.display='grid';
+    if(cnt) cnt.textContent=thumbs.length;
+    thumbs.forEach(function(src,i){
+      var c=document.createElement('div'); c.className='pg-card'+(i===selected?' sel':'');
+      var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); c.appendChild(im);
+      var pn=document.createElement('div'); pn.className='pn'; pn.textContent=(i+1); c.appendChild(pn);
+      c.addEventListener('click', function(){ if(bridge) send({cmd:'select', index:i}); });
+      grid.appendChild(c);
+    });
+  }
+  function highlightScanned(index){
+    var g=byId('scannedGrid'); if(!g) return;
+    var k=g.children;
+    for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', i===index); }
+  }
   var bml=byId('btnMoveL'); if(bml) bml.addEventListener('click', function(){ if(bridge) send({cmd:'moveLeft'}); });
   var bmr=byId('btnMoveR'); if(bmr) bmr.addEventListener('click', function(){ if(bridge) send({cmd:'moveRight'}); });
   // crop mode: drag a rectangle over the preview, then Apply
@@ -752,9 +786,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       if(!m || !m.type) return;
       if(m.type==='devices'){ applyDeviceList(m.devices); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
-      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number') highlightThumb(m.index); }
-      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); }
-      else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; }
+      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ highlightThumb(m.index); highlightScanned(m.index); } }
+      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected); }
+      else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; renderScanned(null); }
       else if(m.type==='done'){ setStatus('Saved'); }
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
