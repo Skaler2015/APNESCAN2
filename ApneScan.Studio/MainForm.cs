@@ -171,6 +171,7 @@ public class MainForm : Form
         string theme = "default";
         string saveDefault = "ask";
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
+        string data = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -196,6 +197,7 @@ public class MainForm : Form
             if (root.TryGetProperty("showProfiles", out var spEl) && (spEl.ValueKind == JsonValueKind.True || spEl.ValueKind == JsonValueKind.False)) showProfiles = spEl.GetBoolean();
             if (root.TryGetProperty("autoName", out var anEl) && (anEl.ValueKind == JsonValueKind.True || anEl.ValueKind == JsonValueKind.False)) autoName = anEl.GetBoolean();
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
+            if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
         }
         catch
@@ -287,6 +289,12 @@ public class MainForm : Form
                 break;
             case "openFolder":
                 OpenFolder(filePath);
+                break;
+            case "getShortcuts":
+                SendShortcuts();
+                break;
+            case "saveShortcuts":
+                SaveShortcuts(data);
                 break;
             case "savePdfHere":
                 await SavePdfHereAsync(filePath);
@@ -1827,6 +1835,28 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 items.Add(new { path = p, name = System.IO.Path.GetFileName(p.TrimEnd('\\', '/')), dir });
             }
             Post(new { type = "favs", items });
+        }
+        catch { /* best-effort */ }
+    }
+
+    private static string ShortcutsFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "shortcuts.json");
+
+    private void SendShortcuts()
+    {
+        string data = "";
+        try { if (File.Exists(ShortcutsFile)) data = File.ReadAllText(ShortcutsFile); }
+        catch { /* non-fatal */ }
+        Post(new { type = "shortcuts", data });
+    }
+
+    private void SaveShortcuts(string data)
+    {
+        try
+        {
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(ShortcutsFile)!);
+            File.WriteAllText(ShortcutsFile, data ?? "");
         }
         catch { /* best-effort */ }
     }

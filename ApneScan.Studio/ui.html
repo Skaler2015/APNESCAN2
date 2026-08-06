@@ -301,6 +301,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .sc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-2);font-size:13px}
 .sc-row .sc-k{display:flex;align-items:center;gap:4px;color:var(--muted)}
 .sc-row kbd{background:#f4f5f9;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font:inherit;font-size:11px;color:#5b6376}
+.kc-row{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid var(--border-2);font-size:13px}
+.kc-row .kc-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kc-key{min-width:140px;display:flex;justify-content:flex-end;align-items:center;gap:6px}
+.kc-combo{padding:3px 10px;border:1px solid var(--border);border-radius:7px;background:#f4f5f9;color:#3b4254;font-size:11.5px;font-weight:700;cursor:pointer;min-width:60px;text-align:center}
+.kc-combo:hover{border-color:var(--accent);color:var(--accent-ink)}
+.kc-combo.cap{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.kc-combo.none{color:var(--muted-2);font-weight:500;font-style:italic}
+.kc-x{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;cursor:pointer;color:#c0455a;flex:none}
+.kc-x:hover{background:#fee2e2}
+.kc-sec{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--muted-2);text-transform:uppercase;margin:12px 0 2px;padding:4px 6px 3px;border-bottom:1px solid var(--border-2)}
 .mn-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-2);border-radius:8px;margin-bottom:6px;font-size:13px}
 .mn-row .mn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
 .mn-row .mn-edit{border:0;background:none;font:inherit;color:var(--text);flex:1;min-width:0;padding:2px 4px;border-bottom:1px solid var(--accent);outline:none}
@@ -668,24 +678,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
-<!-- Keyboard shortcuts -->
+<!-- Keyboard shortcuts (editable) -->
 <div class="cam-overlay" id="scOverlay">
-  <div class="cam-box" style="max-width:460px;text-align:left">
+  <div class="cam-box" style="max-width:520px;text-align:left;max-height:88vh;overflow:auto">
     <h3>⌨️ Keyboard Shortcuts</h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Work faster with these keys.</p>
-    <div id="scList">
-      <div class="sc-row"><span>Scan a page</span><span class="sc-k"><kbd>Enter</kbd></span></div>
-      <div class="sc-row"><span>Resolution 100 / 200 / 300 / 600 dpi</span><span class="sc-k"><kbd>F3</kbd><kbd>F4</kbd><kbd>F5</kbd><kbd>F6</kbd></span></div>
-      <div class="sc-row"><span>Save as PDF</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
-      <div class="sc-row"><span>Print</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>P</kbd></span></div>
-      <div class="sc-row"><span>Import files</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>O</kbd></span></div>
-      <div class="sc-row"><span>Search documents</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
-      <div class="sc-row"><span>Undo last change</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span></div>
-      <div class="sc-row"><span>Rotate right / left</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>R</kbd> / <kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
-      <div class="sc-row"><span>Delete selected page</span><span class="sc-k"><kbd>Delete</kbd></span></div>
-      <div class="sc-row"><span>Close a dialog / panel</span><span class="sc-k"><kbd>Esc</kbd></span></div>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Click a shortcut to change it, then press the new keys (Esc to keep). ✕ clears it.</p>
+    <div class="dp-search" style="margin:0 0 8px"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="scSearch" placeholder="Search actions…"></div>
+    <div id="scList"></div>
+    <div class="cam-actions">
+      <div class="cam-btn" id="scRestore" style="margin-right:auto">Restore Defaults</div>
+      <div class="cam-btn primary" id="scClose">OK</div>
     </div>
-    <div class="cam-actions"><div class="cam-btn primary" id="scClose">Close</div></div>
   </div>
 </div>
 
@@ -857,7 +860,6 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     searchInput.addEventListener('focus', function(){ if(searchInput.value.trim()) runSearch(searchInput.value); });
   }
   document.addEventListener('click', function(e){ if(searchDrop && searchInput && e.target!==searchInput && !searchDrop.contains(e.target)){ searchDrop.classList.remove('on'); } });
-  document.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')){ e.preventDefault(); if(searchInput) searchInput.focus(); } });
 
   // zoom + fullscreen for the preview
   var zoom=1, fitMode=true;
@@ -1004,6 +1006,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ renderFolder(m); }
       else if(m.type==='favs'){ renderFavs(m.items); }
+      else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
@@ -1014,6 +1017,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     send({cmd:'getProfiles'});
     send({cmd:'getNames'});
     send({cmd:'getFavs'});
+    send({cmd:'getShortcuts'});
   } else {
     renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
     renderRecent([]);
@@ -1144,7 +1148,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
   var nSet=byId('navSettings'); if(nSet) nSet.addEventListener('click', openSettings);
   var sCancel=byId('setCancel'); if(sCancel) sCancel.addEventListener('click', closeSettings);
-  var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); overlay('scOverlay', true); });
+  var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false;
@@ -1380,7 +1384,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
 
   // Shortcuts dialog
-  var navShortcuts=byId('navShortcuts'); if(navShortcuts) navShortcuts.addEventListener('click', function(){ overlay('scOverlay', true); });
+  var navShortcuts=byId('navShortcuts'); if(navShortcuts) navShortcuts.addEventListener('click', function(){ openShortcuts(); });
   var scClose=byId('scClose'); if(scClose) scClose.addEventListener('click', function(){ overlay('scOverlay', false); });
 
   // ---- Rename a page + manage suggested names ----
@@ -1451,7 +1455,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') add(); if(e.key==='Escape'){ e.stopPropagation(); renderNames(); } });
   });
 
-  // Keyboard shortcuts (the ones listed in the Shortcuts dialog)
+  // ---- Customizable keyboard shortcuts ----
   function anyOverlayOpen(){
     var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay'];
     for(var i=0;i<ids.length;i++){ var el=byId(ids[i]); if(el && el.classList.contains('on')) return true; }
@@ -1459,28 +1463,116 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     return false;
   }
   function typingTarget(t){ return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable); }
-  document.addEventListener('keydown', function(e){
-    if(!bridge || typingTarget(e.target)) return;
-    if(e.key==='F2'){ if(!anyOverlayOpen() && scannedSel>=0){ e.preventDefault(); openRename(scannedSel); } return; }
-    if(e.key==='F3'||e.key==='F4'||e.key==='F5'||e.key==='F6'){
-      var map={F3:100,F4:200,F5:300,F6:600}; e.preventDefault();
-      settings.dpi=map[e.key]; var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; persistSettings(); setStatus(settings.dpi+' dpi selected');
-      return;
-    }
-    if(e.ctrlKey||e.metaKey){
-      var k=e.key.toLowerCase();
-      if(k==='s'){ e.preventDefault(); setStatus('Saving…'); send({cmd:'savePdf'}); }
-      else if(k==='p'){ e.preventDefault(); setStatus('Printing…'); send({cmd:'print'}); }
-      else if(k==='o'){ e.preventDefault(); doImport(); }
-      else if(k==='z'){ e.preventDefault(); send({cmd:'undo'}); }
-      else if(k==='r'){ e.preventDefault(); send({cmd:'rotateRight'}); }
-      else if(k==='l'){ e.preventDefault(); send({cmd:'rotateLeft'}); }
-      return;
-    }
-    if(anyOverlayOpen()) return;
-    if(e.key==='Enter'){ e.preventDefault(); doScan(); }
-    else if(e.key==='Delete'){ e.preventDefault(); send({cmd:'deletePage'}); }
+  function setDpiVal(n){ settings.dpi=n; var v=byId('valDpi'); if(v) v.textContent=n+' dpi'; persistSettings(); setStatus(n+' dpi selected'); }
+
+  var ACTIONS=[
+    {id:'scan', sec:'Scanning', label:'Scan', def:'Enter', run:function(){ doScan(); }},
+    {id:'rename', sec:'Scanning', label:'Rename page', def:'F2', run:function(){ if(scannedSel>=0) openRename(scannedSel); else setStatus('Select a page to rename'); }},
+    {id:'dpi100', sec:'Scanning', label:'Resolution 100 dpi', def:'F3', run:function(){ setDpiVal(100); }},
+    {id:'dpi200', sec:'Scanning', label:'Resolution 200 dpi', def:'F4', run:function(){ setDpiVal(200); }},
+    {id:'dpi300', sec:'Scanning', label:'Resolution 300 dpi', def:'F5', run:function(){ setDpiVal(300); }},
+    {id:'dpi600', sec:'Scanning', label:'Resolution 600 dpi', def:'F6', run:function(){ setDpiVal(600); }},
+    {id:'ocr', sec:'Scanning', label:'Toggle OCR', def:'Ctrl+Alt+O', run:function(){ setOcr(!ocrOn,true); setStatus(ocrOn?'OCR ON':'OCR off'); }},
+    {id:'import', sec:'Files', label:'Import files', def:'Ctrl+O', run:function(){ doImport(); }},
+    {id:'savePdf', sec:'Files', label:'Save as PDF', def:'Ctrl+S', run:function(){ setStatus('Saving…'); send({cmd:'savePdf'}); }},
+    {id:'saveJpg', sec:'Files', label:'Save as JPG', def:'Ctrl+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'jpg'}); }},
+    {id:'savePng', sec:'Files', label:'Save as PNG', def:'Ctrl+Shift+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'png'}); }},
+    {id:'print', sec:'Files', label:'Print', def:'Ctrl+P', run:function(){ setStatus('Printing…'); send({cmd:'print'}); }},
+    {id:'share', sec:'Files', label:'Share / Email', def:'Ctrl+E', run:function(){ doShare(); }},
+    {id:'camera', sec:'Capture', label:'Camera', def:'Ctrl+M', run:function(){ openCamera(); }},
+    {id:'phone', sec:'Capture', label:'Phone to PC', def:'Ctrl+G', run:function(){ openPhone(); }},
+    {id:'undo', sec:'Edit page', label:'Undo', def:'Ctrl+Z', run:function(){ send({cmd:'undo'}); }},
+    {id:'del', sec:'Edit page', label:'Delete page', def:'Delete', run:function(){ send({cmd:'deletePage'}); }},
+    {id:'rotR', sec:'Edit page', label:'Rotate right', def:'Ctrl+R', run:function(){ send({cmd:'rotateRight'}); }},
+    {id:'rotL', sec:'Edit page', label:'Rotate left', def:'Ctrl+Shift+R', run:function(){ send({cmd:'rotateLeft'}); }},
+    {id:'crop', sec:'Edit page', label:'Crop page', def:'Ctrl+Shift+C', run:function(){ startCrop(); }},
+    {id:'moveL', sec:'Edit page', label:'Move page left', def:'Ctrl+Left', run:function(){ send({cmd:'moveLeft'}); }},
+    {id:'moveR', sec:'Edit page', label:'Move page right', def:'Ctrl+Right', run:function(){ send({cmd:'moveRight'}); }},
+    {id:'clear', sec:'Edit page', label:'Clear all pages', def:'Ctrl+Shift+Delete', run:function(){ send({cmd:'clear'}); }},
+    {id:'myDocs', sec:'Navigate', label:'My Documents', def:'Ctrl+D', run:function(){ openDocs(); }},
+    {id:'history', sec:'Navigate', label:'Scan History', def:'Ctrl+H', run:function(){ openHist(); }},
+    {id:'profiles', sec:'Navigate', label:'Profiles', def:'Ctrl+L', run:function(){ openProfiles(); }},
+    {id:'settings', sec:'Navigate', label:'Settings', def:'Ctrl+Alt+S', run:function(){ openSettings(); }},
+    {id:'search', sec:'Navigate', label:'Search documents', def:'Ctrl+K', run:function(){ if(searchInput) searchInput.focus(); }},
+    {id:'update', sec:'Navigate', label:'Check for updates', def:'Ctrl+U', run:function(){ setStatus('Checking for updates…'); send({cmd:'checkUpdate'}); }}
+  ];
+  var scMap={}; var scReverse={}; var capturingId=null;
+  ACTIONS.forEach(function(a){ scMap[a.id]=a.def; });
+  function buildReverse(){ scReverse={}; for(var id in scMap){ if(scMap[id]) scReverse[scMap[id]]=id; } }
+  buildReverse();
+  function keyToken(e){
+    var k=e.key;
+    if(k===' ') return 'Space';
+    if(k==='ArrowLeft') return 'Left'; if(k==='ArrowRight') return 'Right';
+    if(k==='ArrowUp') return 'Up'; if(k==='ArrowDown') return 'Down';
+    if(k==='Escape'||k==='Shift'||k==='Control'||k==='Alt'||k==='Meta'||k==='Dead') return '';
+    if(k.length===1) return k.toUpperCase();
+    return k;
+  }
+  function comboFromEvent(e){
+    var t=keyToken(e); if(!t) return null;
+    var parts=[];
+    if(e.ctrlKey||e.metaKey) parts.push('Ctrl');
+    if(e.altKey) parts.push('Alt');
+    if(e.shiftKey) parts.push('Shift');
+    parts.push(t);
+    return parts.join('+');
+  }
+  function comboHtml(combo){
+    if(!combo) return '<span class="kc-combo none">Unassigned</span>';
+    return '<span class="kc-combo">'+esc(combo)+'</span>';
+  }
+  function openShortcuts(){ overlay('scOverlay', true); if(bridge) send({cmd:'getShortcuts'}); renderShortcuts(); }
+  function saveShortcutMap(){ if(bridge) send({cmd:'saveShortcuts', data: JSON.stringify(scMap)}); }
+  function assignCombo(id, combo){
+    if(scReverse[combo] && scReverse[combo]!==id){ scMap[scReverse[combo]]=''; }
+    scMap[id]=combo; buildReverse(); saveShortcutMap(); renderShortcuts();
+  }
+  function clearCombo(id){ scMap[id]=''; buildReverse(); saveShortcutMap(); renderShortcuts(); }
+  function renderShortcuts(){
+    var list=byId('scList'); if(!list) return; list.innerHTML='';
+    var q=(byId('scSearch')?byId('scSearch').value:'').trim().toLowerCase();
+    var lastSec='';
+    ACTIONS.forEach(function(a){
+      if(q && a.label.toLowerCase().indexOf(q)<0) return;
+      if(a.sec!==lastSec){ lastSec=a.sec; var h=document.createElement('div'); h.className='kc-sec'; h.textContent=a.sec; list.appendChild(h); }
+      var row=document.createElement('div'); row.className='kc-row';
+      var lbl=document.createElement('div'); lbl.className='kc-label'; lbl.textContent=a.label;
+      var keyw=document.createElement('div'); keyw.className='kc-key';
+      var combo=scMap[a.id]||'';
+      keyw.innerHTML = (capturingId===a.id ? '<span class="kc-combo cap">Press keys…</span>' : comboHtml(combo));
+      keyw.querySelector('.kc-combo').addEventListener('click', function(){ capturingId=a.id; renderShortcuts(); });
+      var x=document.createElement('div'); x.className='kc-x'; x.innerHTML='✕'; x.title='Clear';
+      x.addEventListener('click', function(){ clearCombo(a.id); });
+      row.appendChild(lbl); row.appendChild(keyw); row.appendChild(x);
+      list.appendChild(row);
+    });
+  }
+  var scSearch=byId('scSearch'); if(scSearch) scSearch.addEventListener('input', renderShortcuts);
+  var scRestore=byId('scRestore'); if(scRestore) scRestore.addEventListener('click', function(){
+    scMap={}; ACTIONS.forEach(function(a){ scMap[a.id]=a.def; }); buildReverse(); saveShortcutMap(); renderShortcuts(); setStatus('Shortcuts reset to defaults');
   });
+
+  document.addEventListener('keydown', function(e){
+    // capturing a new shortcut in the editor (runs first so Esc cancels the
+    // capture without also closing the dialog)
+    if(capturingId){
+      e.preventDefault(); e.stopImmediatePropagation();
+      if(e.key==='Escape'){ capturingId=null; renderShortcuts(); return; }
+      var c=comboFromEvent(e); if(!c) return; // ignore lone modifiers
+      var id=capturingId; capturingId=null; assignCombo(id, c);
+      return;
+    }
+    if(!bridge || typingTarget(e.target)) return;
+    // don't run shortcuts while the editor is open
+    if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) return;
+    var combo=comboFromEvent(e); if(!combo) return;
+    var actId=scReverse[combo]; if(!actId) return;
+    var bare=!(e.ctrlKey||e.metaKey||e.altKey);
+    if(bare && anyOverlayOpen()) return;
+    var act=null; for(var i=0;i<ACTIONS.length;i++){ if(ACTIONS[i].id===actId){ act=ACTIONS[i]; break; } }
+    if(act){ e.preventDefault(); act.run(); }
+  }, true);
 
   // Scanner picker — choose which scanner to scan from
   var scannerMenu=byId('scannerMenu'), setScanner=byId('setScanner');
