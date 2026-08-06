@@ -166,6 +166,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .cam-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 .cam-btn{padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--text);background:#f4f5f9}
 .cam-btn.primary{background:var(--accent);color:#fff;border:0;box-shadow:0 5px 14px rgba(109,40,217,.3)}
+.hist-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px}
+.hist-row:hover{background:#f4f5f9}
+.hist-row .hi{width:34px;height:44px;border-radius:5px;background:#fff;border:1px solid var(--border);position:relative;flex:none}
+.hist-row .hi::before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--accent);border-radius:5px 0 0 5px}
+.hist-row b{font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-row small{color:var(--muted);font-size:11px}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -237,7 +243,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="item"><span class="star">&#9733;</span><span class="lbl">Downloads</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHSCARD</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">08-2026</span></div>
-        <div class="item"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
+        <div class="item" id="navHistory"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
         <div class="item"><svg class="ic"><use href="#i-chart"/></svg><span class="lbl">Analytics</span></div>
         <div class="item"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
         <div class="sec">LIBRARY</div>
@@ -340,16 +346,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="qc" id="qcPhone"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
             <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
             <div class="qc" id="qcPhoto"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
-            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
+            <div class="qc" id="qcHistory"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>merge · split…</small></div>
           </div>
           <div class="h3">Recent Files</div>
-          <div class="grid-r">
-            <div class="rc"><div class="thumb p"></div><div><b>OPD.pdf</b><small>05-Aug · 364 KB</small></div></div>
-            <div class="rc"><div class="thumb"></div><div><b>Bills.pdf</b><small>05-Aug · 186 KB</small></div></div>
-            <div class="rc"><div class="thumb p"></div><div><b>Diagnosis.pdf</b><small>05-Aug · 349 KB</small></div></div>
-            <div class="rc"><div class="thumb"></div><div><b>Lab_Reports.pdf</b><small>05-Aug · 1.8 MB</small></div></div>
-          </div>
+          <div class="grid-r" id="recentFiles"></div>
         </div>
 
         <aside class="rightpanel">
@@ -412,6 +413,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<div class="cam-overlay" id="histOverlay">
+  <div class="cam-box" style="max-width:540px;text-align:left">
+    <h3>🕘 Scan History</h3>
+    <div id="histList" style="max-height:62vh;overflow:auto;margin-top:6px"></div>
+    <div class="cam-actions" style="justify-content:flex-end"><div class="cam-btn primary" id="histClose">Close</div></div>
+  </div>
+</div>
+
 <script>
 (function(){
   var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
@@ -462,6 +471,35 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     setCurVer(current);
     var el=byId('updateLine'); if(el){ el.textContent='✓ You are up to date'; el.style.color='var(--good)'; }
   }
+  // ---- recent files & history ----
+  function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var histItems=[];
+  function renderRecent(items){
+    var g=byId('recentFiles'); if(!g) return; g.innerHTML='';
+    if(!items||!items.length){ g.innerHTML='<div style="color:var(--muted);font-size:12px;padding:4px 2px">No saved files yet — scan and Save a PDF to see it here.</div>'; return; }
+    items.slice(0,6).forEach(function(it){
+      var c=document.createElement('div'); c.className='rc';
+      c.innerHTML='<div class="thumb p"></div><div style="min-width:0"><b>'+esc(it.Name)+'</b><small>'+esc(it.Date)+' · '+esc(it.Size)+'</small></div>';
+      c.addEventListener('click', function(){ if(bridge) send({cmd:'openFile', path:it.Path}); });
+      g.appendChild(c);
+    });
+  }
+  function renderHistory(items){
+    var l=byId('histList'); if(!l) return; l.innerHTML='';
+    if(!items||!items.length){ l.innerHTML='<div style="color:var(--muted);font-size:12.5px;padding:10px">No history yet. Saved PDFs will appear here.</div>'; return; }
+    items.forEach(function(it){
+      var r=document.createElement('div'); r.className='hist-row';
+      r.innerHTML='<div class="hi"></div><div style="flex:1;min-width:0"><b>'+esc(it.Name)+'</b><small>'+esc(it.Date)+' · '+esc(it.Size)+' · '+(it.Pages||0)+' page(s)</small></div>';
+      r.addEventListener('click', function(){ if(bridge) send({cmd:'openFile', path:it.Path}); });
+      l.appendChild(r);
+    });
+  }
+  function openHist(){ renderHistory(histItems); var ov=byId('histOverlay'); if(ov) ov.classList.add('on'); }
+  function closeHist(){ var ov=byId('histOverlay'); if(ov) ov.classList.remove('on'); }
+  var nH=byId('navHistory'); if(nH) nH.addEventListener('click', openHist);
+  var qH=byId('qcHistory'); if(qH) qH.addEventListener('click', openHist);
+  var hC=byId('histClose'); if(hC) hC.addEventListener('click', closeHist);
+
   // ---- editor: thumbnails, selection, move, crop ----
   function renderThumbs(thumbs, selected){
     var strip=byId('thumbStrip'); if(!strip) return;
@@ -531,11 +569,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
       else if(m.type==='phone'){ var qr=byId('phoneQr'); if(qr&&m.qr) qr.src=m.qr; var pu=byId('phoneUrl'); if(pu) pu.textContent=m.url||''; }
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
+      else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getDevices'});
     send({cmd:'checkUpdate'});
+    send({cmd:'getHistory'});
   } else {
+    renderRecent([]);
     setStatus('Ready (design preview)');
     var ul=byId('updateLine'); if(ul){ ul.textContent='Updates check runs in the app'; }
   }

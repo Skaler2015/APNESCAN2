@@ -124,11 +124,13 @@ public class MainForm : Form
         string dataUrl = "";
         int index = -1;
         double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+        string filePath = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
             var root = doc.RootElement;
             cmd = root.GetProperty("cmd").GetString() ?? "";
+            if (root.TryGetProperty("path", out var fp) && fp.ValueKind == JsonValueKind.String) filePath = fp.GetString() ?? "";
             if (root.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number) deviceIndex = d.GetInt32();
             if (root.TryGetProperty("index", out var ix) && ix.ValueKind == JsonValueKind.Number) index = ix.GetInt32();
             if (root.TryGetProperty("x0", out var vx0) && vx0.ValueKind == JsonValueKind.Number) x0 = vx0.GetDouble();
@@ -171,6 +173,12 @@ public class MainForm : Form
                 break;
             case "share":
                 await SharePdfAsync();
+                break;
+            case "getHistory":
+                SendHistory();
+                break;
+            case "openFile":
+                OpenFile(filePath);
                 break;
             case "startPhone":
                 StartPhoneServer();
@@ -465,6 +473,7 @@ public class MainForm : Form
             var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
             await exporter.Export(sfd.FileName, _pages, ocrParams: ocrParams);
+            AddHistory(sfd.FileName, _pages.Count);
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
         }
@@ -932,6 +941,89 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    private sealed class HistoryItem
+    {
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public string Date { get; set; } = "";
+        public string Size { get; set; } = "";
+        public int Pages { get; set; }
+    }
+
+    private static string HistoryFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "history.json");
+
+    private static List<HistoryItem> LoadHistory()
+    {
+        try
+        {
+            if (File.Exists(HistoryFile))
+            {
+                return JsonSerializer.Deserialize<List<HistoryItem>>(File.ReadAllText(HistoryFile)) ?? new();
+            }
+        }
+        catch { /* corrupt/missing history is non-fatal */ }
+        return new();
+    }
+
+    private void AddHistory(string path, int pages)
+    {
+        try
+        {
+            var fi = new FileInfo(path);
+            var list = LoadHistory();
+            list.RemoveAll(h => string.Equals(h.Path, fi.FullName, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, new HistoryItem
+            {
+                Name = fi.Name,
+                Path = fi.FullName,
+                Date = fi.LastWriteTime.ToString("dd-MMM · hh:mm tt"),
+                Size = FormatSize(fi.Length),
+                Pages = pages
+            });
+            if (list.Count > 50)
+            {
+                list = list.GetRange(0, 50);
+            }
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(HistoryFile)!);
+            File.WriteAllText(HistoryFile, JsonSerializer.Serialize(list));
+            SendHistory();
+        }
+        catch { /* history is best-effort */ }
+    }
+
+    private void SendHistory()
+    {
+        try { Post(new { type = "history", items = LoadHistory() }); }
+        catch { /* best-effort */ }
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:0.0} MB";
+        if (bytes >= 1024) return $"{bytes / 1024.0:0} KB";
+        return $"{bytes} B";
+    }
+
+    private void OpenFile(string path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                Status("File not found (it may have been moved or deleted)");
+                SendHistory();
+                return;
+            }
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Status("Open error: " + ex.Message);
+        }
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });
