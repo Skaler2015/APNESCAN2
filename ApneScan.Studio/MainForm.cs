@@ -309,6 +309,9 @@ public class MainForm : Form
             case "openFolder":
                 OpenFolder(filePath);
                 break;
+            case "browseFolder":
+                BrowseFolder(filePath);
+                break;
             case "getShortcuts":
                 SendShortcuts();
                 break;
@@ -2089,6 +2092,37 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             }
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
             Status("Opened in File Explorer");
+        }
+        catch (Exception ex)
+        {
+            Status("Open error: " + ex.Message);
+        }
+    }
+
+    // Native Windows "choose folder" dialog; the pick opens in the sidebar panel.
+    private void BrowseFolder(string start)
+    {
+        try
+        {
+            string? picked = null;
+            try
+            {
+                // Modern Vista-style folder picker (.NET 8+)
+                var dlg = new OpenFolderDialog();
+                if (!string.IsNullOrWhiteSpace(start) && Directory.Exists(start)) dlg.InitialDirectory = start;
+                if (dlg.ShowDialog(this) == DialogResult.OK) picked = dlg.FolderName;
+            }
+            catch
+            {
+                using var fbd = new FolderBrowserDialog();
+                if (!string.IsNullOrWhiteSpace(start) && Directory.Exists(start)) fbd.SelectedPath = start;
+                if (fbd.ShowDialog(this) == DialogResult.OK) picked = fbd.SelectedPath;
+            }
+            if (!string.IsNullOrEmpty(picked))
+            {
+                Post(new { type = "openDocsPanel" });
+                SendFolder(picked);
+            }
         }
         catch (Exception ex)
         {

@@ -432,7 +432,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="dp-act" id="docsImport">Import</div>
           <div class="dp-act primary" id="docsSaveHere">Save here</div>
         </div>
-        <div class="dp-tip">Press <b>Open</b> to browse &amp; pick a folder · double-click to go inside · ★ to pin</div>
+        <div class="dp-tip">Press <b>Open</b> to pick any folder on your PC · double-click to go inside · ★ to pin</div>
       </div>
     </aside>
 
@@ -1037,6 +1037,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='analytics'){ renderAnalytics(m.rows); }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
+      else if(m.type==='openDocsPanel'){ var dpn=byId('docsPanel'); if(dpn) dpn.classList.add('on'); }
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
     });
@@ -1407,7 +1408,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var target=docsSelected||docsData.path;
     setStatus('Saving…'); if(bridge) send({cmd:'savePdfHere', path:target});
   });
-  var docsOpenBtn=byId('docsOpen'); if(docsOpenBtn) docsOpenBtn.addEventListener('click', function(){ openPopup(); });
+  var docsOpenBtn=byId('docsOpen'); if(docsOpenBtn) docsOpenBtn.addEventListener('click', function(){ if(bridge) send({cmd:'browseFolder', path:(docsData.path||'')}); });
 
   // Open-folder popup: browse folders; "Open folder" shows the pick in the sidebar
   var popData={path:'',name:'',parent:'',entries:[]}, popSelected='';
