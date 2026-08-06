@@ -174,6 +174,12 @@ public class MainForm : Form
             case "share":
                 await SharePdfAsync();
                 break;
+            case "getSettings":
+                SendSettings();
+                break;
+            case "saveSettings":
+                SaveSettings(dpi, color, source, on);
+                break;
             case "getHistory":
                 SendHistory();
                 break;
@@ -941,6 +947,50 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    private sealed class AppSettings
+    {
+        public int Dpi { get; set; } = 200;
+        public string Color { get; set; } = "color";
+        public string Source { get; set; } = "auto";
+        public bool Ocr { get; set; }
+    }
+
+    private static string SettingsFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "settings.json");
+
+    private static AppSettings LoadSettings()
+    {
+        try
+        {
+            if (File.Exists(SettingsFile))
+            {
+                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsFile)) ?? new();
+            }
+        }
+        catch { /* non-fatal */ }
+        return new();
+    }
+
+    private void SendSettings()
+    {
+        var s = LoadSettings();
+        _ocr = s.Ocr;
+        Post(new { type = "settings", dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr });
+    }
+
+    private void SaveSettings(int dpi, string color, string source, bool ocr)
+    {
+        try
+        {
+            var s = new AppSettings { Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr };
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsFile)!);
+            File.WriteAllText(SettingsFile, JsonSerializer.Serialize(s));
+            _ocr = ocr;
+        }
+        catch { /* best-effort */ }
     }
 
     private sealed class HistoryItem

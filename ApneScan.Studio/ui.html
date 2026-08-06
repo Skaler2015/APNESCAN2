@@ -172,6 +172,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .hist-row .hi::before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--accent);border-radius:5px 0 0 5px}
 .hist-row b{font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-row small{color:var(--muted);font-size:11px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;border-bottom:1px solid var(--border-2)}
+.set-row label{font-weight:600;font-size:13px}
+.set-row select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff;color:var(--text);min-width:150px}
+.set-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -251,7 +255,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="item" id="navPhone"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">Phone to PC</span></div>
         <div class="item"><svg class="ic"><use href="#i-wrench"/></svg><span class="lbl">Tools</span></div>
         <div class="sec">SYSTEM</div>
-        <div class="item"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
+        <div class="item" id="navSettings"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
         <div class="item"><svg class="ic"><use href="#i-help"/></svg><span class="lbl">Help &amp; Guide</span></div>
         <div class="item" id="checkUpdate"><svg class="ic"><use href="#i-refresh"/></svg><span class="lbl">Check for updates</span></div>
       </nav>
@@ -413,6 +417,21 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<div class="cam-overlay" id="setOverlay">
+  <div class="cam-box" style="max-width:420px;text-align:left">
+    <h3>⚙️ Settings</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Your default scan options — remembered every time you open ApneScan.</p>
+    <div class="set-row"><label>Resolution</label>
+      <select id="setResSel"><option value="100">100 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option></select></div>
+    <div class="set-row"><label>Color</label>
+      <select id="setColorSel"><option value="color">Color</option><option value="gray">Grayscale</option><option value="bw">Black &amp; White</option></select></div>
+    <div class="set-row"><label>Paper source</label>
+      <select id="setSrcSel"><option value="auto">Auto</option><option value="flatbed">Flatbed</option><option value="feeder">Feeder</option><option value="duplex">Duplex (both sides)</option></select></div>
+    <div class="set-row"><label>OCR by default</label><input type="checkbox" id="setOcrChk"></div>
+    <div class="cam-actions"><div class="cam-btn no" id="setCancel">Cancel</div><div class="cam-btn primary" id="setSave">Save</div></div>
+  </div>
+</div>
+
 <div class="cam-overlay" id="histOverlay">
   <div class="cam-box" style="max-width:540px;text-align:left">
     <h3>🕘 Scan History</h3>
@@ -570,8 +589,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='phone'){ var qr=byId('phoneQr'); if(qr&&m.qr) qr.src=m.qr; var pu=byId('phoneUrl'); if(pu) pu.textContent=m.url||''; }
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
+      else if(m.type==='settings'){ applySettings(m); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
+    send({cmd:'getSettings'});
     send({cmd:'getDevices'});
     send({cmd:'checkUpdate'});
     send({cmd:'getHistory'});
@@ -596,9 +617,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     else { setTimeout(function(){ if(t)t.textContent='Ready to Scan'; if(s)s.textContent='Place your document in the feeder and press Scan'; setStatus('Ready (design preview)'); }, 1600); }
   }
   // scan settings — click a field to cycle its value
-  var sd=byId('setDpi'); if(sd) sd.addEventListener('click', function(){ settings.dpi=cycle(dpiOpts, settings.dpi); var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; });
-  var sco=byId('setColor'); if(sco) sco.addEventListener('click', function(){ settings.color=cycle(colorOpts.map(function(o){return o[0];}), settings.color); var v=byId('valColor'); if(v) v.textContent=labelFor(colorOpts, settings.color); });
-  var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(){ settings.source=cycle(srcOpts.map(function(o){return o[0];}), settings.source); var v=byId('valSource'); if(v) v.textContent=labelFor(srcOpts, settings.source); });
+  var sd=byId('setDpi'); if(sd) sd.addEventListener('click', function(){ settings.dpi=cycle(dpiOpts, settings.dpi); var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; persistSettings(); });
+  var sco=byId('setColor'); if(sco) sco.addEventListener('click', function(){ settings.color=cycle(colorOpts.map(function(o){return o[0];}), settings.color); var v=byId('valColor'); if(v) v.textContent=labelFor(colorOpts, settings.color); persistSettings(); });
+  var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(){ settings.source=cycle(srcOpts.map(function(o){return o[0];}), settings.source); var v=byId('valSource'); if(v) v.textContent=labelFor(srcOpts, settings.source); persistSettings(); });
   // editor — rotate / delete the latest page
   var brt=byId('btnRotate'); if(brt) brt.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
@@ -653,14 +674,46 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var pcl=byId('phoneClose'); if(pcl) pcl.addEventListener('click', closePhone);
   // OCR toggle — when on, saved PDFs get a searchable text layer
   var ocrOn=false;
-  var bo=byId('btnOcr'); if(bo) bo.addEventListener('click', function(){
-    ocrOn=!ocrOn;
-    bo.classList.remove('on');
-    bo.style.background = ocrOn ? '#16a34a' : '';
-    bo.style.color = ocrOn ? '#fff' : '';
-    bo.style.boxShadow = ocrOn ? '0 4px 12px rgba(22,163,74,.32)' : '';
-    if(bridge) send({cmd:'setOcr', on:ocrOn});
-    setStatus(ocrOn ? 'OCR ON — saved PDF will be searchable' : 'OCR off');
+  function setOcr(on, persist){
+    ocrOn=on;
+    var bo=byId('btnOcr');
+    if(bo){ bo.classList.remove('on'); bo.style.background=on?'#16a34a':''; bo.style.color=on?'#fff':''; bo.style.boxShadow=on?'0 4px 12px rgba(22,163,74,.32)':''; }
+    if(bridge) send({cmd:'setOcr', on:on});
+    if(persist) persistSettings();
+  }
+  var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
+  // settings persistence
+  function persistSettings(){ if(bridge) send({cmd:'saveSettings', dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn}); }
+  function applySettings(s){
+    if(!s) return;
+    if(s.dpi) settings.dpi=s.dpi;
+    if(s.color) settings.color=s.color;
+    if(s.source) settings.source=s.source;
+    var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
+    var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
+    var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
+    setOcr(!!s.ocr, false);
+  }
+  function openSettings(){
+    var r=byId('setResSel'); if(r) r.value=String(settings.dpi);
+    var c=byId('setColorSel'); if(c) c.value=settings.color;
+    var s=byId('setSrcSel'); if(s) s.value=settings.source;
+    var o=byId('setOcrChk'); if(o) o.checked=ocrOn;
+    var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
+  }
+  function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
+  var nSet=byId('navSettings'); if(nSet) nSet.addEventListener('click', openSettings);
+  var sCancel=byId('setCancel'); if(sCancel) sCancel.addEventListener('click', closeSettings);
+  var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){
+    var r=byId('setResSel'), c=byId('setColorSel'), s=byId('setSrcSel'), o=byId('setOcrChk');
+    if(r) settings.dpi=parseInt(r.value,10)||settings.dpi;
+    if(c) settings.color=c.value;
+    if(s) settings.source=s.value;
+    var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
+    var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
+    var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
+    setOcr(o?o.checked:ocrOn, false);
+    persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
