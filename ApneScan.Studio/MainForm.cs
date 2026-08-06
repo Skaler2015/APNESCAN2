@@ -178,6 +178,9 @@ public class MainForm : Form
             case "getText":
                 await GetTextAsync();
                 break;
+            case "getAnalytics":
+                SendAnalytics();
+                break;
             case "getSettings":
                 SendSettings();
                 break;
@@ -449,6 +452,7 @@ public class MainForm : Form
             }
 
             await RefreshAsync(true);
+            Bump("scan", added);
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
         }
         catch (Exception ex)
@@ -484,6 +488,7 @@ public class MainForm : Form
             var ocrParams = _ocr ? new OcrParams("eng") : null;
             await exporter.Export(sfd.FileName, _pages, ocrParams: ocrParams);
             AddHistory(sfd.FileName, _pages.Count);
+            Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
         }
@@ -572,6 +577,7 @@ public class MainForm : Form
                 doc.PrinterSettings = pd.PrinterSettings;
                 Status("Printing…");
                 doc.Print();
+                Bump("print", 1);
                 Status($"Printed {_pages.Count} page(s)");
             }
         }
@@ -605,6 +611,7 @@ public class MainForm : Form
             if (added > 0)
             {
                 await RefreshAsync(true);
+                Bump("camera", 1);
                 Status($"Photo added — {_pages.Count} page(s)");
             }
         }
@@ -649,6 +656,7 @@ public class MainForm : Form
                 return;
             }
             await RefreshAsync(true);
+            Bump("import", added);
             Status($"Imported {added} page(s) — {_pages.Count} total");
         }
         catch (Exception ex)
@@ -772,6 +780,7 @@ public class MainForm : Form
             if (added > 0)
             {
                 await RefreshAsync(true);
+                Bump("camera", added);
                 Status($"Photo received from phone — {_pages.Count} page(s)");
                 Post(new { type = "phonePhoto", pages = _pages.Count });
             }
@@ -951,6 +960,77 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    private sealed class AnalyticsData
+    {
+        public Dictionary<string, int> Total { get; set; } = new();
+        public Dictionary<string, int> Today { get; set; } = new();
+        public string TodayDate { get; set; } = "";
+    }
+
+    private static readonly (string Key, string Label)[] AnalyticsRows =
+    {
+        ("scan", "Scan"), ("pdf", "PDF Save"), ("print", "Print"), ("import", "Import"), ("camera", "Camera")
+    };
+
+    private static string AnalyticsFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "analytics.json");
+
+    private static AnalyticsData LoadAnalytics()
+    {
+        try
+        {
+            if (File.Exists(AnalyticsFile))
+            {
+                return JsonSerializer.Deserialize<AnalyticsData>(File.ReadAllText(AnalyticsFile)) ?? new();
+            }
+        }
+        catch { /* non-fatal */ }
+        return new();
+    }
+
+    private void Bump(string key, int n)
+    {
+        if (n <= 0)
+        {
+            return;
+        }
+        try
+        {
+            var a = LoadAnalytics();
+            var today = DateTime.Now.ToString("yyyy-MM-dd");
+            if (a.TodayDate != today)
+            {
+                a.Today = new();
+                a.TodayDate = today;
+            }
+            a.Total[key] = a.Total.GetValueOrDefault(key) + n;
+            a.Today[key] = a.Today.GetValueOrDefault(key) + n;
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AnalyticsFile)!);
+            File.WriteAllText(AnalyticsFile, JsonSerializer.Serialize(a));
+            SendAnalytics(a);
+        }
+        catch { /* best-effort */ }
+    }
+
+    private void SendAnalytics(AnalyticsData? a = null)
+    {
+        try
+        {
+            a ??= LoadAnalytics();
+            var today = DateTime.Now.ToString("yyyy-MM-dd");
+            var todayMap = a.TodayDate == today ? a.Today : new Dictionary<string, int>();
+            var rows = AnalyticsRows.Select(r => new
+            {
+                label = r.Label,
+                world = a.Total.GetValueOrDefault(r.Key),
+                today = todayMap.GetValueOrDefault(r.Key)
+            }).ToArray();
+            Post(new { type = "analytics", rows });
+        }
+        catch { /* best-effort */ }
     }
 
     private async Task GetTextAsync()

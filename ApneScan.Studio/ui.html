@@ -276,14 +276,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       </nav>
       <div class="sfoot">
         <div class="mini">
-          <div class="mh"><span style="color:var(--good)">&#9679;</span> <b>World</b> <span style="margin-left:auto;color:var(--muted)">Analytics</span></div>
+          <div class="mh"><span style="color:var(--good)">&#9679;</span> <b>Activity</b> <span style="margin-left:auto;color:var(--muted)">Analytics</span></div>
           <table class="num">
-            <tr><th>Activity</th><th>World</th><th>Today</th></tr>
-            <tr><td><span class="d" style="background:#6d28d9"></span>Scan</td><td>2 130</td><td class="t">133</td></tr>
-            <tr><td><span class="d" style="background:#2563eb"></span>Rename</td><td>672</td><td class="t">73</td></tr>
-            <tr><td><span class="d" style="background:#16a34a"></span>PDF Save</td><td>716</td><td class="t">71</td></tr>
-            <tr><td><span class="d" style="background:#f59e0b"></span>Import</td><td>554</td><td class="t">23</td></tr>
-            <tr><td><span class="d" style="background:#ef4444"></span>Print</td><td>114</td><td class="t">10</td></tr>
+            <thead><tr><th>Activity</th><th>Total</th><th>Today</th></tr></thead>
+            <tbody id="analyticsBody"></tbody>
           </table>
         </div>
         <div class="storage">Storage used <b class="num">174 / 237 GB</b><div class="bar"><i></i></div></div>
@@ -537,6 +533,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       l.appendChild(r);
     });
   }
+  // analytics table (real counts)
+  function renderAnalytics(rows){
+    var b=byId('analyticsBody'); if(!b) return; b.innerHTML='';
+    var colors=['#6d28d9','#16a34a','#ef4444','#f59e0b','#0ea5e9'];
+    (rows||[]).forEach(function(r,i){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td><span class="d" style="background:'+colors[i%colors.length]+'"></span>'+esc(r.label)+'</td><td>'+(r.world||0)+'</td><td class="t">'+(r.today||0)+'</td>';
+      b.appendChild(tr);
+    });
+  }
+
   // search saved files (from history)
   var searchInput=byId('searchInput'), searchDrop=byId('searchDrop');
   function runSearch(q){
@@ -659,13 +666,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
       else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
+      else if(m.type==='analytics'){ renderAnalytics(m.rows); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
     send({cmd:'getDevices'});
     send({cmd:'checkUpdate'});
     send({cmd:'getHistory'});
+    send({cmd:'getAnalytics'});
   } else {
+    renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
     renderRecent([]);
     setStatus('Ready (design preview)');
     var ul=byId('updateLine'); if(ul){ ul.textContent='Updates check runs in the app'; }
