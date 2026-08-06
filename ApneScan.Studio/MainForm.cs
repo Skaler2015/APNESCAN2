@@ -235,7 +235,7 @@ public class MainForm : Form
                 SendProfiles();
                 break;
             case "saveProfile":
-                SaveProfile(name, dpi, color, source, on);
+                SaveProfile(name, dpi, color, source, on, deviceName);
                 break;
             case "deleteProfile":
                 DeleteProfile(name);
@@ -1388,6 +1388,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string Color { get; set; } = "color";
         public string Source { get; set; } = "auto";
         public bool Ocr { get; set; }
+        public string Device { get; set; } = "";
     }
 
     private static string ProfilesFile => System.IO.Path.Combine(
@@ -1419,7 +1420,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         catch { /* best-effort */ }
     }
 
-    private void SaveProfile(string name, int dpi, string color, string source, bool ocr)
+    private void SaveProfile(string name, int dpi, string color, string source, bool ocr, string device)
     {
         try
         {
@@ -1431,7 +1432,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             }
             var list = LoadProfiles();
             list.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-            list.Insert(0, new Profile { Name = name, Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr });
+            list.Insert(0, new Profile { Name = name, Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr, Device = device ?? "" });
             if (list.Count > 20)
             {
                 list = list.GetRange(0, 20);

@@ -20,7 +20,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .num{font-variant-numeric:tabular-nums}
 .app{display:flex;flex-direction:column;height:100vh;min-height:0}
 .body{flex:1;display:flex;min-height:0}
-.sidebar{width:236px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.sidebar{width:236px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;position:relative}
 .brand{display:flex;gap:10px;align-items:center;padding:12px 14px 10px}
 .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff7a5c,#f43f5e);display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 4px 10px rgba(244,63,94,.28)}
 .brand h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.2px}
@@ -38,11 +38,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
 .item.active .badge{background:#fff;color:var(--accent-ink)}
-.docs-tree{margin:0 4px 4px 12px;border-left:2px solid var(--border);padding-left:6px;max-height:280px;overflow:auto}
-.docs-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;font-size:10px;font-weight:700;color:var(--muted-2);letter-spacing:.4px}
-.docs-head .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.docs-up{color:var(--accent);cursor:pointer;font-weight:700;white-space:nowrap}
-.docs-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;color:#3b4254;font-size:12px}
+.docs-panel{position:absolute;inset:0;background:var(--sidebar);z-index:30;display:none;flex-direction:column;box-shadow:0 0 40px rgba(20,20,50,.08)}
+.docs-panel.on{display:flex}
+.dp-head{display:flex;align-items:center;gap:9px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex:none}
+.dp-head .dp-title{font-weight:700;font-size:14px;flex:1}
+.dp-x{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.dp-x:hover{background:#f4f5f9;color:var(--text)}
+.dp-bar{display:flex;align-items:center;gap:8px;padding:7px 14px;color:var(--muted-2);font-size:10.5px;font-weight:700;letter-spacing:.3px;border-bottom:1px solid var(--border-2);flex:none}
+.dp-bar .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dp-up{color:var(--accent);cursor:pointer;white-space:nowrap}
+.docs-list{flex:1;overflow:auto;padding:5px 8px 12px}
+.docs-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;color:#3b4254;font-size:12px}
 .docs-row:hover{background:#f4f5f9}
 .docs-row .ic{color:var(--muted);width:15px;height:15px}
 .docs-row.dir .ic{color:var(--accent)}
@@ -221,6 +227,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .prof-row small{color:var(--muted);font-size:10.5px}
 .prof-row .apply{margin-left:auto;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer}
 .prof-row .del{background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;color:#dc2626}
+.sc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-2);font-size:13px}
+.sc-row .sc-k{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.sc-row kbd{background:#f4f5f9;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font:inherit;font-size:11px;color:#5b6376}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -279,8 +288,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       <nav class="nav">
         <div class="sec">WORKSPACE</div>
         <div class="item active"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Dashboard</span></div>
-        <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span><svg class="ic" id="docsChev" style="width:14px;height:14px;transition:transform .15s"><use href="#i-chevron"/></svg></div>
-        <div class="docs-tree" id="docsTree" style="display:none"></div>
+        <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span></div>
         <div class="item"><svg class="ic"><use href="#i-files"/></svg><span class="lbl">Recent Files</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD and Daycare</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD</span></div>
@@ -291,7 +299,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="item"><span class="star">&#9733;</span><span class="lbl">08-2026</span></div>
         <div class="item" id="navHistory"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
         <div class="item"><svg class="ic"><use href="#i-chart"/></svg><span class="lbl">Analytics</span></div>
-        <div class="item"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
+        <div class="item" id="navShortcuts"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
         <div class="sec">LIBRARY</div>
         <div class="item" id="navProfiles"><svg class="ic"><use href="#i-folder"/></svg><span class="lbl">Profiles</span></div>
         <div class="item" id="navPhone"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">Phone to PC</span></div>
@@ -312,6 +320,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="row"><span>Scanner · <b>WIA</b></span></div>
         <div class="row"><span>ApneScan · v<span id="curVer">1.0.0</span></span><span style="color:var(--good);font-weight:600">100% Free</span></div>
         <div id="updateLine" style="font-size:10.5px;color:var(--muted)">Checking for updates…</div>
+      </div>
+
+      <!-- My Documents browser — opens over the sidebar, closes with Esc/× -->
+      <div class="docs-panel" id="docsPanel">
+        <div class="dp-head">
+          <svg class="ic" style="color:var(--accent)"><use href="#i-doc"/></svg>
+          <span class="dp-title">My Documents</span>
+          <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
+        </div>
+        <div class="dp-bar" id="docsBar"></div>
+        <div class="docs-list" id="docsList"></div>
       </div>
     </aside>
 
@@ -538,6 +557,27 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       <div class="cam-btn" id="aboutRepo">Website</div>
       <div class="cam-btn primary" id="aboutClose">Close</div>
     </div>
+  </div>
+</div>
+
+<!-- Keyboard shortcuts -->
+<div class="cam-overlay" id="scOverlay">
+  <div class="cam-box" style="max-width:460px;text-align:left">
+    <h3>⌨️ Keyboard Shortcuts</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Work faster with these keys.</p>
+    <div id="scList">
+      <div class="sc-row"><span>Scan a page</span><span class="sc-k"><kbd>Enter</kbd></span></div>
+      <div class="sc-row"><span>Resolution 100 / 200 / 300 / 600 dpi</span><span class="sc-k"><kbd>F3</kbd><kbd>F4</kbd><kbd>F5</kbd><kbd>F6</kbd></span></div>
+      <div class="sc-row"><span>Save as PDF</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
+      <div class="sc-row"><span>Print</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>P</kbd></span></div>
+      <div class="sc-row"><span>Import files</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>O</kbd></span></div>
+      <div class="sc-row"><span>Search documents</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
+      <div class="sc-row"><span>Undo last change</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span></div>
+      <div class="sc-row"><span>Rotate right / left</span><span class="sc-k"><kbd>Ctrl</kbd>+<kbd>R</kbd> / <kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
+      <div class="sc-row"><span>Delete selected page</span><span class="sc-k"><kbd>Delete</kbd></span></div>
+      <div class="sc-row"><span>Close a dialog / panel</span><span class="sc-k"><kbd>Esc</kbd></span></div>
+    </div>
+    <div class="cam-actions"><div class="cam-btn primary" id="scClose">Close</div></div>
   </div>
 </div>
 
@@ -1006,15 +1046,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(!items||!items.length){ l.innerHTML='<div style="color:var(--muted);font-size:12.5px;padding:8px 2px">No profiles yet. Set your scan options above, type a name and press “Save current”.</div>'; return; }
     items.forEach(function(p){
       var colLabel=labelFor(colorOpts, p.Color), srcLabel=labelFor(srcOpts, p.Source);
+      var devLine=p.Device?(' · '+esc(p.Device)):'';
       var row=document.createElement('div'); row.className='prof-row';
       row.innerHTML='<div class="pd"><svg class="ic" style="width:16px;height:16px"><use href="#i-profiles"/></svg></div>'+
-        '<div style="flex:1;min-width:0"><b>'+esc(p.Name)+'</b><small>'+p.Dpi+' dpi · '+esc(colLabel)+' · '+esc(srcLabel)+(p.Ocr?' · OCR':'')+'</small></div>'+
+        '<div style="flex:1;min-width:0"><b>'+esc(p.Name)+'</b><small>'+p.Dpi+' dpi · '+esc(colLabel)+' · '+esc(srcLabel)+(p.Ocr?' · OCR':'')+devLine+'</small></div>'+
         '<button class="apply">Apply</button><button class="del" title="Delete">✕</button>';
       row.querySelector('.apply').addEventListener('click', function(){
         settings.dpi=p.Dpi||settings.dpi; settings.color=p.Color||settings.color; settings.source=p.Source||settings.source;
         var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
         var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
         var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
+        if(p.Device){ var di=devices.indexOf(p.Device); if(di>=0){ selectedDevice=di; savedScanner=p.Device; renderDevice(); } }
         setOcr(!!p.Ocr, false); persistSettings();
         overlay('profOverlay', false); setStatus('Profile “'+p.Name+'” applied');
       });
@@ -1028,27 +1070,29 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var profSave=byId('profSave'); if(profSave) profSave.addEventListener('click', function(){
     var ni=byId('profName'); var nm=ni?ni.value.trim():'';
     if(!nm){ if(ni) ni.focus(); setStatus('Give the profile a name first'); return; }
-    if(bridge) send({cmd:'saveProfile', name:nm, dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn});
+    if(bridge) send({cmd:'saveProfile', name:nm, dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn, deviceName:(devices[selectedDevice]||savedScanner||'')});
     if(ni) ni.value='';
   });
 
-  // My Documents — a small folder browser that opens inside the sidebar
+  // My Documents — a folder browser that opens as a panel over the sidebar
   function renderFolder(m){
-    var tree=byId('docsTree'); if(!tree) return;
-    tree.innerHTML='';
-    var head=document.createElement('div'); head.className='docs-head';
-    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(m.name||'Documents'); head.appendChild(nm);
-    if(m.parent){
-      var up=document.createElement('span'); up.className='docs-up'; up.textContent='↑ Up';
-      up.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'listFolder', path:m.parent}); });
-      head.appendChild(up);
+    var bar=byId('docsBar'), list=byId('docsList');
+    if(!list) return;
+    if(bar){
+      bar.innerHTML='';
+      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(m.name||'Documents'); bar.appendChild(nm);
+      if(m.parent){
+        var up=document.createElement('span'); up.className='dp-up'; up.textContent='↑ Up';
+        up.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'listFolder', path:m.parent}); });
+        bar.appendChild(up);
+      }
     }
-    tree.appendChild(head);
-    var list=m.entries||[];
-    if(!list.length){
-      var e=document.createElement('div'); e.className='docs-empty'; e.textContent='No documents in this folder'; tree.appendChild(e); return;
+    list.innerHTML='';
+    var items=m.entries||[];
+    if(!items.length){
+      var e=document.createElement('div'); e.className='docs-empty'; e.textContent='No documents in this folder'; list.appendChild(e); return;
     }
-    list.forEach(function(en){
+    items.forEach(function(en){
       var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'');
       r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg><span class="dn">'+esc(en.name)+'</span>';
       r.title=en.name;
@@ -1057,17 +1101,46 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         if(en.dir) send({cmd:'listFolder', path:en.path});
         else send({cmd:'openFile', path:en.path});
       });
-      tree.appendChild(r);
+      list.appendChild(r);
     });
   }
-  var docsOpen=false;
-  var navDocs=byId('navDocs');
-  if(navDocs) navDocs.addEventListener('click', function(){
-    var tree=byId('docsTree'), chev=byId('docsChev'); if(!tree) return;
-    docsOpen=!docsOpen;
-    tree.style.display=docsOpen?'block':'none';
-    if(chev) chev.style.transform=docsOpen?'rotate(180deg)':'';
-    if(docsOpen && bridge && !tree.children.length) send({cmd:'listFolder'});
+  function openDocs(){ var p=byId('docsPanel'); if(!p) return; p.classList.add('on'); if(bridge) send({cmd:'listFolder'}); }
+  function closeDocs(){ var p=byId('docsPanel'); if(p) p.classList.remove('on'); }
+  var navDocs=byId('navDocs'); if(navDocs) navDocs.addEventListener('click', function(e){ e.stopPropagation(); openDocs(); });
+  var docsClose=byId('docsClose'); if(docsClose) docsClose.addEventListener('click', function(e){ e.stopPropagation(); closeDocs(); });
+
+  // Shortcuts dialog
+  var navShortcuts=byId('navShortcuts'); if(navShortcuts) navShortcuts.addEventListener('click', function(){ overlay('scOverlay', true); });
+  var scClose=byId('scClose'); if(scClose) scClose.addEventListener('click', function(){ overlay('scOverlay', false); });
+
+  // Keyboard shortcuts (the ones listed in the Shortcuts dialog)
+  function anyOverlayOpen(){
+    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay'];
+    for(var i=0;i<ids.length;i++){ var el=byId(ids[i]); if(el && el.classList.contains('on')) return true; }
+    var dp=byId('docsPanel'); if(dp && dp.classList.contains('on')) return true;
+    return false;
+  }
+  function typingTarget(t){ return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable); }
+  document.addEventListener('keydown', function(e){
+    if(!bridge || typingTarget(e.target)) return;
+    if(e.key==='F3'||e.key==='F4'||e.key==='F5'||e.key==='F6'){
+      var map={F3:100,F4:200,F5:300,F6:600}; e.preventDefault();
+      settings.dpi=map[e.key]; var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; persistSettings(); setStatus(settings.dpi+' dpi selected');
+      return;
+    }
+    if(e.ctrlKey||e.metaKey){
+      var k=e.key.toLowerCase();
+      if(k==='s'){ e.preventDefault(); setStatus('Saving…'); send({cmd:'savePdf'}); }
+      else if(k==='p'){ e.preventDefault(); setStatus('Printing…'); send({cmd:'print'}); }
+      else if(k==='o'){ e.preventDefault(); doImport(); }
+      else if(k==='z'){ e.preventDefault(); send({cmd:'undo'}); }
+      else if(k==='r'){ e.preventDefault(); send({cmd:'rotateRight'}); }
+      else if(k==='l'){ e.preventDefault(); send({cmd:'rotateLeft'}); }
+      return;
+    }
+    if(anyOverlayOpen()) return;
+    if(e.key==='Enter'){ e.preventDefault(); doScan(); }
+    else if(e.key==='Delete'){ e.preventDefault(); send({cmd:'deletePage'}); }
   });
 
   // Scanner picker — choose which scanner to scan from
@@ -1101,8 +1174,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   if(setScanner){ setScanner.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('#refreshBtn')) return; e.stopPropagation(); openScannerMenu(); }); }
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
-  // Close any open modal with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); } });
+  // Close any open modal/panel with Escape
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
