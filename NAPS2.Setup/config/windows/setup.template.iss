@@ -7,7 +7,7 @@
 #define AppCompany               "NAPS2 Software"
 #define AppCopyrightStartYear    "2009"
 #define AppCopyrightEndYear      GetDateTimeString('yyyy','','')
-#define AppCopyrightCompany      "NAPS2 Contributors"
+#define AppCopyrightCompany      "Subhash Kaler"
 #define ExeName                  "NAPS2.exe"
 
 [Setup]

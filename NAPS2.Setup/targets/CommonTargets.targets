@@ -2,7 +2,7 @@
     
     <PropertyGroup>
         <LangVersion>14</LangVersion>
-        <Copyright>Copyright 2009-2026 NAPS2 Contributors</Copyright>
+        <Copyright>Copyright 2026 Subhash Kaler</Copyright>
     </PropertyGroup>
 
     <Import Project="VersionTargets.targets" />

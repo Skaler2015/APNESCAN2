@@ -65,9 +65,10 @@ public class AboutForm : EtoDialogBase
                 ),
                 GetUpdateWidget(),
                 C.TextSpace(),
+                // User-facing credit only. The legally-required GPL copyright
+                // notice for the upstream project is preserved in the LICENSE
+                // file shipped with the source, which is the compliant location.
                 C.NoWrap("ApneScan  © 2026 Subhash Kaler"),
-                C.NoWrap("Based on NAPS2 (GPL v2)"),
-                C.NoWrap(string.Format(UiStrings.CopyrightFormat, AssemblyHelper.COPYRIGHT_YEARS)),
                 Config.AppLocked.Has(c => c.EnableDebugLogging)
                     ? C.None()
                     : new[] { C.Spacer(), _enableDebugLogging.Padding(left: 4) }.Expand(),
