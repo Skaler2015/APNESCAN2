@@ -1029,6 +1029,9 @@ public class MainForm : Form
     }
 
     // Import a single file by path (used by drag-and-drop from the sidebar).
+    private static bool IsPreviewable(string ext) => ext is
+        ".pdf" or ".jpg" or ".jpeg" or ".png" or ".tif" or ".tiff" or ".bmp";
+
     private async Task ImportPathAsync(string path)
     {
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
@@ -1036,11 +1039,17 @@ public class MainForm : Form
             Status("File not found");
             return;
         }
+        var iext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        if (!IsPreviewable(iext))
+        {
+            Status("Only PDF and image files can be imported");
+            return;
+        }
         try
         {
             Status("Importing…");
             PushUndo();
-            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            var ext = iext;
             var importer = ext == ".pdf"
                 ? new PdfImporter(_ctx).Import(path)
                 : new ImageImporter(_ctx).Import(path);
@@ -1818,10 +1827,16 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Status("File not found");
             return;
         }
+        var pext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        if (!IsPreviewable(pext))
+        {
+            Status("Preview is only for PDF and image files");
+            return;
+        }
         try
         {
             Status("Loading preview…");
-            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            var ext = pext;
             var importer = ext == ".pdf"
                 ? new PdfImporter(_ctx).Import(path)
                 : new ImageImporter(_ctx).Import(path);
@@ -2092,7 +2107,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 foreach (var f in di.GetFiles())
                 {
                     if ((f.Attributes & FileAttributes.Hidden) != 0) continue;
-                    if (!exts.Contains(f.Extension)) continue;
+                    // Show every document in the folder; only PDFs/images are
+                    // marked "prev" (previewable and importable).
                     entries.Add(new
                     {
                         name = f.Name,
@@ -2102,7 +2118,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                         ms = new DateTimeOffset(f.LastWriteTime).ToUnixTimeMilliseconds(),
                         count = 0,
                         size = f.Length,
-                        fav = favs.Contains(f.FullName)
+                        fav = favs.Contains(f.FullName),
+                        prev = exts.Contains(f.Extension)
                     });
                     if (entries.Count >= 600) break;
                 }
