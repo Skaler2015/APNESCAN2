@@ -24,7 +24,8 @@ DefaultGroupName=ApneScan
 UninstallDisplayName=ApneScan
 UninstallDisplayIcon={app}\{#AppExe}
 DisableProgramGroupPage=yes
-OutputDir=installer-out
+; Paths are relative to this .iss file (the installer/ folder), so ".." is repo root.
+OutputDir=..\installer-out
 OutputBaseFilename=ApneScan-Setup
 Compression=lzma2
 SolidCompression=yes
@@ -43,7 +44,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "publish\ApneScan\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "..\publish\ApneScan\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
 Name: "{group}\ApneScan"; Filename: "{app}\{#AppExe}"
