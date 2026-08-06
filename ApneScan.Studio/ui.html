@@ -88,7 +88,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
 .item.active .badge{background:#fff;color:var(--accent-ink)}
-.docs-panel{position:absolute;top:0;left:100%;bottom:0;width:302px;background:var(--sidebar);z-index:40;display:none;flex-direction:column;box-shadow:10px 0 44px rgba(20,20,50,.22);border-right:1px solid var(--border);border-left:1px solid var(--border)}
+.docs-panel{flex:none;width:300px;background:var(--sidebar);display:none;flex-direction:column;border-right:1px solid var(--border);min-height:0}
 .docs-panel.on{display:flex}
 .dp-head{display:flex;align-items:center;gap:9px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex:none}
 .dp-head .dp-title{font-weight:700;font-size:14px;flex:1}
@@ -411,35 +411,6 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div id="updateLine" style="font-size:10.5px;color:var(--muted)">Checking for updates…</div>
       </div>
 
-      <!-- My Documents browser — opens over the sidebar, closes with Esc/× -->
-      <div class="docs-panel" id="docsPanel">
-        <div class="dp-head">
-          <svg class="ic" style="color:var(--accent)"><use href="#i-doc"/></svg>
-          <span class="dp-title">My Documents</span>
-          <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
-        </div>
-        <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
-        <div class="dp-chips">
-          <div class="dp-chip" data-f="fav">&#9733; Fav</div>
-          <div class="dp-chip" data-f="recent">Recent</div>
-          <div class="dp-chip" data-f="today">Today</div>
-          <div class="dp-chip on" data-f="all">All</div>
-        </div>
-        <div class="dp-sort">
-          <div class="dp-sortbtn" data-s="name">Name</div>
-          <div class="dp-sortbtn on" data-s="date">Date &#8595;</div>
-          <div class="dp-sortbtn" data-s="size">Size</div>
-        </div>
-        <div class="dp-bar" id="docsBar"></div>
-        <div class="docs-list" id="docsList"></div>
-        <div class="dp-actions">
-          <div class="dp-act" id="docsOpen">Open</div>
-          <div class="dp-act" id="docsNew">&#43; New</div>
-          <div class="dp-act" id="docsImport">Import</div>
-          <div class="dp-act primary" id="docsSaveHere">Save here</div>
-        </div>
-        <div class="dp-tip">Press <b>Open</b> to pick any folder on your PC · double-click to go inside · ★ to pin</div>
-      </div>
     </aside>
 
     <main class="workarea">
@@ -494,6 +465,35 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       </div>
 
       <div class="content">
+        <!-- My Documents browser — opens inside the thumbnail area, shrinking it -->
+        <div class="docs-panel" id="docsPanel">
+          <div class="dp-head">
+            <svg class="ic" style="color:var(--accent)"><use href="#i-doc"/></svg>
+            <span class="dp-title">My Documents</span>
+            <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
+          </div>
+          <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
+          <div class="dp-chips">
+            <div class="dp-chip" data-f="fav">&#9733; Fav</div>
+            <div class="dp-chip" data-f="recent">Recent</div>
+            <div class="dp-chip" data-f="today">Today</div>
+            <div class="dp-chip on" data-f="all">All</div>
+          </div>
+          <div class="dp-sort">
+            <div class="dp-sortbtn" data-s="name">Name</div>
+            <div class="dp-sortbtn on" data-s="date">Date &#8595;</div>
+            <div class="dp-sortbtn" data-s="size">Size</div>
+          </div>
+          <div class="dp-bar" id="docsBar"></div>
+          <div class="docs-list" id="docsList"></div>
+          <div class="dp-actions">
+            <div class="dp-act" id="docsOpen">Open</div>
+            <div class="dp-act" id="docsNew">&#43; New</div>
+            <div class="dp-act" id="docsImport">Import</div>
+            <div class="dp-act primary" id="docsSaveHere">Save here</div>
+          </div>
+          <div class="dp-tip">Press <b>Open</b> to pick any folder on your PC · double-click to go inside · ★ to pin</div>
+        </div>
         <div class="center">
           <div class="scan-card" id="scanCard">
             <h2 id="scanTitle">Ready to Scan</h2>
