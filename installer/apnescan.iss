@@ -52,4 +52,7 @@ Name: "{group}\Uninstall ApneScan"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\ApneScan"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Launch ApneScan"; Flags: nowait postinstall skipifsilent
+; Launch ApneScan after install. No "skipifsilent" so the app also relaunches
+; after a silent one-click update; "runasoriginaluser" so it starts as the
+; normal user rather than under the elevated installer.
+Filename: "{app}\{#AppExe}"; Description: "Launch ApneScan"; Flags: nowait postinstall runasoriginaluser

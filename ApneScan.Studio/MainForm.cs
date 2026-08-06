@@ -438,7 +438,10 @@ public class MainForm : Form
             var path = Path.Combine(Path.GetTempPath(), "ApneScan-Setup.exe");
             await File.WriteAllBytesAsync(path, bytes);
 
-            Status("Installing update…");
+            Status("Installing update… ApneScan will reopen automatically.");
+            // /SILENT installs quietly; the installer's [Run] entry relaunches
+            // ApneScan for us once the new files are in place, so the app opens
+            // again by itself after updating.
             Process.Start(new ProcessStartInfo
             {
                 FileName = path,
