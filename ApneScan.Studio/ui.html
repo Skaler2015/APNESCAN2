@@ -114,6 +114,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .pg-card{cursor:grab}
 .docs-row .ic{width:22px;height:22px;flex:none;color:var(--muted)}
 .docs-row.dir .ic{color:#f0b400}
+.docs-row .ic.ic-pdf{color:#e2483d}
+.docs-row .ic.ic-img{color:#12a06a}
 .docs-row.dim .dn b{color:var(--muted)}
 .docs-row.dim .ic{opacity:.5}
 .docs-row .dn{flex:1;min-width:0}
@@ -369,6 +371,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></symbol>
 <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 16h6"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-5-5-4 4-2-2-4 4"/></symbol>
+<symbol id="i-pdf" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 18v-4h1.2a1.2 1.2 0 0 1 0 2.4H9.5M13.4 18v-4h1.6M13.4 16h1.3M17.4 18v-4h1.6"/></symbol>
 <symbol id="i-files" viewBox="0 0 24 24"><path d="M4 7h5l2 2h9v9a2 2 0 0 1-2 2H4z"/></symbol>
 <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 5v4h4"/><path d="M12 8v4l3 2"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 5v14h14"/><path d="M8 15l3-4 3 3 4-6"/></symbol>
@@ -1411,6 +1415,13 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function fmtBytes(b){ b=b||0; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return Math.round(b/1024)+' KB'; return b+' B'; }
   // Natural (numeric-aware) name compare so 10 comes before 100.
   function natCmp(a,b){ return String(a||'').localeCompare(String(b||''), undefined, {numeric:true, sensitivity:'base'}); }
+  // Pick an icon by file type so PDFs and images are distinguishable at a glance.
+  function fileIcon(name){
+    var ext=(name||'').split('.').pop().toLowerCase();
+    if(ext==='pdf') return {sym:'i-pdf', cls:'ic-pdf'};
+    if(['jpg','jpeg','png','tif','tiff','bmp','gif','webp'].indexOf(ext)>=0) return {sym:'i-image', cls:'ic-img'};
+    return {sym:'i-doc', cls:''};
+  }
   function renderFolder(m){
     docsData=m||{entries:[]}; docsSelected='';
     renderDocsBar(); renderDocsList();
@@ -1450,7 +1461,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       var dimCls=(!en.dir&&!en.prev)?' dim':'';
       var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+selCls+dimCls;
       var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
-      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg>'+
+      var fic=en.dir?{sym:'i-folder',cls:''}:fileIcon(en.name);
+      r.innerHTML='<svg class="ic '+fic.cls+'"><use href="#'+fic.sym+'"/></svg>'+
         '<div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>'+
         '<span class="fav'+(en.fav?' on':'')+'" title="Favorite">&#9733;</span>';
       r.querySelector('.fav').addEventListener('click', function(ev){ ev.stopPropagation(); en.fav=!en.fav; renderDocsList(); if(bridge) send({cmd:'toggleFav', path:en.path}); });
@@ -1534,7 +1546,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     arr.forEach(function(en){
       var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+(en.dir&&en.path===popSelected?' sel':'');
       var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
-      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg><div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>';
+      var fic=en.dir?{sym:'i-folder',cls:''}:fileIcon(en.name);
+      r.innerHTML='<svg class="ic '+fic.cls+'"><use href="#'+fic.sym+'"/></svg><div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>';
       if(en.dir){
         r.addEventListener('click', function(){ popSelected=(popSelected===en.path?'':en.path); renderPopup(popData); });
         r.addEventListener('dblclick', function(){ if(bridge) send({cmd:'listFolder', path:en.path, ctx:'popup'}); });
