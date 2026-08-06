@@ -88,7 +88,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
 .item.active .badge{background:#fff;color:var(--accent-ink)}
-.docs-panel{position:absolute;top:0;left:0;bottom:0;width:302px;background:var(--sidebar);z-index:40;display:none;flex-direction:column;box-shadow:8px 0 44px rgba(20,20,50,.20);border-right:1px solid var(--border)}
+.docs-panel{position:absolute;top:0;left:100%;bottom:0;width:302px;background:var(--sidebar);z-index:40;display:none;flex-direction:column;box-shadow:10px 0 44px rgba(20,20,50,.22);border-right:1px solid var(--border);border-left:1px solid var(--border)}
 .docs-panel.on{display:flex}
 .dp-head{display:flex;align-items:center;gap:9px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex:none}
 .dp-head .dp-title{font-weight:700;font-size:14px;flex:1}
@@ -430,7 +430,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="dp-act" id="docsImport">Import</div>
           <div class="dp-act primary" id="docsSaveHere">Save here</div>
         </div>
-        <div class="dp-tip">Select a folder and press <b>Open</b> to open it in File Explorer · double-click to browse inside</div>
+        <div class="dp-tip">Press <b>Open</b> to browse &amp; pick a folder · double-click to go inside · ★ to pin</div>
       </div>
     </aside>
 
@@ -727,6 +727,21 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<!-- Open-folder popup: browse and pick a folder to open in the sidebar -->
+<div class="cam-overlay" id="docsPopup">
+  <div class="cam-box" style="max-width:560px;width:560px;text-align:left;max-height:86vh;display:flex;flex-direction:column">
+    <h3>📂 Open folder</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Browse to a folder and press <b>Open folder</b> to show it in the sidebar. Double-click to go inside.</p>
+    <div class="dp-bar" id="popBar" style="border:1px solid var(--border);border-radius:9px;margin-bottom:8px"></div>
+    <div id="popList" style="flex:1;overflow:auto;border:1px solid var(--border-2);border-radius:9px;padding:7px;min-height:260px"></div>
+    <div class="cam-actions">
+      <div class="cam-btn" id="popExplorer" style="margin-right:auto">Open in Explorer</div>
+      <div class="cam-btn no" id="popCancel">Cancel</div>
+      <div class="cam-btn primary" id="popOpen">Open folder</div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
@@ -1004,7 +1019,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
       else if(m.type==='analytics'){ renderAnalytics(m.rows); }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
-      else if(m.type==='folder'){ renderFolder(m); }
+      else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
     });
@@ -1364,9 +1379,47 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var target=docsSelected||docsData.path;
     setStatus('Saving…'); if(bridge) send({cmd:'savePdfHere', path:target});
   });
-  var docsOpenBtn=byId('docsOpen'); if(docsOpenBtn) docsOpenBtn.addEventListener('click', function(){
-    var target=docsSelected||docsData.path;
-    if(target && bridge) send({cmd:'openFolder', path:target});
+  var docsOpenBtn=byId('docsOpen'); if(docsOpenBtn) docsOpenBtn.addEventListener('click', function(){ openPopup(); });
+
+  // Open-folder popup: browse folders; "Open folder" shows the pick in the sidebar
+  var popData={path:'',name:'',parent:'',entries:[]}, popSelected='';
+  function openPopup(){ popSelected=''; overlay('docsPopup', true); if(bridge) send({cmd:'listFolder', path:(docsData.path||''), ctx:'popup'}); }
+  function renderPopup(m){
+    popData=m||{entries:[]};
+    var bar=byId('popBar');
+    if(bar){
+      bar.innerHTML='';
+      var back=document.createElement('div'); back.className='dp-navb'; back.textContent='‹'; back.title='Up one folder';
+      back.addEventListener('click', function(){ if(popData.parent && bridge) send({cmd:'listFolder', path:popData.parent, ctx:'popup'}); });
+      var home=document.createElement('div'); home.className='dp-navb'; home.innerHTML='<svg class="ic" style="width:14px;height:14px"><use href="#i-home"/></svg>'; home.title='Documents';
+      home.addEventListener('click', function(){ if(bridge) send({cmd:'listFolder', ctx:'popup'}); });
+      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(popData.name||'Documents'); nm.title=popData.path||'';
+      bar.appendChild(back); bar.appendChild(home); bar.appendChild(nm);
+    }
+    var list=byId('popList'); if(!list) return; list.innerHTML='';
+    var arr=(popData.entries||[]).slice().sort(function(a,b){ if(a.dir!==b.dir) return a.dir?-1:1; return (a.name||'').localeCompare(b.name||''); });
+    if(!arr.length){ list.innerHTML='<div class="docs-empty">This folder is empty</div>'; return; }
+    arr.forEach(function(en){
+      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+(en.dir&&en.path===popSelected?' sel':'');
+      var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
+      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg><div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>';
+      if(en.dir){
+        r.addEventListener('click', function(){ popSelected=(popSelected===en.path?'':en.path); renderPopup(popData); });
+        r.addEventListener('dblclick', function(){ if(bridge) send({cmd:'listFolder', path:en.path, ctx:'popup'}); });
+      } else {
+        r.addEventListener('dblclick', function(){ if(bridge) send({cmd:'openFile', path:en.path}); });
+      }
+      list.appendChild(r);
+    });
+  }
+  var popCancel=byId('popCancel'); if(popCancel) popCancel.addEventListener('click', function(){ overlay('docsPopup', false); });
+  var popExplorer=byId('popExplorer'); if(popExplorer) popExplorer.addEventListener('click', function(){ var t=popSelected||popData.path; if(t && bridge) send({cmd:'openFolder', path:t}); });
+  var popOpen=byId('popOpen'); if(popOpen) popOpen.addEventListener('click', function(){
+    var target=popSelected||popData.path;
+    if(!target){ overlay('docsPopup', false); return; }
+    var p=byId('docsPanel'); if(p) p.classList.add('on');
+    if(bridge) send({cmd:'listFolder', path:target});
+    overlay('docsPopup', false);
   });
   // Favorites pinned in the sidebar (whatever you ★ in My Documents shows here)
   function renderFavs(items){
@@ -1607,7 +1660,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});

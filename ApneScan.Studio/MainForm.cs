@@ -172,6 +172,7 @@ public class MainForm : Form
         string saveDefault = "ask";
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
         string data = "";
+        string ctx = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -198,6 +199,7 @@ public class MainForm : Form
             if (root.TryGetProperty("autoName", out var anEl) && (anEl.ValueKind == JsonValueKind.True || anEl.ValueKind == JsonValueKind.False)) autoName = anEl.GetBoolean();
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
+            if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
         }
         catch
@@ -279,7 +281,7 @@ public class MainForm : Form
                 OpenFile(filePath);
                 break;
             case "listFolder":
-                SendFolder(filePath);
+                SendFolder(filePath, ctx);
                 break;
             case "makeFolder":
                 MakeFolder(filePath, name);
@@ -1758,7 +1760,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
     // ---- Browse the user's Documents folder inside the sidebar --------------
 
-    private void SendFolder(string path)
+    private void SendFolder(string path, string ctx = "")
     {
         try
         {
@@ -1824,6 +1826,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 path = di.FullName,
                 name = di.Name,
                 parent = di.Parent?.FullName,
+                ctx,
                 entries
             });
         }
