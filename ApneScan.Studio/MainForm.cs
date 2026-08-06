@@ -46,6 +46,7 @@ public class MainForm : Form
     private bool _clearAfter;
     private bool _autoCrop = true;
     private bool _skipBlank;
+    private int _compressPercent; // 0 = off; higher = smaller PDFs on save
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
 
@@ -174,6 +175,7 @@ public class MainForm : Form
         string saveDefault = "ask";
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
         bool autoCrop = true, skipBlank = false;
+        int compressPercent = 0;
         string data = "";
         string ctx = "";
         var indices = new List<int>();
@@ -204,6 +206,7 @@ public class MainForm : Form
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
+            if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
@@ -291,7 +294,7 @@ public class MainForm : Form
                     Dpi = dpi, Color = color, Source = source, Ocr = on, Device = deviceName,
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
-                    AutoCrop = autoCrop, SkipBlank = skipBlank
+                    AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent
                 });
                 break;
             case "getHistory":
@@ -302,6 +305,12 @@ public class MainForm : Form
                 break;
             case "previewFile":
                 await PreviewFileAsync(filePath);
+                break;
+            case "compressPdf":
+                await CompressPdfFileAsync(filePath);
+                break;
+            case "renameItem":
+                RenameItem(filePath, name);
                 break;
             case "listFolder":
                 SendFolder(filePath, ctx);
@@ -787,9 +796,8 @@ public class MainForm : Form
         try
         {
             Status(_ocr ? "Saving PDF with OCR (this can take a moment)…" : "Saving PDF…");
-            var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
-            await exporter.Export(sfd.FileName, _pages, ocrParams: ocrParams);
+            await ExportPdf(sfd.FileName, _pages, ocrParams);
             AddHistory(sfd.FileName, _pages.Count);
             Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
@@ -836,9 +844,8 @@ public class MainForm : Form
         {
             Status(_ocr ? "Saving selected page(s) (OCR)…" : "Saving selected page(s)…");
             var pages = sel.Select(i => _pages[i]).ToList();
-            var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
-            await exporter.Export(sfd.FileName, pages, ocrParams: ocrParams);
+            await ExportPdf(sfd.FileName, pages, ocrParams);
             AddHistory(sfd.FileName, pages.Count);
             Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
@@ -890,9 +897,8 @@ public class MainForm : Form
             Status("Preparing PDF to share…");
             var path = Path.Combine(Path.GetTempPath(),
                 "ApneScan_" + Guid.NewGuid().ToString("N")[..8] + ".pdf");
-            var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
-            await exporter.Export(path, _pages, ocrParams: ocrParams);
+            await ExportPdf(path, _pages, ocrParams);
 
             // Open Explorer with the PDF selected so the user can right-click it
             // and choose Windows "Share" (WhatsApp, Mail, etc.).
@@ -1832,6 +1838,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public bool ClearAfter { get; set; }
         public bool AutoCrop { get; set; } = true;
         public bool SkipBlank { get; set; }
+        public int CompressPercent { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -1859,13 +1866,14 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _clearAfter = s.ClearAfter;
         _autoCrop = s.AutoCrop;
         _skipBlank = s.SkipBlank;
+        _compressPercent = s.CompressPercent;
         Post(new
         {
             type = "settings",
             dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device,
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
-            autoCrop = s.AutoCrop, skipBlank = s.SkipBlank
+            autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent
         });
     }
 
@@ -1882,6 +1890,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _clearAfter = s.ClearAfter;
             _autoCrop = s.AutoCrop;
             _skipBlank = s.SkipBlank;
+            _compressPercent = s.CompressPercent;
         }
         catch { /* best-effort */ }
     }
@@ -1971,6 +1980,130 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
     // Render the first page of a PDF/image to show in the right preview panel
     // (without importing it into the current document).
+    // Export pages to PDF, applying the compression setting if enabled.
+    private async Task ExportPdf(string file, ICollection<ProcessedImage> pages, OcrParams? ocr)
+    {
+        if (_compressPercent > 0)
+        {
+            int quality = Math.Clamp(100 - _compressPercent, 20, 95);
+            await BuildCompressedPdfAsync(pages, file, quality, ocr);
+        }
+        else
+        {
+            var exporter = new PdfExporter(_ctx);
+            await exporter.Export(file, pages, ocrParams: ocr);
+        }
+    }
+
+    // Build a smaller PDF by re-encoding each page as a JPEG at the given
+    // quality and embedding it directly (keeps visual quality, cuts size).
+    private async Task BuildCompressedPdfAsync(IEnumerable<ProcessedImage> sourcePages, string outFile, int quality, OcrParams? ocr)
+    {
+        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_cz_" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(tempDir);
+        var compCtx = new ScanningContext(new GdiImageContext())
+        {
+            FileStorageManager = FileStorageManager.CreateFolder(tempDir),
+            OcrEngine = _ctx.OcrEngine
+        };
+        var newPages = new List<ProcessedImage>();
+        try
+        {
+            var importer = new ImageImporter(compCtx);
+            foreach (var src in sourcePages)
+            {
+                var jpg = System.IO.Path.Combine(tempDir, "p_" + Guid.NewGuid().ToString("N")[..8] + ".jpg");
+                using (var rendered = src.Render())
+                {
+                    rendered.Save(jpg, ImageFileFormat.Jpeg, new ImageSaveOptions { Quality = quality });
+                }
+                await foreach (var ni in importer.Import(jpg)) newPages.Add(ni);
+                try { File.Delete(jpg); } catch { /* the importer keeps its own copy */ }
+            }
+            var exporter = new PdfExporter(compCtx);
+            await exporter.Export(outFile, newPages, ocrParams: ocr);
+        }
+        finally
+        {
+            foreach (var p in newPages) p.Dispose();
+            compCtx.Dispose();
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort */ }
+        }
+    }
+
+    private async Task CompressPdfFileAsync(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path) ||
+            System.IO.Path.GetExtension(path).ToLowerInvariant() != ".pdf")
+        {
+            Status("Select a PDF to compress");
+            return;
+        }
+        try
+        {
+            Status("Compressing PDF…");
+            int percent = _compressPercent > 0 ? _compressPercent : 40;
+            int quality = Math.Clamp(100 - percent, 20, 95);
+            var src = new List<ProcessedImage>();
+            await foreach (var img in new PdfImporter(_ctx).Import(path)) src.Add(img);
+            if (src.Count == 0) { Status("Could not read the PDF"); return; }
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = System.IO.Path.GetFileNameWithoutExtension(path) + "_small";
+            var outFile = System.IO.Path.Combine(dir, stem + ".pdf");
+            int k = 1;
+            while (File.Exists(outFile)) outFile = System.IO.Path.Combine(dir, $"{stem} ({++k}).pdf");
+            try
+            {
+                await BuildCompressedPdfAsync(src, outFile, quality, null);
+            }
+            finally { foreach (var p in src) p.Dispose(); }
+            long oldS = new FileInfo(path).Length, newS = new FileInfo(outFile).Length;
+            SendFolder(dir);
+            Status($"Compressed → {System.IO.Path.GetFileName(outFile)} ({FormatSize(oldS)} → {FormatSize(newS)})");
+        }
+        catch (Exception ex)
+        {
+            Status("Compress error: " + ex.Message);
+        }
+    }
+
+    // Rename a file or folder on disk (from the My Documents panel).
+    private void RenameItem(string path, string newName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path) || newName == null) return;
+            newName = newName.Trim();
+            if (newName.Length == 0) { Status("Give it a name"); return; }
+            var dir = System.IO.Path.GetDirectoryName(path);
+            if (dir == null) return;
+            bool isDir = Directory.Exists(path);
+            var safe = SanitizeFileName(newName);
+            if (!isDir && string.IsNullOrEmpty(System.IO.Path.GetExtension(safe)))
+            {
+                safe += System.IO.Path.GetExtension(path); // keep original extension
+            }
+            var target = System.IO.Path.Combine(dir, safe);
+            if (string.Equals(target, path, StringComparison.OrdinalIgnoreCase)) return;
+            if (isDir)
+            {
+                if (Directory.Exists(target)) { Status("A folder with that name exists"); return; }
+                Directory.Move(path, target);
+            }
+            else
+            {
+                if (File.Exists(target)) { Status("A file with that name exists"); return; }
+                File.Move(path, target);
+            }
+            SendFolder(dir);
+            Status("Renamed to " + safe);
+        }
+        catch (Exception ex)
+        {
+            Status("Rename error: " + ex.Message);
+        }
+    }
+
     private async Task PreviewFileAsync(string path)
     {
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
@@ -2409,7 +2542,6 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
         try
         {
-            var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
             int made = 0;
             foreach (var nm in order)
@@ -2420,7 +2552,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 int k = 1;
                 while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
                 Status($"Saving {stem}.pdf …");
-                await exporter.Export(file, pages, ocrParams: ocrParams);
+                await ExportPdf(file, pages, ocrParams);
                 AddHistory(file, pages.Count);
                 made++;
             }
@@ -2523,9 +2655,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
 
             Status(_ocr ? "Saving PDF with OCR…" : "Saving PDF…");
-            var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
-            await exporter.Export(file, _pages, ocrParams: ocrParams);
+            await ExportPdf(file, _pages, ocrParams);
             AddHistory(file, _pages.Count);
             Bump("pdf", 1);
             SendFolder(folder);

@@ -632,6 +632,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="set-sec">Application</div>
     <div class="set-row"><label>Trim blank borders (auto-crop)</label><input type="checkbox" id="setAutoCropChk"></div>
     <div class="set-row"><label>Skip blank pages</label><input type="checkbox" id="setSkipBlankChk"></div>
+    <div class="set-row"><label>PDF compression (smaller size)</label>
+      <select id="setCompressSel"><option value="0">Off (best quality)</option><option value="20">Light — 20%</option><option value="40">Medium — 40%</option><option value="60">High — 60%</option><option value="75">Max — 75%</option></select></div>
     <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
 
     <div class="cam-actions">
@@ -786,6 +788,19 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
 <!-- Drag-and-drop import hint overlay -->
 <div id="dropHint"><div class="box">&#11015; Drop files here to import</div></div>
+
+<!-- Right-click context menu for files in My Documents -->
+<div class="menu" id="ctxMenu" style="min-width:170px"></div>
+
+<!-- Rename a file/folder from My Documents (F2) -->
+<div class="cam-overlay" id="friOverlay">
+  <div class="cam-box" style="max-width:400px;text-align:left">
+    <h3>Rename</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">New name:</p>
+    <input id="friInput" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
+    <div class="cam-actions"><div class="cam-btn no" id="friCancel">Cancel</div><div class="cam-btn primary" id="friOk">OK</div></div>
+  </div>
+</div>
 
 <!-- New folder dialog (Ctrl+Shift+N) -->
 <div class="cam-overlay" id="nfOverlay">
@@ -1225,7 +1240,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false };
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0 };
   function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
   function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
@@ -1234,7 +1249,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank }); }
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -1250,6 +1265,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     ui.clearAfter=!!s.clearAfter;
     ui.autoCrop=(s.autoCrop!==false);
     ui.skipBlank=!!s.skipBlank;
+    ui.compressPercent=s.compressPercent||0;
     applyTheme(s.theme||'default');
     applyShowNums(s.showNums!==false);
     applyShowProfiles(s.showProfiles!==false);
@@ -1270,6 +1286,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var cl=byId('setClearChk'); if(cl) cl.checked=ui.clearAfter;
     var acp=byId('setAutoCropChk'); if(acp) acp.checked=ui.autoCrop;
     var skb=byId('setSkipBlankChk'); if(skb) skb.checked=ui.skipBlank;
+    var cps=byId('setCompressSel'); if(cps) cps.value=String(ui.compressPercent);
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
@@ -1278,7 +1295,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
-    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false;
+    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0;
     openSettings(); setStatus('Defaults restored — press OK to apply');
   });
   var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
@@ -1299,6 +1316,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var cl=byId('setClearChk'); if(cl) ui.clearAfter=cl.checked;
     var acp=byId('setAutoCropChk'); if(acp) ui.autoCrop=acp.checked;
     var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
+    var cps=byId('setCompressSel'); if(cps) ui.compressPercent=parseInt(cps.value,10)||0;
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
@@ -1477,6 +1495,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         else { docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(en.prev){ if(bridge) send({cmd:'previewFile', path:en.path}); } else { setStatus('Preview is only for PDF & images — double-click to open'); } }
       });
       r.addEventListener('dblclick', function(){ if(!bridge) return; if(en.dir) send({cmd:'listFolder', path:en.path}); else send({cmd:'openFile', path:en.path}); });
+      r.addEventListener('contextmenu', function(ev){ ev.preventDefault(); showFileMenu(ev.clientX, ev.clientY, en); });
       list.appendChild(r);
     });
   }
@@ -1518,6 +1537,33 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var nfOk=byId('nfOk'); if(nfOk) nfOk.addEventListener('click', submitNewFolder);
   var nfCancel=byId('nfCancel'); if(nfCancel) nfCancel.addEventListener('click', function(){ overlay('nfOverlay', false); });
   var nfInput=byId('nfInput'); if(nfInput) nfInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitNewFolder(); } });
+
+  // Right-click menu for files in My Documents
+  function showFileMenu(x,y,en){
+    var m=byId('ctxMenu'); if(!m) return; m.innerHTML='';
+    function item(label, sym, fn){ var o=document.createElement('div'); o.className='opt'; o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
+    var ext=(en.name||'').split('.').pop().toLowerCase();
+    if(en.prev) item('Preview','i-doc', function(){ docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(bridge) send({cmd:'previewFile', path:en.path}); });
+    item('Open','i-full', function(){ if(bridge) send({cmd:'openFile', path:en.path}); });
+    item('Rename (F2)','i-editor', function(){ openFileRename(en.path, en.name); });
+    if(ext==='pdf') item('Compress PDF','i-save', function(){ setStatus('Compressing PDF…'); if(bridge) send({cmd:'compressPdf', path:en.path}); });
+    m.style.left=Math.min(x, window.innerWidth-190)+'px';
+    m.style.top=Math.min(y, window.innerHeight-170)+'px';
+    m.classList.add('on');
+  }
+  document.addEventListener('click', function(){ var m=byId('ctxMenu'); if(m) m.classList.remove('on'); });
+
+  // Rename a file/folder from the panel (F2)
+  var friPath='';
+  function openFileRename(path, name){
+    friPath=path||''; var inp=byId('friInput'); if(inp) inp.value=name||'';
+    overlay('friOverlay', true);
+    if(inp){ inp.focus(); var dot=(name||'').lastIndexOf('.'); if(dot>0){ try{ inp.setSelectionRange(0,dot); }catch(_){ inp.select(); } } else inp.select(); }
+  }
+  function submitFileRename(){ var inp=byId('friInput'); var v=inp?inp.value.trim():''; if(v && friPath && bridge) send({cmd:'renameItem', path:friPath, name:v}); overlay('friOverlay', false); }
+  var friOk=byId('friOk'); if(friOk) friOk.addEventListener('click', submitFileRename);
+  var friCancel=byId('friCancel'); if(friCancel) friCancel.addEventListener('click', function(){ overlay('friOverlay', false); });
+  var friInput=byId('friInput'); if(friInput) friInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitFileRename(); } });
   var docsImport=byId('docsImport'); if(docsImport) docsImport.addEventListener('click', function(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); });
   var docsSaveHere=byId('docsSaveHere'); if(docsSaveHere) docsSaveHere.addEventListener('click', function(){
     var target=docsSelected||docsData.path;
@@ -1766,9 +1812,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   });
 
   // ---- Customizable keyboard shortcuts ----
+  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
+  function modalOverlayOpen(){ for(var i=0;i<MODAL_IDS.length;i++){ var el=byId(MODAL_IDS[i]); if(el && el.classList.contains('on')) return true; } return false; }
   function anyOverlayOpen(){
-    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay'];
-    for(var i=0;i<ids.length;i++){ var el=byId(ids[i]); if(el && el.classList.contains('on')) return true; }
+    if(modalOverlayOpen()) return true;
     var dp=byId('docsPanel'); if(dp && dp.classList.contains('on')) return true;
     return false;
   }
@@ -1777,7 +1824,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
   var ACTIONS=[
     {id:'scan', sec:'Scanning', label:'Scan (default)', def:'Enter', run:function(){ doScan(); }},
-    {id:'rename', sec:'Scanning', label:'Rename page', def:'F2', run:function(){ if(scannedSel>=0) openRename(scannedSel); else setStatus('Select a page to rename'); }},
+    {id:'rename', sec:'Scanning', label:'Rename page / file', def:'F2', run:function(){
+      var dp=byId('docsPanel');
+      if(dp && dp.classList.contains('on') && (docsSelectedFile||docsSelected)){ var p=docsSelectedFile||docsSelected; openFileRename(p, p.split(/[\\\/]/).pop()); }
+      else if(scannedSel>=0) openRename(scannedSel);
+      else setStatus('Select a page or file to rename');
+    }},
     {id:'dpi100', sec:'Scanning', label:'Resolution 100 dpi', def:'F3', run:function(){ setDpiVal(100); }},
     {id:'dpi200', sec:'Scanning', label:'Resolution 200 dpi', def:'F4', run:function(){ setDpiVal(200); }},
     {id:'dpi300', sec:'Scanning', label:'Resolution 300 dpi', def:'F5', run:function(){ setDpiVal(300); }},
@@ -1882,9 +1934,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var combo=comboFromEvent(e); if(!combo) return;
     var actId=scReverse[combo]; if(!actId) return;
     var bare=!(e.ctrlKey||e.metaKey||e.altKey);
+    // Rename (F2) also works while the My Documents panel is open (to rename a
+    // selected file); other bare keys don't fire while any overlay/panel is open.
+    if(actId==='rename'){ if(!modalOverlayOpen()){ e.preventDefault(); runAction(actId); } return; }
     if(bare && anyOverlayOpen()) return;
-    var act=null; for(var i=0;i<ACTIONS.length;i++){ if(ACTIONS[i].id===actId){ act=ACTIONS[i]; break; } }
-    if(act){ e.preventDefault(); act.run(); }
+    runAction(actId);
+    function runAction(id){ for(var i=0;i<ACTIONS.length;i++){ if(ACTIONS[i].id===id){ e.preventDefault(); ACTIONS[i].run(); return; } } }
   }, true);
 
   // Scanner picker — choose which scanner to scan from
@@ -1919,7 +1974,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
