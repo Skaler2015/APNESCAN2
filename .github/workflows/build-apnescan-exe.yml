@@ -32,9 +32,9 @@ jobs:
         id: version
         shell: bash
         run: |
-          VER=$(grep -oE '<Version>[^<]+' NAPS2.Setup/targets/VersionTargets.targets | head -1 | sed 's/<Version>//')
+          VER=$(grep -oE '<Version>[^<]+' ApneScan.Studio/ApneScan.Studio.csproj | head -1 | sed 's/<Version>//')
           echo "version=$VER" >> "$GITHUB_OUTPUT"
-          echo "App version: $VER"
+          echo "ApneScan version: $VER"
 
       - name: Publish ApneScan Studio (new UI + real scan/print engine)
         run: >
