@@ -443,15 +443,18 @@ public class MainForm : Form
             var path = Path.Combine(Path.GetTempPath(), "ApneScan-Setup.exe");
             await File.WriteAllBytesAsync(path, bytes);
 
-            Status("Installing update… ApneScan will reopen automatically.");
-            // /SILENT installs quietly; the installer's [Run] entry relaunches
-            // ApneScan for us once the new files are in place, so the app opens
-            // again by itself after updating.
+            Status("Updating in the background… ApneScan will reopen automatically.");
+            // /VERYSILENT hides the installer completely (no windows, no prompts);
+            // the per-user install needs no UAC, so the whole update runs in the
+            // background. The installer's [Run] entry relaunches ApneScan once the
+            // new files are in place, so the app just reopens on the new version.
             Process.Start(new ProcessStartInfo
             {
                 FileName = path,
-                Arguments = "/SILENT /CLOSEAPPLICATIONS",
-                UseShellExecute = true
+                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS",
+                UseShellExecute = true,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             });
             Application.Exit();
         }

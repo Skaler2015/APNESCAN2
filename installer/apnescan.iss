@@ -34,7 +34,10 @@ ArchitecturesAllowed=x64compatible
 ; Let the updater close a running instance before upgrading.
 CloseApplications=yes
 RestartApplications=no
-PrivilegesRequired=admin
+; Install per-user (no admin / UAC prompt) so the one-click updater can
+; install a new version completely in the background — {autopf} resolves to
+; %LocalAppData%\Programs when running without elevation.
+PrivilegesRequired=lowest
 WizardStyle=modern
 
 [Languages]
@@ -49,7 +52,7 @@ Source: "..\publish\ApneScan\*"; DestDir: "{app}"; Flags: recursesubdirs createa
 [Icons]
 Name: "{group}\ApneScan"; Filename: "{app}\{#AppExe}"
 Name: "{group}\Uninstall ApneScan"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\ApneScan"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{autodesktop}\ApneScan"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
 ; Launch ApneScan after install. No "skipifsilent" so the app also relaunches
