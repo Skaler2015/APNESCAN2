@@ -387,7 +387,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
       <div class="content">
         <div class="center">
-          <div class="scan-card">
+          <div class="scan-card" id="scanCard">
             <h2 id="scanTitle">Ready to Scan</h2>
             <p id="scanSub">Place your document in the feeder and press Scan</p>
             <div class="scan-btn" id="scanBtn">
@@ -395,7 +395,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
               <b>SCAN</b>
             </div>
           </div>
-          <div class="hint">
+          <div class="hint" id="scanHint">
             <span>Press <kbd>Enter</kbd> to scan</span>
             <span><kbd>F3</kbd>–<kbd>F6</kbd> quick DPI</span>
             <span><kbd>Ctrl</kbd>+<kbd>P</kbd> print</span>
@@ -763,8 +763,13 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function renderScanned(thumbs, selected){
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
+    // When scanned pages are shown below, hide the big Scan card/hint above.
+    var has=!!(thumbs&&thumbs.length);
+    var card=byId('scanCard'), hint=byId('scanHint');
+    if(card) card.style.display=has?'none':'';
+    if(hint) hint.style.display=has?'none':'';
     grid.innerHTML='';
-    if(!thumbs||!thumbs.length){
+    if(!has){
       if(head) head.style.display='none';
       grid.style.display='none';
       return;
