@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using QRCoder;
@@ -173,6 +174,9 @@ public class MainForm : Form
                 break;
             case "share":
                 await SharePdfAsync();
+                break;
+            case "getText":
+                await GetTextAsync();
                 break;
             case "getSettings":
                 SendSettings();
@@ -947,6 +951,37 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    private async Task GetTextAsync()
+    {
+        if (_pages.Count == 0)
+        {
+            Post(new { type = "text", text = "" });
+            return;
+        }
+        if (_ctx.OcrEngine == null)
+        {
+            Post(new { type = "text", text = "OCR is not available." });
+            return;
+        }
+        try
+        {
+            Status("Reading text (OCR)…");
+            int i = Sel();
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_ocr_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            _pages[i].Save(tmp);
+            var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            try { File.Delete(tmp); } catch { /* best-effort */ }
+            var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
+            Post(new { type = "text", text });
+            Status(string.IsNullOrWhiteSpace(text) ? "No text found on this page" : "Text ready");
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "text", text = "" });
+            Status("OCR error: " + ex.Message);
+        }
     }
 
     private sealed class AppSettings

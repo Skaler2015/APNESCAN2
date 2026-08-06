@@ -140,6 +140,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .rp-page i{display:block;height:3px;background:#e9ebf2;margin:16px 16px 0}
 .rp-page i:first-child{margin-top:22px;width:60%}
 #previewImg{max-width:92%;max-height:92%;box-shadow:0 8px 22px rgba(30,30,60,.16);background:#fff}
+#textPanel{position:absolute;inset:0;background:#fff;padding:16px;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.55;color:var(--text);display:none;z-index:4}
+#textPanel.on{display:block}
+#rpZoom{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:#2a2f3a;color:#fff;border-radius:9px;padding:4px 6px;font-size:13px;z-index:6}
+#rpZoom span{min-width:26px;height:24px;display:grid;place-items:center;border-radius:6px;cursor:pointer;padding:0 6px;font-weight:600}
+#rpZoom span:hover{background:rgba(255,255,255,.14)}
 .rp-thumbs{padding:6px 14px;display:flex;gap:8px}
 .rp-thumbs .th{width:52px;height:66px;border:2px solid var(--accent);border-radius:6px;background:#fff;position:relative;padding:6px}
 .rp-thumbs .th i{display:block;height:2px;background:#e6e8f0;margin-bottom:4px}
@@ -373,14 +378,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="pg"><span class="num" id="pageCount2">Page 1 / 1</span></div>
           </div>
           <div class="tabs">
-            <div class="tab on"><svg class="ic" style="width:14px;height:14px"><use href="#i-grid"/></svg>Preview</div>
-            <div class="tab"><svg class="ic" style="width:14px;height:14px"><use href="#i-ocr"/></svg>Text</div>
+            <div class="tab on" id="tabPreview"><svg class="ic" style="width:14px;height:14px"><use href="#i-grid"/></svg>Preview</div>
+            <div class="tab" id="tabText"><svg class="ic" style="width:14px;height:14px"><use href="#i-ocr"/></svg>Text</div>
           </div>
           <div class="rp-view" id="rpView">
             <div class="rp-page" id="previewPage"><i></i><i></i><i></i><i></i></div>
             <img id="previewImg" alt="Scanned preview">
             <div id="cropBox"></div>
             <div id="cropBar"><div class="cb ok" id="cropApply">Apply crop</div><div class="cb no" id="cropCancel">Cancel</div></div>
+            <div id="textPanel"></div>
+            <div id="rpZoom"><span id="zoomOut">−</span><span id="zoomFit">Fit</span><span id="zoomIn">+</span><span id="zoomFull">⛶</span></div>
           </div>
           <div class="thumb-head"><span class="lbl2">Pages</span><span class="mv" id="btnMoveL" title="Move selected left">◀</span><span class="mv" id="btnMoveR" title="Move selected right">▶</span></div>
           <div class="rp-thumbs" id="thumbStrip"></div>
@@ -450,6 +457,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<div class="cam-overlay" id="fsOverlay" style="background:rgba(8,10,16,.93)">
+  <img id="fsImg" alt="Preview" style="max-width:94vw;max-height:92vh;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.5)">
+</div>
+
 <script>
 (function(){
   var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
@@ -471,7 +482,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   function showPreview(url, pages){
     var img=byId('previewImg'), ph=byId('previewPage');
+    fitMode=true; zoom=1;
+    showPreviewTab();
     if(img){ img.src=url; img.style.display='block'; }
+    applyZoom();
     if(ph){ ph.style.display='none'; }
     setPages(pages);
     var t=byId('scanTitle'); if(t) t.textContent='Scan complete';
@@ -546,6 +560,26 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   document.addEventListener('click', function(e){ if(searchDrop && searchInput && e.target!==searchInput && !searchDrop.contains(e.target)){ searchDrop.classList.remove('on'); } });
   document.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')){ e.preventDefault(); if(searchInput) searchInput.focus(); } });
+
+  // zoom + fullscreen for the preview
+  var zoom=1, fitMode=true;
+  function applyZoom(){
+    var im=byId('previewImg'), rp=byId('rpView'); if(!im||!rp) return;
+    if(fitMode){ im.style.maxWidth='92%'; im.style.maxHeight='92%'; im.style.width=''; im.style.height=''; rp.style.overflow='hidden'; }
+    else { im.style.maxWidth='none'; im.style.maxHeight='none'; im.style.width=((im.naturalWidth||800)*zoom)+'px'; im.style.height='auto'; rp.style.overflow='auto'; }
+  }
+  var zi=byId('zoomIn'); if(zi) zi.addEventListener('click', function(){ fitMode=false; zoom=Math.min(zoom*1.25,5); applyZoom(); });
+  var zo=byId('zoomOut'); if(zo) zo.addEventListener('click', function(){ fitMode=false; zoom=Math.max(zoom/1.25,0.2); applyZoom(); });
+  var zf=byId('zoomFit'); if(zf) zf.addEventListener('click', function(){ fitMode=true; zoom=1; applyZoom(); });
+  function openFs(){ var im=byId('previewImg'); if(!im||!im.getAttribute('src')) return; var fi=byId('fsImg'); if(fi) fi.src=im.src; var ov=byId('fsOverlay'); if(ov) ov.classList.add('on'); }
+  var zfull=byId('zoomFull'); if(zfull) zfull.addEventListener('click', openFs);
+  var fsov=byId('fsOverlay'); if(fsov) fsov.addEventListener('click', function(){ fsov.classList.remove('on'); });
+  // Text tab (OCR text of the selected page)
+  var tabPrev=byId('tabPreview'), tabTxt=byId('tabText');
+  function showPreviewTab(){ if(tabPrev) tabPrev.classList.add('on'); if(tabTxt) tabTxt.classList.remove('on'); var tp=byId('textPanel'); if(tp) tp.classList.remove('on'); }
+  function showTextTab(){ if(tabTxt) tabTxt.classList.add('on'); if(tabPrev) tabPrev.classList.remove('on'); var tp=byId('textPanel'); if(tp){ tp.classList.add('on'); tp.textContent='Reading text (OCR)…'; } if(bridge) send({cmd:'getText'}); }
+  if(tabPrev) tabPrev.addEventListener('click', showPreviewTab);
+  if(tabTxt) tabTxt.addEventListener('click', showTextTab);
 
   function openHist(){ renderHistory(histItems); var ov=byId('histOverlay'); if(ov) ov.classList.add('on'); }
   function closeHist(){ var ov=byId('histOverlay'); if(ov) ov.classList.remove('on'); }
@@ -624,6 +658,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
+      else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
