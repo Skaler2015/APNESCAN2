@@ -248,7 +248,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       <div class="toolbar">
         <div class="tbtn on"><svg class="ic" style="stroke:#fff"><use href="#i-scan"/></svg><small>Scan</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
-        <div class="tbtn"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
+        <div class="tbtn" id="btnOcr"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
@@ -453,6 +453,17 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brl=byId('btnRotL'); if(brl) brl.addEventListener('click', function(){ if(bridge) send({cmd:'rotateLeft'}); });
   var bde=byId('btnDelete'); if(bde) bde.addEventListener('click', function(){ if(bridge) send({cmd:'deletePage'}); });
+  // OCR toggle — when on, saved PDFs get a searchable text layer
+  var ocrOn=false;
+  var bo=byId('btnOcr'); if(bo) bo.addEventListener('click', function(){
+    ocrOn=!ocrOn;
+    bo.classList.remove('on');
+    bo.style.background = ocrOn ? '#16a34a' : '';
+    bo.style.color = ocrOn ? '#fff' : '';
+    bo.style.boxShadow = ocrOn ? '0 4px 12px rgba(22,163,74,.32)' : '';
+    if(bridge) send({cmd:'setOcr', on:ocrOn});
+    setStatus(ocrOn ? 'OCR ON — saved PDF will be searchable' : 'OCR off');
+  });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
 

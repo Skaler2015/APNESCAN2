@@ -10,6 +10,7 @@ using Microsoft.Web.WebView2.WinForms;
 using NAPS2.Images;
 using NAPS2.Images.Gdi;
 using NAPS2.Images.Transforms;
+using NAPS2.Ocr;
 using NAPS2.Pdf;
 using NAPS2.Scan;
 
@@ -28,6 +29,7 @@ public class MainForm : Form
     private readonly List<ProcessedImage> _pages = new();
     private List<ScanDevice> _devices = new();
     private bool _busy;
+    private bool _ocr;
 
     // One-click update: manifest published to the "latest" GitHub release.
     private const string UpdateManifestUrl =
@@ -47,6 +49,12 @@ public class MainForm : Form
             Icon = new Icon(Path.Combine(AppContext.BaseDirectory, "favicon.ico"));
         }
         catch { /* icon optional */ }
+        try
+        {
+            // OCR via the bundled Tesseract executable + English language data.
+            _ctx.OcrEngine = TesseractOcrEngine.Bundled(Path.Combine(AppContext.BaseDirectory, "tessdata"));
+        }
+        catch { /* OCR optional */ }
         Controls.Add(_web);
         Load += async (_, _) => await InitAsync();
         FormClosed += (_, _) =>
@@ -75,6 +83,7 @@ public class MainForm : Form
         int dpi = 200;
         string color = "color";
         string source = "auto";
+        bool on = false;
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -84,6 +93,7 @@ public class MainForm : Form
             if (root.TryGetProperty("dpi", out var dp) && dp.ValueKind == JsonValueKind.Number) dpi = dp.GetInt32();
             if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
             if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
+            if (root.TryGetProperty("on", out var onEl) && (onEl.ValueKind == JsonValueKind.True || onEl.ValueKind == JsonValueKind.False)) on = onEl.GetBoolean();
         }
         catch
         {
@@ -115,6 +125,10 @@ public class MainForm : Form
                 break;
             case "deletePage":
                 DeleteLastPage();
+                break;
+            case "setOcr":
+                _ocr = on;
+                Status(_ocr ? "OCR on — saved PDFs will have searchable text" : "OCR off");
                 break;
             case "checkUpdate":
                 await CheckForUpdatesAsync();
@@ -347,9 +361,10 @@ public class MainForm : Form
         }
         try
         {
-            Status("Saving PDF…");
+            Status(_ocr ? "Saving PDF with OCR (this can take a moment)…" : "Saving PDF…");
             var exporter = new PdfExporter(_ctx);
-            await exporter.Export(sfd.FileName, _pages);
+            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            await exporter.Export(sfd.FileName, _pages, ocrParams: ocrParams);
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
         }
