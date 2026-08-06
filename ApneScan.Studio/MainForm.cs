@@ -66,6 +66,16 @@ public class MainForm : Form
 
     private async Task InitAsync()
     {
+        // WebView2's default user-data folder is created next to the .exe. When
+        // the app is installed under Program Files that folder isn't writable,
+        // which fails with "Access is denied (E_ACCESSDENIED)". Point it at a
+        // writable per-user location instead.
+        var userData = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ApneScan", "WebView2");
+        Directory.CreateDirectory(userData);
+        _web.CreationProperties = new CoreWebView2CreationProperties { UserDataFolder = userData };
+
         await _web.EnsureCoreWebView2Async();
         var core = _web.CoreWebView2;
         core.Settings.AreDefaultContextMenusEnabled = false;
