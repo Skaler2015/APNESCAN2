@@ -1,13 +1,17 @@
 name: Build ApneScan EXE (Windows)
 
 # Manually runnable from the Actions tab, and also runs automatically
-# whenever this branch is pushed. Produces a self-contained Windows build
-# of ApneScan (no separate .NET install needed to run it).
+# whenever this branch is pushed. Produces a SINGLE self-contained
+# ApneScan.exe (no separate .NET install needed to run it) and publishes
+# it to a GitHub Release for a direct one-click .exe download.
 on:
   workflow_dispatch:
   push:
     branches:
       - claude/share-41mb-file-j8ol4i
+
+permissions:
+  contents: write
 
 jobs:
   build-windows-exe:
@@ -22,27 +26,39 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Publish ApneScan (win-x64, self-contained)
+      - name: Publish ApneScan as a single self-contained .exe
         run: >
           dotnet publish NAPS2.App.WinForms/NAPS2.App.WinForms.csproj
           -c Release
           -r win-x64
           --self-contained true
           -o publish/ApneScan
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
           /p:DebugType=None
           /p:DebugSymbols=false
 
-      - name: Show output
+      - name: Rename to ApneScan-Setup.exe and show result
         shell: bash
         run: |
-          echo "Built files:"
-          ls -lh publish/ApneScan/ApneScan.exe || true
-          echo "Total size:"
-          du -sh publish/ApneScan || true
+          cp publish/ApneScan/ApneScan.exe ApneScan.exe
+          echo "Single-file exe:"
+          ls -lh ApneScan.exe
 
-      - name: Upload ApneScan build artifact
+      - name: Upload build artifact (backup download)
         uses: actions/upload-artifact@v4
         with:
           name: ApneScan-Windows-x64
-          path: publish/ApneScan
+          path: ApneScan.exe
           if-no-files-found: error
+
+      - name: Publish to a GitHub Release (direct .exe download)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apnescan-latest
+          name: ApneScan (latest Windows build)
+          body: |
+            Single-file, self-contained Windows build of ApneScan.
+            Just download **ApneScan.exe** below and run it — no .NET install needed.
+          files: ApneScan.exe
+          make_latest: true
