@@ -1,0 +1,48 @@
+name: Build ApneScan EXE (Windows)
+
+# Manually runnable from the Actions tab, and also runs automatically
+# whenever this branch is pushed. Produces a self-contained Windows build
+# of ApneScan (no separate .NET install needed to run it).
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/share-41mb-file-j8ol4i
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish ApneScan (win-x64, self-contained)
+        run: >
+          dotnet publish NAPS2.App.WinForms/NAPS2.App.WinForms.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -o publish/ApneScan
+          /p:DebugType=None
+          /p:DebugSymbols=false
+
+      - name: Show output
+        shell: bash
+        run: |
+          echo "Built files:"
+          ls -lh publish/ApneScan/ApneScan.exe || true
+          echo "Total size:"
+          du -sh publish/ApneScan || true
+
+      - name: Upload ApneScan build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ApneScan-Windows-x64
+          path: publish/ApneScan
+          if-no-files-found: error
