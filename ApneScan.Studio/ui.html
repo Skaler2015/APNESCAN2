@@ -258,9 +258,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
         <div class="sep"></div>
         <div class="tbtn"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
+        <div class="tbtn" id="btnRotate"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
+        <div class="tbtn" id="btnDelete"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
         <div class="tbtn" id="btnClear"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
         <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input placeholder="Search documents…  (Ctrl+K)"></div>
         <div class="status-pill"><span class="d"></span><span id="statusText">Starting…</span></div>
@@ -274,10 +274,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <span class="k">CONNECTED SCANNER</span>
           <span class="v"><span class="dev"></span><span id="deviceName">Detecting…</span> <span class="rf" id="refreshBtn"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg></span></span>
         </div>
-        <div class="field"><span class="k">RESOLUTION</span><span class="v">200 dpi <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
-        <div class="field"><span class="k">COLOR</span><span class="v">24-bit Color <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
-        <div class="field"><span class="k">PAPER</span><span class="v">Auto <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
-        <div class="field"><span class="k">PAPER SOURCE</span><span class="v">Auto <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field" id="setDpi" style="cursor:pointer"><span class="k">RESOLUTION</span><span class="v"><span id="valDpi">200 dpi</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field" id="setColor" style="cursor:pointer"><span class="k">COLOR</span><span class="v"><span id="valColor">Color</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field"><span class="k">PAGE SIZE</span><span class="v">Auto (full)</span></div>
+        <div class="field" id="setSource" style="cursor:pointer"><span class="k">PAPER SOURCE</span><span class="v"><span id="valSource">Auto</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="scan-sm" id="scanSm">&#9654; Scan</div>
       </div>
 
@@ -286,8 +286,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tools">
           <div class="tool"><svg class="ic"><use href="#i-list"/></svg></div>
           <div class="tool"><svg class="ic"><use href="#i-crop"/></svg></div>
-          <div class="tool"><svg class="ic"><use href="#i-rotate"/></svg></div>
-          <div class="tool"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
+          <div class="tool" id="btnRotR"><svg class="ic"><use href="#i-rotate"/></svg></div>
+          <div class="tool" id="btnRotL"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
           <div class="tool"><svg class="ic"><use href="#i-print"/></svg></div>
           <div class="tool g"><svg class="ic"><use href="#i-check"/></svg></div>
           <div class="tool"><svg class="ic"><use href="#i-wrench"/></svg></div>
@@ -364,6 +364,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 (function(){
   var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
   var devices = [];
+  var settings = { dpi:200, color:'color', source:'auto' };
+  var dpiOpts = [100,200,300,600];
+  var colorOpts = [['color','Color'],['gray','Grayscale'],['bw','Black & White']];
+  var srcOpts = [['auto','Auto'],['flatbed','Flatbed'],['feeder','Feeder'],['duplex','Duplex (both sides)']];
+  function cycle(arr, cur){ var i=arr.indexOf(cur); return arr[(i+1)%arr.length]; }
+  function labelFor(opts, key){ for(var i=0;i<opts.length;i++){ if(opts[i][0]===key) return opts[i][1]; } return key; }
   function send(o){ if(bridge){ bridge.postMessage(JSON.stringify(o)); } }
   function byId(id){ return document.getElementById(id); }
   function setStatus(t){ var e=byId('statusText'); if(e) e.textContent=t; var c=byId('connText'); if(c) c.textContent=t; }
@@ -435,9 +441,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
     var s=byId('scanSub'); if(s) s.textContent='Feeding page from your scanner';
     setStatus('Scanning…');
-    if(bridge){ send({cmd:'scan', device:0}); }
+    if(bridge){ send({cmd:'scan', device:0, dpi:settings.dpi, color:settings.color, source:settings.source}); }
     else { setTimeout(function(){ if(t)t.textContent='Ready to Scan'; if(s)s.textContent='Place your document in the feeder and press Scan'; setStatus('Ready (design preview)'); }, 1600); }
   }
+  // scan settings — click a field to cycle its value
+  var sd=byId('setDpi'); if(sd) sd.addEventListener('click', function(){ settings.dpi=cycle(dpiOpts, settings.dpi); var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; });
+  var sco=byId('setColor'); if(sco) sco.addEventListener('click', function(){ settings.color=cycle(colorOpts.map(function(o){return o[0];}), settings.color); var v=byId('valColor'); if(v) v.textContent=labelFor(colorOpts, settings.color); });
+  var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(){ settings.source=cycle(srcOpts.map(function(o){return o[0];}), settings.source); var v=byId('valSource'); if(v) v.textContent=labelFor(srcOpts, settings.source); });
+  // editor — rotate / delete the latest page
+  var brt=byId('btnRotate'); if(brt) brt.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
+  var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
+  var brl=byId('btnRotL'); if(brl) brl.addEventListener('click', function(){ if(bridge) send({cmd:'rotateLeft'}); });
+  var bde=byId('btnDelete'); if(bde) bde.addEventListener('click', function(){ if(bridge) send({cmd:'deletePage'}); });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
 

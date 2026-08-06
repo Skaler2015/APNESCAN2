@@ -72,14 +72,18 @@ public class MainForm : Form
     {
         string cmd;
         int deviceIndex = 0;
+        int dpi = 200;
+        string color = "color";
+        string source = "auto";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
-            cmd = doc.RootElement.GetProperty("cmd").GetString() ?? "";
-            if (doc.RootElement.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number)
-            {
-                deviceIndex = d.GetInt32();
-            }
+            var root = doc.RootElement;
+            cmd = root.GetProperty("cmd").GetString() ?? "";
+            if (root.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number) deviceIndex = d.GetInt32();
+            if (root.TryGetProperty("dpi", out var dp) && dp.ValueKind == JsonValueKind.Number) dpi = dp.GetInt32();
+            if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
+            if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
         }
         catch
         {
@@ -92,7 +96,7 @@ public class MainForm : Form
                 await SendDevicesAsync();
                 break;
             case "scan":
-                await ScanAsync(deviceIndex);
+                await ScanAsync(deviceIndex, dpi, color, source);
                 break;
             case "savePdf":
                 await SavePdfAsync();
@@ -103,12 +107,71 @@ public class MainForm : Form
             case "clear":
                 ClearPages();
                 break;
+            case "rotateLeft":
+                RotatePage(-90);
+                break;
+            case "rotateRight":
+                RotatePage(90);
+                break;
+            case "deletePage":
+                DeleteLastPage();
+                break;
             case "checkUpdate":
                 await CheckForUpdatesAsync();
                 break;
             case "update":
                 await RunUpdateAsync();
                 break;
+        }
+    }
+
+    private static BitDepth ParseColor(string c) => c switch
+    {
+        "gray" => BitDepth.Grayscale,
+        "bw" => BitDepth.BlackAndWhite,
+        _ => BitDepth.Color
+    };
+
+    private static NAPS2.Scan.PaperSource ParseSource(string s) => s switch
+    {
+        "flatbed" => NAPS2.Scan.PaperSource.Flatbed,
+        "feeder" => NAPS2.Scan.PaperSource.Feeder,
+        "duplex" => NAPS2.Scan.PaperSource.Duplex,
+        _ => NAPS2.Scan.PaperSource.Auto
+    };
+
+    private void RotatePage(double degrees)
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to rotate — scan a page first");
+            return;
+        }
+        int idx = _pages.Count - 1;
+        _pages[idx] = _pages[idx].WithTransform(new RotationTransform(degrees), disposeSelf: true);
+        SendPreview();
+        Status($"Rotated page {idx + 1}");
+    }
+
+    private void DeleteLastPage()
+    {
+        if (_pages.Count == 0)
+        {
+            Status("No pages to delete");
+            return;
+        }
+        var last = _pages[^1];
+        _pages.RemoveAt(_pages.Count - 1);
+        last.Dispose();
+        if (_pages.Count == 0)
+        {
+            Post(new { type = "cleared" });
+            Status("All pages removed");
+        }
+        else
+        {
+            SendPreview();
+            Status($"Page deleted — {_pages.Count} left");
         }
     }
 
@@ -208,7 +271,7 @@ public class MainForm : Form
         }
     }
 
-    private async Task ScanAsync(int deviceIndex)
+    private async Task ScanAsync(int deviceIndex, int dpi, string color, string source)
     {
         if (_busy)
         {
@@ -232,11 +295,12 @@ public class MainForm : Form
             var options = new ScanOptions
             {
                 Device = _devices[deviceIndex],
-                PaperSource = NAPS2.Scan.PaperSource.Auto,
+                PaperSource = ParseSource(source),
                 // Scan the scanner's full area (the driver clamps to the device
                 // maximum) so a page of any size is captured completely.
                 PageSize = new PageSize(14m, 22m, PageSizeUnit.Inch),
-                Dpi = 200
+                BitDepth = ParseColor(color),
+                Dpi = dpi > 0 ? dpi : 200
             };
 
             int added = 0;
