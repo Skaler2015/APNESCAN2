@@ -65,6 +65,8 @@ public class AboutForm : EtoDialogBase
                 ),
                 GetUpdateWidget(),
                 C.TextSpace(),
+                C.NoWrap("ApneScan  © 2026 Subhash Kaler"),
+                C.NoWrap("Based on NAPS2 (GPL v2)"),
                 C.NoWrap(string.Format(UiStrings.CopyrightFormat, AssemblyHelper.COPYRIGHT_YEARS)),
                 Config.AppLocked.Has(c => c.EnableDebugLogging)
                     ? C.None()
