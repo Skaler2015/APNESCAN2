@@ -216,6 +216,9 @@ public class MainForm : Form
             case "savePdf":
                 await SavePdfAsync();
                 break;
+            case "savePdfSelected":
+                await SavePdfSelectedAsync();
+                break;
             case "print":
                 PrintPages();
                 break;
@@ -628,6 +631,48 @@ public class MainForm : Form
             Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
+            if (_clearAfter) ClearPages();
+        }
+        catch (Exception ex)
+        {
+            Status("Save error: " + ex.Message);
+        }
+    }
+
+    private async Task SavePdfSelectedAsync()
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to save — scan a page first");
+            return;
+        }
+        int idx = Sel();
+        if (idx < 0)
+        {
+            Status("No page selected");
+            return;
+        }
+        var nm = (idx < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[idx]))
+            ? SanitizeFileName(_pageNames[idx]) : "scan";
+        using var sfd = new SaveFileDialog
+        {
+            Filter = "PDF document (*.pdf)|*.pdf",
+            FileName = nm + ".pdf"
+        };
+        if (sfd.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+        try
+        {
+            Status(_ocr ? "Saving selected page (OCR)…" : "Saving selected page…");
+            var exporter = new PdfExporter(_ctx);
+            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            await exporter.Export(sfd.FileName, new[] { _pages[idx] }, ocrParams: ocrParams);
+            AddHistory(sfd.FileName, 1);
+            Bump("pdf", 1);
+            Post(new { type = "done", path = sfd.FileName });
+            Status("Saved selected page: " + sfd.FileName);
             if (_clearAfter) ClearPages();
         }
         catch (Exception ex)

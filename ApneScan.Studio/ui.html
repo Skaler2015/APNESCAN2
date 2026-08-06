@@ -1466,7 +1466,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function setDpiVal(n){ settings.dpi=n; var v=byId('valDpi'); if(v) v.textContent=n+' dpi'; persistSettings(); setStatus(n+' dpi selected'); }
 
   var ACTIONS=[
-    {id:'scan', sec:'Scanning', label:'Scan', def:'Enter', run:function(){ doScan(); }},
+    {id:'scan', sec:'Scanning', label:'Scan (default)', def:'Enter', run:function(){ doScan(); }},
     {id:'rename', sec:'Scanning', label:'Rename page', def:'F2', run:function(){ if(scannedSel>=0) openRename(scannedSel); else setStatus('Select a page to rename'); }},
     {id:'dpi100', sec:'Scanning', label:'Resolution 100 dpi', def:'F3', run:function(){ setDpiVal(100); }},
     {id:'dpi200', sec:'Scanning', label:'Resolution 200 dpi', def:'F4', run:function(){ setDpiVal(200); }},
@@ -1474,7 +1474,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'dpi600', sec:'Scanning', label:'Resolution 600 dpi', def:'F6', run:function(){ setDpiVal(600); }},
     {id:'ocr', sec:'Scanning', label:'Toggle OCR', def:'Ctrl+Alt+O', run:function(){ setOcr(!ocrOn,true); setStatus(ocrOn?'OCR ON':'OCR off'); }},
     {id:'import', sec:'Files', label:'Import files', def:'Ctrl+O', run:function(){ doImport(); }},
-    {id:'savePdf', sec:'Files', label:'Save as PDF', def:'Ctrl+S', run:function(){ setStatus('Saving…'); send({cmd:'savePdf'}); }},
+    {id:'savePdf', sec:'Files', label:'Save all as PDF', def:'Ctrl+S', run:function(){ setStatus('Saving…'); send({cmd:'savePdf'}); }},
+    {id:'savePdfSel', sec:'Files', label:'Save selected page as PDF', def:'Space', run:function(){ setStatus('Saving selected page…'); send({cmd:'savePdfSelected'}); }},
     {id:'saveJpg', sec:'Files', label:'Save as JPG', def:'Ctrl+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'jpg'}); }},
     {id:'savePng', sec:'Files', label:'Save as PNG', def:'Ctrl+Shift+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'png'}); }},
     {id:'print', sec:'Files', label:'Print', def:'Ctrl+P', run:function(){ setStatus('Printing…'); send({cmd:'print'}); }},
