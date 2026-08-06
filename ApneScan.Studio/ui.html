@@ -13,6 +13,56 @@
   --shadow:0 1px 2px rgba(20,20,50,.04), 0 4px 14px rgba(30,30,60,.05);
   color-scheme: light;
 }
+/* Dark theme (Settings → Theme → Dark). Documents/thumbnails stay white. */
+:root[data-theme="dark"]{
+  --bg:#12151c; --panel:#1c2029; --sidebar:#181b23;
+  --border:#2b313c; --border-2:#242a34;
+  --text:#e6e8ef; --muted:#949cad; --muted-2:#6c7484;
+  --accent-soft:#282142; --accent-ink:#cbbdf9;
+  --good:#22c55e; --good-soft:#12331e;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .subbar,
+:root[data-theme="dark"] .statusbar,
+:root[data-theme="dark"] .mini .mh{background:#191d25}
+:root[data-theme="dark"] .item:hover,
+:root[data-theme="dark"] .tbtn:hover,
+:root[data-theme="dark"] .tool:hover,
+:root[data-theme="dark"] .tr-ic:hover,
+:root[data-theme="dark"] .dp-act:hover,
+:root[data-theme="dark"] .dp-x:hover,
+:root[data-theme="dark"] .search-item:hover,
+:root[data-theme="dark"] .menu .opt:hover,
+:root[data-theme="dark"] .hist-row:hover,
+:root[data-theme="dark"] .docs-row:hover,
+:root[data-theme="dark"] .dp-act:hover{background:#252b36}
+:root[data-theme="dark"] .menu,
+:root[data-theme="dark"] .docs-row,
+:root[data-theme="dark"] .thumb-item,
+:root[data-theme="dark"] .search-drop{background:#1c2029}
+:root[data-theme="dark"] .search,
+:root[data-theme="dark"] .dp-search,
+:root[data-theme="dark"] .badge,
+:root[data-theme="dark"] .dp-chip,
+:root[data-theme="dark"] .dp-sortbtn,
+:root[data-theme="dark"] .dp-act,
+:root[data-theme="dark"] .bar,
+:root[data-theme="dark"] .set-row select,
+:root[data-theme="dark"] .cam-btn:not(.primary),
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] .sc-row kbd,
+:root[data-theme="dark"] .hint kbd,
+:root[data-theme="dark"] .mn-row,
+:root[data-theme="dark"] .prof-row,
+:root[data-theme="dark"] .tool-card{background:#252b36;color:var(--text);border-color:var(--border)}
+:root[data-theme="dark"] .status-pill{background:#12331e;color:#7ee2a6;border-color:#1c5233}
+/* Show / hide page numbers (Settings → Show page numbers) */
+body.hidenums .pn,
+body.hidenums .pages,
+body.hidenums .rp-head .pg{display:none}
+.set-sec{font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--muted-2);text-transform:uppercase;margin:14px 0 2px;padding-bottom:4px;border-bottom:1px solid var(--border-2)}
+.set-sec:first-of-type{margin-top:6px}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -517,9 +567,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 </div>
 
 <div class="cam-overlay" id="setOverlay">
-  <div class="cam-box" style="max-width:420px;text-align:left">
+  <div class="cam-box" style="max-width:460px;text-align:left;max-height:88vh;overflow:auto">
     <h3>⚙️ Settings</h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Your default scan options — remembered every time you open ApneScan.</p>
+    <div class="set-sec">Interface</div>
+    <div class="set-row"><label>Theme</label>
+      <select id="setThemeSel"><option value="default">Default (Light)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+    <div class="set-row"><label>Show page numbers</label><input type="checkbox" id="setNumsChk"></div>
+    <div class="set-row"><label>Show “Profiles” button</label><input type="checkbox" id="setProfChk"></div>
+    <div class="set-row"><label>“Save” button default</label>
+      <select id="setSaveSel"><option value="ask">Ask (PDF / JPG / PNG)</option><option value="pdf">Save as PDF</option><option value="jpg">Save as JPG</option><option value="png">Save as PNG</option></select></div>
+    <div class="set-row"><label>Keyboard shortcuts</label><div class="cam-btn" id="setShortcuts" style="padding:7px 14px">⌨ Open</div></div>
+
+    <div class="set-sec">Scanning</div>
     <div class="set-row"><label>Resolution</label>
       <select id="setResSel"><option value="100">100 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option></select></div>
     <div class="set-row"><label>Color</label>
@@ -527,7 +586,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="set-row"><label>Paper source</label>
       <select id="setSrcSel"><option value="auto">Auto</option><option value="flatbed">Flatbed</option><option value="feeder">Feeder</option><option value="duplex">Duplex (both sides)</option></select></div>
     <div class="set-row"><label>OCR by default</label><input type="checkbox" id="setOcrChk"></div>
-    <div class="cam-actions"><div class="cam-btn no" id="setCancel">Cancel</div><div class="cam-btn primary" id="setSave">Save</div></div>
+    <div class="set-row"><label>Auto-detect document names</label><input type="checkbox" id="setAutoNameChk"></div>
+
+    <div class="set-sec">Application</div>
+    <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
+
+    <div class="cam-actions">
+      <div class="cam-btn" id="setRestore" style="margin-right:auto">Restore Defaults</div>
+      <div class="cam-btn no" id="setCancel">Cancel</div>
+      <div class="cam-btn primary" id="setSave">OK</div>
+    </div>
   </div>
 </div>
 
@@ -1033,7 +1101,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  function persistSettings(){ if(bridge) send({cmd:'saveSettings', dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn, deviceName:(devices[selectedDevice]||savedScanner||'')}); }
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false };
+  function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
+  function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
+  function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
+  function persistSettings(){ if(bridge) send({cmd:'saveSettings',
+    dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn,
+    deviceName:(devices[selectedDevice]||savedScanner||''),
+    theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
+    saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -1044,17 +1120,35 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
     var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
     setOcr(!!s.ocr, false);
+    if(s.saveDefault) ui.saveDefault=s.saveDefault;
+    ui.autoName=(s.autoName!==false);
+    ui.clearAfter=!!s.clearAfter;
+    applyTheme(s.theme||'default');
+    applyShowNums(s.showNums!==false);
+    applyShowProfiles(s.showProfiles!==false);
   }
   function openSettings(){
     var r=byId('setResSel'); if(r) r.value=String(settings.dpi);
     var c=byId('setColorSel'); if(c) c.value=settings.color;
     var s=byId('setSrcSel'); if(s) s.value=settings.source;
     var o=byId('setOcrChk'); if(o) o.checked=ocrOn;
+    var th=byId('setThemeSel'); if(th) th.value=ui.theme;
+    var sn=byId('setNumsChk'); if(sn) sn.checked=ui.showNums;
+    var sp=byId('setProfChk'); if(sp) sp.checked=ui.showProfiles;
+    var sv=byId('setSaveSel'); if(sv) sv.value=ui.saveDefault;
+    var an=byId('setAutoNameChk'); if(an) an.checked=ui.autoName;
+    var cl=byId('setClearChk'); if(cl) cl.checked=ui.clearAfter;
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
   var nSet=byId('navSettings'); if(nSet) nSet.addEventListener('click', openSettings);
   var sCancel=byId('setCancel'); if(sCancel) sCancel.addEventListener('click', closeSettings);
+  var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); overlay('scOverlay', true); });
+  var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
+    settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
+    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false;
+    openSettings(); setStatus('Defaults restored — press OK to apply');
+  });
   var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){
     var r=byId('setResSel'), c=byId('setColorSel'), s=byId('setSrcSel'), o=byId('setOcrChk');
     if(r) settings.dpi=parseInt(r.value,10)||settings.dpi;
@@ -1064,6 +1158,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
     var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
     setOcr(o?o.checked:ocrOn, false);
+    var th=byId('setThemeSel'); if(th) applyTheme(th.value);
+    var sn=byId('setNumsChk'); if(sn) applyShowNums(sn.checked);
+    var sp=byId('setProfChk'); if(sp) applyShowProfiles(sp.checked);
+    var sv=byId('setSaveSel'); if(sv) ui.saveDefault=sv.value;
+    var an=byId('setAutoNameChk'); if(an) ui.autoName=an.checked;
+    var cl=byId('setClearChk'); if(cl) ui.clearAfter=cl.checked;
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
@@ -1090,7 +1190,13 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     saveMenu.style.top=(r.bottom+6)+'px';
     saveMenu.classList.add('on');
   }
-  if(btnSave){ btnSave.addEventListener('click', function(e){ e.stopPropagation(); toggleSaveMenu(); }); }
+  if(btnSave){ btnSave.addEventListener('click', function(e){ e.stopPropagation();
+    if(!bridge){ toggleSaveMenu(); return; }
+    if(ui.saveDefault==='pdf'){ setStatus('Saving…'); send({cmd:'savePdf'}); }
+    else if(ui.saveDefault==='jpg'){ setStatus('Saving image(s)…'); send({cmd:'saveImages', format:'jpg'}); }
+    else if(ui.saveDefault==='png'){ setStatus('Saving image(s)…'); send({cmd:'saveImages', format:'png'}); }
+    else { toggleSaveMenu(); }
+  }); }
   if(saveMenu){
     saveMenu.querySelectorAll('.opt').forEach(function(o){
       o.addEventListener('click', function(){

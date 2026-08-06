@@ -42,6 +42,8 @@ public class MainForm : Form
     // Auto-detected document name per page (from OCR of the page's top area).
     private readonly List<string> _pageNames = new();
     private bool _naming;
+    private bool _autoName = true;
+    private bool _clearAfter;
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
 
@@ -166,6 +168,9 @@ public class MainForm : Form
         string name = "";
         string format = "";
         string deviceName = "";
+        string theme = "default";
+        string saveDefault = "ask";
+        bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -185,6 +190,12 @@ public class MainForm : Form
             if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
             if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
             if (root.TryGetProperty("on", out var onEl) && (onEl.ValueKind == JsonValueKind.True || onEl.ValueKind == JsonValueKind.False)) on = onEl.GetBoolean();
+            if (root.TryGetProperty("theme", out var thEl) && thEl.ValueKind == JsonValueKind.String) theme = thEl.GetString() ?? "default";
+            if (root.TryGetProperty("saveDefault", out var sdEl) && sdEl.ValueKind == JsonValueKind.String) saveDefault = sdEl.GetString() ?? "ask";
+            if (root.TryGetProperty("showNums", out var snEl) && (snEl.ValueKind == JsonValueKind.True || snEl.ValueKind == JsonValueKind.False)) showNums = snEl.GetBoolean();
+            if (root.TryGetProperty("showProfiles", out var spEl) && (spEl.ValueKind == JsonValueKind.True || spEl.ValueKind == JsonValueKind.False)) showProfiles = spEl.GetBoolean();
+            if (root.TryGetProperty("autoName", out var anEl) && (anEl.ValueKind == JsonValueKind.True || anEl.ValueKind == JsonValueKind.False)) autoName = anEl.GetBoolean();
+            if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
         }
         catch
@@ -249,7 +260,12 @@ public class MainForm : Form
                 SendSettings();
                 break;
             case "saveSettings":
-                SaveSettings(dpi, color, source, on, deviceName);
+                SaveSettings(new AppSettings
+                {
+                    Dpi = dpi, Color = color, Source = source, Ocr = on, Device = deviceName,
+                    Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
+                    SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter
+                });
                 break;
             case "getHistory":
                 SendHistory();
@@ -601,6 +617,7 @@ public class MainForm : Form
             Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
+            if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
@@ -1037,7 +1054,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     // document's name. Runs in the background; names stream back one by one.
     private async Task AutoNameAsync()
     {
-        if (_ctx.OcrEngine == null || _naming) return;
+        if (_ctx.OcrEngine == null || _naming || !_autoName) return;
         _naming = true;
         try
         {
@@ -1353,6 +1370,13 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public bool Ocr { get; set; }
         // Preferred scanner (by name) — remembered across sessions.
         public string Device { get; set; } = "";
+        // Interface / application preferences
+        public string Theme { get; set; } = "default";
+        public bool ShowNums { get; set; } = true;
+        public bool ShowProfiles { get; set; } = true;
+        public string SaveDefault { get; set; } = "ask";
+        public bool AutoName { get; set; } = true;
+        public bool ClearAfter { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -1376,17 +1400,28 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     {
         var s = LoadSettings();
         _ocr = s.Ocr;
-        Post(new { type = "settings", dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device });
+        _autoName = s.AutoName;
+        _clearAfter = s.ClearAfter;
+        Post(new
+        {
+            type = "settings",
+            dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device,
+            theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
+            saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter
+        });
     }
 
-    private void SaveSettings(int dpi, string color, string source, bool ocr, string device)
+    private void SaveSettings(AppSettings s)
     {
         try
         {
-            var s = new AppSettings { Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr, Device = device ?? "" };
+            if (s.Dpi <= 0) s.Dpi = 200;
+            s.Device ??= "";
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsFile)!);
             File.WriteAllText(SettingsFile, JsonSerializer.Serialize(s));
-            _ocr = ocr;
+            _ocr = s.Ocr;
+            _autoName = s.AutoName;
+            _clearAfter = s.ClearAfter;
         }
         catch { /* best-effort */ }
     }
@@ -1518,6 +1553,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Bump("image", _pages.Count);
             Post(new { type = "done", path = sfd.FileName });
             Status($"Saved {_pages.Count} image(s) to {dir}");
+            if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
@@ -1836,6 +1872,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             SendFolder(folder);
             Post(new { type = "done", path = file });
             Status("Saved: " + file);
+            if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
