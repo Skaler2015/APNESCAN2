@@ -259,13 +259,13 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 <div class="app">
   <div class="titlebar">
     <div class="tt-ic"><svg class="ic" style="width:12px;height:12px;stroke:#fff"><use href="#i-scan"/></svg></div>
-    <span class="tt-name">ApneScan <span style="color:var(--muted);font-weight:500">v286</span></span>
+    <span class="tt-name">ApneScan <span style="color:var(--muted);font-weight:500" id="tbVer"></span></span>
   </div>
   <div class="body">
     <aside class="sidebar">
       <div class="brand">
         <div class="logo"><svg class="ic" style="stroke:#fff;width:20px;height:20px"><use href="#i-doc"/></svg></div>
-        <div><h1>ApneScan</h1><div class="sub">Document Studio · v286</div><div class="by">by Subhash Kaler</div></div>
+        <div><h1>ApneScan</h1><div class="sub">Document Studio<span id="brandVer"></span></div><div class="by">by Subhash Kaler</div></div>
       </div>
       <nav class="nav">
         <div class="sec">WORKSPACE</div>
@@ -416,7 +416,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       <span class="chip">ApneScan Document Studio</span>
     </div>
     <div class="r">
-      <span class="chip">v286</span>
+      <span class="chip" id="sbVer"></span>
       <span class="chip free"><span class="d"></span>Scanner ready</span>
     </div>
   </div>
@@ -585,7 +585,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var t=byId('scanTitle'); if(t) t.textContent='Ready to Scan';
     var s=byId('scanSub'); if(s) s.textContent='Place your document in the feeder and press Scan';
   }
-  function setCurVer(v){ var e=byId('curVer'); if(e && v) e.textContent=v; }
+  function setCurVer(v){
+    if(!v) return;
+    var e=byId('curVer'); if(e) e.textContent=v;              // footer: "ApneScan · v1.0.16"
+    var tb=byId('tbVer'); if(tb) tb.textContent='v'+v;        // titlebar
+    var sb=byId('sbVer'); if(sb) sb.textContent='v'+v;        // status bar
+    var bv=byId('brandVer'); if(bv) bv.textContent=' · v'+v;  // sidebar subtitle
+    var av=byId('aboutVer'); if(av) av.textContent=v;         // About dialog
+  }
   function showUpdate(version, current){
     setCurVer(current);
     var el=byId('updateLine'); if(!el) return;
