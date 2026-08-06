@@ -149,6 +149,9 @@ public class MainForm : Form
             case "addPhoto":
                 await AddPhotoAsync(dataUrl);
                 break;
+            case "share":
+                await SharePdfAsync();
+                break;
             case "rotateLeft":
                 RotatePage(-90);
                 break;
@@ -270,7 +273,28 @@ public class MainForm : Form
             Status("Downloading update…");
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Add("User-Agent", "ApneScan");
-            var bytes = await http.GetByteArrayAsync(_updateUrl);
+
+            // The rolling release is briefly unavailable while a new build
+            // republishes it, so retry a few times on a transient failure.
+            byte[]? bytes = null;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    bytes = await http.GetByteArrayAsync(_updateUrl);
+                    break;
+                }
+                catch when (attempt < 3)
+                {
+                    Status($"Download busy, retrying ({attempt}/3)…");
+                    await Task.Delay(2500 * attempt);
+                }
+            }
+            if (bytes == null)
+            {
+                Status("Update is being published right now — please try again in a minute.");
+                return;
+            }
 
             // Verify the download against the manifest's SHA-256 (base64) before running it.
             if (!string.IsNullOrEmpty(_updateSha))
@@ -403,6 +427,38 @@ public class MainForm : Form
         catch (Exception ex)
         {
             Status("Save error: " + ex.Message);
+        }
+    }
+
+    private async Task SharePdfAsync()
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to share — scan or import first");
+            return;
+        }
+        try
+        {
+            Status("Preparing PDF to share…");
+            var path = Path.Combine(Path.GetTempPath(),
+                "ApneScan_" + Guid.NewGuid().ToString("N")[..8] + ".pdf");
+            var exporter = new PdfExporter(_ctx);
+            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            await exporter.Export(path, _pages, ocrParams: ocrParams);
+
+            // Open Explorer with the PDF selected so the user can right-click it
+            // and choose Windows "Share" (WhatsApp, Mail, etc.).
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{path}\"",
+                UseShellExecute = true
+            });
+            Status("PDF ready — right-click it and choose Share (WhatsApp, Email…)");
+        }
+        catch (Exception ex)
+        {
+            Status("Share error: " + ex.Message);
         }
     }
 

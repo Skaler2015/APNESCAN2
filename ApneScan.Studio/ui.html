@@ -264,7 +264,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="sep"></div>
         <div class="tbtn" id="btnSave"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
         <div class="tbtn" id="btnPrint"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
-        <div class="tbtn"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
+        <div class="tbtn" id="btnShare"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
         <div class="sep"></div>
         <div class="tbtn"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
         <div class="tbtn" id="btnRotate"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
@@ -502,6 +502,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(bridge) send({cmd:'addPhoto', dataUrl:data});
     if(msg){ msg.textContent='Photo captured ✓  — take more, or Close.'; msg.style.color='var(--good)'; }
   }
+  // share — export a PDF and open it in Explorer for Windows Share
+  var bsh=byId('btnShare'); if(bsh) bsh.addEventListener('click', function(){ setStatus('Preparing to share…'); if(bridge) send({cmd:'share'}); });
   var bcam=byId('btnCamera'); if(bcam) bcam.addEventListener('click', openCamera);
   var qcam=byId('qcPhoto'); if(qcam) qcam.addEventListener('click', openCamera);
   var ccl=byId('camClose'); if(ccl) ccl.addEventListener('click', closeCamera);
