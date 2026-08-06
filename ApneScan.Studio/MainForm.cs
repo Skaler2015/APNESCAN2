@@ -2172,16 +2172,14 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         try
         {
             string? picked = null;
-            try
+            // FolderBrowserDialog uses the modern Vista-style folder picker by
+            // default (AutoUpgradeEnabled), letting the user pick any folder
+            // including This PC / Network locations.
+            using (var fbd = new FolderBrowserDialog())
             {
-                // Modern Vista-style folder picker (.NET 8+)
-                var dlg = new OpenFolderDialog();
-                if (!string.IsNullOrWhiteSpace(start) && Directory.Exists(start)) dlg.InitialDirectory = start;
-                if (dlg.ShowDialog(this) == DialogResult.OK) picked = dlg.FolderName;
-            }
-            catch
-            {
-                using var fbd = new FolderBrowserDialog();
+                fbd.UseDescriptionForTitle = true;
+                fbd.Description = "Select a folder to open";
+                fbd.ShowNewFolderButton = true;
                 if (!string.IsNullOrWhiteSpace(start) && Directory.Exists(start)) fbd.SelectedPath = start;
                 if (fbd.ShowDialog(this) == DialogResult.OK) picked = fbd.SelectedPath;
             }
