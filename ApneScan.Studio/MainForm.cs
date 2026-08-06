@@ -285,6 +285,9 @@ public class MainForm : Form
             case "getFavs":
                 SendFavs();
                 break;
+            case "openFolder":
+                OpenFolder(filePath);
+                break;
             case "savePdfHere":
                 await SavePdfHereAsync(filePath);
                 break;
@@ -1826,6 +1829,24 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Post(new { type = "favs", items });
         }
         catch { /* best-effort */ }
+    }
+
+    private void OpenFolder(string path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                Status("Folder not found");
+                return;
+            }
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            Status("Opened in File Explorer");
+        }
+        catch (Exception ex)
+        {
+            Status("Open error: " + ex.Message);
+        }
     }
 
     private void MakeFolder(string path, string name)
