@@ -1991,30 +1991,32 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             var importer = ext == ".pdf"
                 ? new PdfImporter(_ctx).Import(path)
                 : new ImageImporter(_ctx).Import(path);
-            ProcessedImage? first = null;
+            var pages = new List<string>();
             await foreach (var img in importer)
             {
-                first = img;
-                break; // first page is enough for a preview
+                try
+                {
+                    var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                        "apnescan_fp_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                    img.Save(tmp);
+                    pages.Add("data:image/png;base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(tmp)));
+                    try { File.Delete(tmp); } catch { /* best-effort */ }
+                }
+                finally { img.Dispose(); }
+                if (pages.Count >= 40) break; // cap very large PDFs
             }
-            if (first == null)
+            if (pages.Count == 0)
             {
                 Status("Could not preview this file");
                 return;
             }
-            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
-                "apnescan_fp_" + Guid.NewGuid().ToString("N")[..8] + ".png");
-            first.Save(tmp);
-            first.Dispose();
-            var b64 = Convert.ToBase64String(await File.ReadAllBytesAsync(tmp));
-            try { File.Delete(tmp); } catch { /* best-effort */ }
             Post(new
             {
                 type = "filePreview",
-                dataUrl = "data:image/png;base64," + b64,
-                name = System.IO.Path.GetFileName(path)
+                name = System.IO.Path.GetFileName(path),
+                pages = pages.ToArray()
             });
-            Status("Preview: " + System.IO.Path.GetFileName(path));
+            Status("Preview: " + System.IO.Path.GetFileName(path) + (pages.Count > 1 ? $" ({pages.Count} pages)" : ""));
         }
         catch (Exception ex)
         {
@@ -2253,7 +2255,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                         size = 0L,
                         fav = favs.Contains(d.FullName)
                     });
-                    if (entries.Count >= 600) break;
+                    if (entries.Count >= 6000) break;
                 }
                 foreach (var f in di.GetFiles())
                 {
@@ -2272,7 +2274,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                         fav = favs.Contains(f.FullName),
                         prev = exts.Contains(f.Extension)
                     });
-                    if (entries.Count >= 600) break;
+                    if (entries.Count >= 6000) break;
                 }
             }
             catch { /* some subfolders may deny access — show what we can */ }
@@ -2283,6 +2285,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 path = di.FullName,
                 name = di.Name,
                 parent = di.Parent?.FullName,
+                curFav = favs.Contains(di.FullName),
                 ctx,
                 entries
             });

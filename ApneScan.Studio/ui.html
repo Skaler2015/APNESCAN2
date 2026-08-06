@@ -239,6 +239,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .rp-page i:first-child{margin-top:22px;width:60%}
 #previewImg{max-width:92%;max-height:92%;box-shadow:0 8px 22px rgba(30,30,60,.16);background:#fff}
 #textPanel{position:absolute;inset:0;background:#fff;padding:16px;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.55;color:var(--text);display:none;z-index:4}
+#filePreview{position:absolute;inset:0;background:var(--panel);padding:10px;overflow:auto;display:none;z-index:3}
+#filePreview.on{display:block}
+#filePreview img{width:100%;display:block;margin:0 auto 10px;box-shadow:0 4px 14px rgba(20,20,50,.16);background:#fff;border:1px solid var(--border-2)}
+.dp-fav{color:#d7dae3;font-size:15px;cursor:pointer;flex:none;margin-left:4px;line-height:1}
+.dp-fav.on{color:var(--amber)}
 #textPanel.on{display:block}
 #rpZoom{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:#2a2f3a;color:#fff;border-radius:9px;padding:4px 6px;font-size:13px;z-index:6}
 #rpZoom span{min-width:26px;height:24px;display:grid;place-items:center;border-radius:6px;cursor:pointer;padding:0 6px;font-weight:600}
@@ -549,6 +554,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div id="cropBox"></div>
             <div id="cropBar"><div class="cb ok" id="cropApply">Apply crop</div><div class="cb no" id="cropCancel">Cancel</div></div>
             <div id="textPanel"></div>
+            <div id="filePreview"></div>
             <div id="rpZoom"><span id="zoomOut">−</span><span id="zoomFit">Fit</span><span id="zoomIn">+</span><span id="zoomFull">⛶</span></div>
           </div>
           <div class="thumb-head"><span class="lbl2">Pages</span><span class="mv" id="btnMoveL" title="Move selected left">◀</span><span class="mv" id="btnMoveR" title="Move selected right">▶</span></div>
@@ -841,6 +847,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function showPreview(url, pages){
     var img=byId('previewImg'), ph=byId('previewPage');
     fitMode=true; zoom=1;
+    hideFilePreview();
     showPreviewTab();
     if(img){ img.src=url; img.style.display='block'; }
     applyZoom();
@@ -851,20 +858,26 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   function resetPreview(){
     var img=byId('previewImg'), ph=byId('previewPage');
+    hideFilePreview();
     if(img){ img.removeAttribute('src'); img.style.display='none'; }
     if(ph){ ph.style.display='block'; }
     setPages(0);
     var t=byId('scanTitle'); if(t) t.textContent='Ready to Scan';
     var s=byId('scanSub'); if(s) s.textContent='Place your document in the feeder and press Scan';
   }
-  // Preview a file from My Documents in the right panel (not added to pages)
-  function showFilePreview(url, name){
+  // Preview a file from My Documents in the right panel (all pages, scrollable)
+  function hideFilePreview(){ var fp=byId('filePreview'); if(fp){ fp.classList.remove('on'); fp.innerHTML=''; } }
+  function showFilePreview(name, pages){
+    pages=pages||[];
+    var fp=byId('filePreview'); if(!fp) return;
+    showPreviewTab();
     var img=byId('previewImg'), ph=byId('previewPage');
-    fitMode=true; zoom=1; showPreviewTab();
-    if(img){ img.src=url; img.style.display='block'; }
-    applyZoom();
-    if(ph){ ph.style.display='none'; }
-    var pc2=byId('pageCount2'); if(pc2) pc2.textContent=name||'Preview';
+    if(img) img.style.display='none';
+    if(ph) ph.style.display='none';
+    fp.innerHTML='';
+    pages.forEach(function(src){ var im=document.createElement('img'); im.src=src; im.draggable=false; fp.appendChild(im); });
+    fp.classList.add('on'); fp.scrollTop=0;
+    var pc2=byId('pageCount2'); if(pc2) pc2.textContent=(name||'Preview')+(pages.length>1?(' · '+pages.length+' pages'):'');
   }
   function setCurVer(v){
     if(!v) return;
@@ -1106,7 +1119,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
       else if(m.type==='openDocsPanel'){ var dpn=byId('docsPanel'); if(dpn) dpn.classList.add('on'); }
-      else if(m.type==='filePreview'){ showFilePreview(m.dataUrl, m.name); }
+      else if(m.type==='filePreview'){ showFilePreview(m.name, m.pages); }
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
     });
@@ -1409,6 +1422,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     home.addEventListener('click', function(){ if(bridge) send({cmd:'listFolder'}); });
     bar.appendChild(home);
     var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(docsData.name||'Documents'); nm.title=docsData.path||''; bar.appendChild(nm);
+    var star=document.createElement('span'); star.className='dp-fav'+(docsData.curFav?' on':''); star.innerHTML='&#9733;'; star.title='Favorite this folder';
+    star.addEventListener('click', function(){ if(!docsData.path) return; docsData.curFav=!docsData.curFav; star.classList.toggle('on', docsData.curFav); if(bridge) send({cmd:'toggleFav', path:docsData.path}); });
+    bar.appendChild(star);
   }
   function renderDocsList(){
     var list=byId('docsList'); if(!list) return; list.innerHTML='';
