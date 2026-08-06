@@ -36,6 +36,9 @@ public class MainForm : Form
     private List<ScanDevice> _devices = new();
     private bool _busy;
     private bool _ocr;
+    private int _selected = -1;
+
+    private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
 
     // One-click update: manifest published to the "latest" GitHub release.
     private const string UpdateManifestUrl =
@@ -119,12 +122,19 @@ public class MainForm : Form
         string source = "auto";
         bool on = false;
         string dataUrl = "";
+        int index = -1;
+        double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
             var root = doc.RootElement;
             cmd = root.GetProperty("cmd").GetString() ?? "";
             if (root.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number) deviceIndex = d.GetInt32();
+            if (root.TryGetProperty("index", out var ix) && ix.ValueKind == JsonValueKind.Number) index = ix.GetInt32();
+            if (root.TryGetProperty("x0", out var vx0) && vx0.ValueKind == JsonValueKind.Number) x0 = vx0.GetDouble();
+            if (root.TryGetProperty("y0", out var vy0) && vy0.ValueKind == JsonValueKind.Number) y0 = vy0.GetDouble();
+            if (root.TryGetProperty("x1", out var vx1) && vx1.ValueKind == JsonValueKind.Number) x1 = vx1.GetDouble();
+            if (root.TryGetProperty("y1", out var vy1) && vy1.ValueKind == JsonValueKind.Number) y1 = vy1.GetDouble();
             if (root.TryGetProperty("dpi", out var dp) && dp.ValueKind == JsonValueKind.Number) dpi = dp.GetInt32();
             if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
             if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
@@ -169,13 +179,26 @@ public class MainForm : Form
                 StopPhoneServer();
                 break;
             case "rotateLeft":
-                RotatePage(-90);
+                await RotatePageAsync(-90);
                 break;
             case "rotateRight":
-                RotatePage(90);
+                await RotatePageAsync(90);
                 break;
             case "deletePage":
-                DeleteLastPage();
+                await DeletePageAsync();
+                break;
+            case "select":
+                _selected = index;
+                SendPreview();
+                break;
+            case "moveLeft":
+                await MovePageAsync(-1);
+                break;
+            case "moveRight":
+                await MovePageAsync(1);
+                break;
+            case "crop":
+                await CropPageAsync(x0, y0, x1, y1);
                 break;
             case "setOcr":
                 _ocr = on;
@@ -205,29 +228,34 @@ public class MainForm : Form
         _ => NAPS2.Scan.PaperSource.Auto
     };
 
-    private void RotatePage(double degrees)
+    private async Task RotatePageAsync(double degrees)
     {
-        if (_pages.Count == 0)
+        int idx = Sel();
+        if (idx < 0)
         {
             Status("Nothing to rotate — scan a page first");
             return;
         }
-        int idx = _pages.Count - 1;
         _pages[idx] = _pages[idx].WithTransform(new RotationTransform(degrees), disposeSelf: true);
-        SendPreview();
+        await RefreshAsync(false);
         Status($"Rotated page {idx + 1}");
     }
 
-    private void DeleteLastPage()
+    private async Task DeletePageAsync()
     {
-        if (_pages.Count == 0)
+        int idx = Sel();
+        if (idx < 0)
         {
             Status("No pages to delete");
             return;
         }
-        var last = _pages[^1];
-        _pages.RemoveAt(_pages.Count - 1);
-        last.Dispose();
+        var pg = _pages[idx];
+        _pages.RemoveAt(idx);
+        pg.Dispose();
+        if (_selected >= _pages.Count)
+        {
+            _selected = _pages.Count - 1;
+        }
         if (_pages.Count == 0)
         {
             Post(new { type = "cleared" });
@@ -235,7 +263,7 @@ public class MainForm : Form
         }
         else
         {
-            SendPreview();
+            await RefreshAsync(false);
             Status($"Page deleted — {_pages.Count} left");
         }
     }
@@ -402,7 +430,7 @@ public class MainForm : Form
                 return;
             }
 
-            SendPreview();
+            await RefreshAsync(true);
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
         }
         catch (Exception ex)
@@ -557,7 +585,7 @@ public class MainForm : Form
             try { File.Delete(temp); } catch { /* temp cleanup best-effort */ }
             if (added > 0)
             {
-                SendPreview();
+                await RefreshAsync(true);
                 Status($"Photo added — {_pages.Count} page(s)");
             }
         }
@@ -601,7 +629,7 @@ public class MainForm : Form
                 Status("Nothing was imported");
                 return;
             }
-            SendPreview();
+            await RefreshAsync(true);
             Status($"Imported {added} page(s) — {_pages.Count} total");
         }
         catch (Exception ex)
@@ -724,7 +752,7 @@ public class MainForm : Form
             try { File.Delete(path); } catch { /* best-effort */ }
             if (added > 0)
             {
-                SendPreview();
+                await RefreshAsync(true);
                 Status($"Photo received from phone — {_pages.Count} page(s)");
                 Post(new { type = "phonePhoto", pages = _pages.Count });
             }
@@ -818,12 +846,92 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     {
         try
         {
+            if (_pages.Count == 0)
+            {
+                Post(new { type = "cleared" });
+                return;
+            }
+            var i = Sel();
             var previewPath = Path.Combine(Path.GetTempPath(), "apnescan_preview.png");
-            _pages[^1].Save(previewPath);
+            _pages[i].Save(previewPath);
             var b64 = Convert.ToBase64String(File.ReadAllBytes(previewPath));
-            Post(new { type = "preview", dataUrl = "data:image/png;base64," + b64, pages = _pages.Count });
+            Post(new { type = "preview", dataUrl = "data:image/png;base64," + b64, pages = _pages.Count, index = i });
         }
         catch { /* preview is best-effort */ }
+    }
+
+    private async Task SendThumbsAsync()
+    {
+        try
+        {
+            var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+            var thumbs = new List<string>();
+            foreach (var p in _pages)
+            {
+                using var thumb = await renderer.Render(p, 150);
+                var tmp = Path.Combine(Path.GetTempPath(), "apnescan_th_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                thumb.Save(tmp, ImageFileFormat.Png);
+                thumbs.Add("data:image/png;base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(tmp)));
+                try { File.Delete(tmp); } catch { /* best-effort */ }
+            }
+            Post(new { type = "pages", thumbs, selected = Sel(), count = _pages.Count });
+        }
+        catch { /* thumbnails best-effort */ }
+    }
+
+    private async Task RefreshAsync(bool selectLast)
+    {
+        if (selectLast)
+        {
+            _selected = _pages.Count - 1;
+        }
+        if (_selected >= _pages.Count)
+        {
+            _selected = _pages.Count - 1;
+        }
+        SendPreview();
+        await SendThumbsAsync();
+    }
+
+    private async Task MovePageAsync(int delta)
+    {
+        int i = Sel();
+        int j = i + delta;
+        if (i < 0 || j < 0 || j >= _pages.Count)
+        {
+            return;
+        }
+        (_pages[i], _pages[j]) = (_pages[j], _pages[i]);
+        _selected = j;
+        await RefreshAsync(false);
+        Status($"Moved to position {j + 1}");
+    }
+
+    private async Task CropPageAsync(double x0, double y0, double x1, double y1)
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count)
+        {
+            return;
+        }
+        double lx = Math.Clamp(Math.Min(x0, x1), 0, 1), rx = Math.Clamp(Math.Max(x0, x1), 0, 1);
+        double ty = Math.Clamp(Math.Min(y0, y1), 0, 1), by = Math.Clamp(Math.Max(y0, y1), 0, 1);
+        if (rx - lx < 0.02 || by - ty < 0.02)
+        {
+            Status("Crop area is too small");
+            return;
+        }
+        int w, h;
+        using (var rendered = _pages[i].Render())
+        {
+            w = rendered.Width;
+            h = rendered.Height;
+        }
+        int left = (int) (lx * w), right = (int) ((1 - rx) * w);
+        int top = (int) (ty * h), bottom = (int) ((1 - by) * h);
+        _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
+        await RefreshAsync(false);
+        Status("Cropped");
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });

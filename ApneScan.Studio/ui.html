@@ -142,6 +142,21 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .statusbar .d{width:7px;height:7px;border-radius:50%;background:var(--good)}
 .statusbar .r{margin-left:auto;display:flex;align-items:center;gap:14px;white-space:nowrap}
 .statusbar .r .free{color:#15803d;font-weight:600}
+.thumb-head{display:flex;align-items:center;gap:6px;padding:8px 14px 0;font-size:11px;color:var(--muted)}
+.thumb-head .lbl2{flex:1;font-weight:700;letter-spacing:.3px}
+.thumb-head .mv{width:26px;height:22px;display:grid;place-items:center;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);font-size:11px;font-weight:700}
+.thumb-head .mv:hover{background:#f4f5f9}
+.rp-thumbs{overflow-x:auto}
+.thumb-item{flex:none;width:56px;height:72px;border:2px solid transparent;border-radius:7px;overflow:hidden;cursor:pointer;position:relative;background:#fff;box-shadow:0 1px 3px rgba(20,20,50,.12)}
+.thumb-item img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-item.sel{border-color:var(--accent)}
+.thumb-item b{position:absolute;bottom:0;right:0;background:var(--accent);color:#fff;font-size:9px;padding:0 4px;border-radius:6px 0 0 0;font-weight:700}
+#cropBox{position:absolute;border:2px dashed var(--accent);background:rgba(109,40,217,.12);display:none;pointer-events:none;z-index:5}
+#cropBar{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:none;gap:8px;z-index:6}
+#cropBar .cb{padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;border:0}
+#cropBar .cb.ok{background:var(--accent);color:#fff}
+#cropBar .cb.no{background:#fff;color:var(--text);border:1px solid var(--border)}
+.rp-view.cropping{cursor:crosshair}
 .cam-overlay{position:fixed;inset:0;background:rgba(15,18,28,.72);display:none;place-items:center;z-index:60}
 .cam-overlay.on{display:grid}
 .cam-box{background:var(--panel);border-radius:16px;padding:16px;width:min(700px,92vw);box-shadow:0 24px 70px rgba(0,0,0,.45)}
@@ -294,7 +309,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="zoom"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><div class="slider"><i></i></div></div>
         <div class="tools">
           <div class="tool"><svg class="ic"><use href="#i-list"/></svg></div>
-          <div class="tool"><svg class="ic"><use href="#i-crop"/></svg></div>
+          <div class="tool" id="btnCrop" title="Crop selected page"><svg class="ic"><use href="#i-crop"/></svg></div>
           <div class="tool" id="btnRotR"><svg class="ic"><use href="#i-rotate"/></svg></div>
           <div class="tool" id="btnRotL"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
           <div class="tool"><svg class="ic"><use href="#i-print"/></svg></div>
@@ -346,11 +361,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="tab on"><svg class="ic" style="width:14px;height:14px"><use href="#i-grid"/></svg>Preview</div>
             <div class="tab"><svg class="ic" style="width:14px;height:14px"><use href="#i-ocr"/></svg>Text</div>
           </div>
-          <div class="rp-view">
+          <div class="rp-view" id="rpView">
             <div class="rp-page" id="previewPage"><i></i><i></i><i></i><i></i></div>
             <img id="previewImg" alt="Scanned preview">
+            <div id="cropBox"></div>
+            <div id="cropBar"><div class="cb ok" id="cropApply">Apply crop</div><div class="cb no" id="cropCancel">Cancel</div></div>
           </div>
-          <div class="rp-thumbs"><div class="th"><i></i><i></i><i style="width:70%"></i><b>1</b></div></div>
+          <div class="thumb-head"><span class="lbl2">Pages</span><span class="mv" id="btnMoveL" title="Move selected left">◀</span><span class="mv" id="btnMoveR" title="Move selected right">▶</span></div>
+          <div class="rp-thumbs" id="thumbStrip"></div>
           <div class="rp-open"><svg class="ic" style="width:16px;height:16px;stroke:#fff"><use href="#i-editor"/></svg>Open in Editor</div>
         </aside>
       </div>
@@ -444,14 +462,70 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     setCurVer(current);
     var el=byId('updateLine'); if(el){ el.textContent='✓ You are up to date'; el.style.color='var(--good)'; }
   }
+  // ---- editor: thumbnails, selection, move, crop ----
+  function renderThumbs(thumbs, selected){
+    var strip=byId('thumbStrip'); if(!strip) return;
+    strip.innerHTML='';
+    (thumbs||[]).forEach(function(src,i){
+      var d=document.createElement('div'); d.className='thumb-item'+(i===selected?' sel':'');
+      var im=document.createElement('img'); im.src=src; d.appendChild(im);
+      var b=document.createElement('b'); b.textContent=(i+1); d.appendChild(b);
+      d.addEventListener('click', function(){ if(bridge) send({cmd:'select', index:i}); });
+      strip.appendChild(d);
+    });
+  }
+  function highlightThumb(index){
+    var strip=byId('thumbStrip'); if(!strip) return;
+    var kids=strip.children;
+    for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
+  }
+  var bml=byId('btnMoveL'); if(bml) bml.addEventListener('click', function(){ if(bridge) send({cmd:'moveLeft'}); });
+  var bmr=byId('btnMoveR'); if(bmr) bmr.addEventListener('click', function(){ if(bridge) send({cmd:'moveRight'}); });
+  // crop mode: drag a rectangle over the preview, then Apply
+  var cropping=false, cStart=null, cRect=null;
+  function rpRect(){ var rp=byId('rpView'); return rp?rp.getBoundingClientRect():null; }
+  function imgRect(){ var im=byId('previewImg'); return (im && im.style.display!=='none' && im.getAttribute('src'))?im.getBoundingClientRect():null; }
+  function startCrop(){ if(!imgRect()){ setStatus('Nothing to crop — scan a page first'); return; } cropping=true; var rp=byId('rpView'); if(rp) rp.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
+  function endCropMode(){ cropping=false; cStart=null; cRect=null; var rp=byId('rpView'); if(rp) rp.classList.remove('cropping'); var cb=byId('cropBox'); if(cb) cb.style.display='none'; var bar=byId('cropBar'); if(bar) bar.style.display='none'; }
+  var bcrop=byId('btnCrop'); if(bcrop) bcrop.addEventListener('click', startCrop);
+  var rpv=byId('rpView');
+  if(rpv){
+    rpv.addEventListener('mousedown', function(e){
+      if(!cropping) return; var rr=rpRect(); if(!rr) return;
+      cStart={x:e.clientX,y:e.clientY}; cRect=null;
+      var cb=byId('cropBox'); if(cb){ cb.style.display='block'; cb.style.left=(e.clientX-rr.left)+'px'; cb.style.top=(e.clientY-rr.top)+'px'; cb.style.width='0px'; cb.style.height='0px'; }
+      var bar=byId('cropBar'); if(bar) bar.style.display='none';
+    });
+    rpv.addEventListener('mousemove', function(e){
+      if(!cropping || !cStart) return; var rr=rpRect(); if(!rr) return;
+      var x=Math.min(e.clientX,cStart.x), y=Math.min(e.clientY,cStart.y);
+      var w=Math.abs(e.clientX-cStart.x), h=Math.abs(e.clientY-cStart.y);
+      var cb=byId('cropBox'); if(cb){ cb.style.left=(x-rr.left)+'px'; cb.style.top=(y-rr.top)+'px'; cb.style.width=w+'px'; cb.style.height=h+'px'; }
+      cRect={x:x,y:y,w:w,h:h};
+    });
+    window.addEventListener('mouseup', function(){
+      if(!cropping || !cStart) return; cStart=null;
+      if(cRect && cRect.w>6 && cRect.h>6){ var bar=byId('cropBar'); if(bar) bar.style.display='flex'; }
+    });
+  }
+  var capply=byId('cropApply'); if(capply) capply.addEventListener('click', function(){
+    var ir=imgRect(); if(!ir || !cRect){ endCropMode(); return; }
+    var x0=(cRect.x-ir.left)/ir.width, y0=(cRect.y-ir.top)/ir.height;
+    var x1=(cRect.x+cRect.w-ir.left)/ir.width, y1=(cRect.y+cRect.h-ir.top)/ir.height;
+    if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1});
+    endCropMode();
+  });
+  var ccancel=byId('cropCancel'); if(ccancel) ccancel.addEventListener('click', endCropMode);
+
   if(bridge){
     window.chrome.webview.addEventListener('message', function(ev){
       var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
       if(!m || !m.type) return;
       if(m.type==='devices'){ devices=m.devices||[]; setDevice(devices.length?devices[0]:'No scanner found'); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
-      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); }
-      else if(m.type==='cleared'){ resetPreview(); }
+      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number') highlightThumb(m.index); }
+      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); }
+      else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; }
       else if(m.type==='done'){ setStatus('Saved'); }
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
