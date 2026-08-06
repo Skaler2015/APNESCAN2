@@ -83,8 +83,21 @@ public class MainForm : Form
         core.Settings.IsStatusBarEnabled = false;
         core.WebMessageReceived += OnMessage;
 
-        var htmlPath = Path.Combine(AppContext.BaseDirectory, "ui.html");
-        core.NavigateToString(File.ReadAllText(htmlPath));
+        // Auto-grant camera/microphone so in-page photo capture works.
+        core.PermissionRequested += (_, e) =>
+        {
+            if (e.PermissionKind == CoreWebView2PermissionKind.Camera ||
+                e.PermissionKind == CoreWebView2PermissionKind.Microphone)
+            {
+                e.State = CoreWebView2PermissionState.Allow;
+            }
+        };
+
+        // Serve the UI from a virtual https host so it runs in a secure context
+        // (getUserMedia / camera only works on a secure origin).
+        core.SetVirtualHostNameToFolderMapping(
+            "apnescan.app", AppContext.BaseDirectory, CoreWebView2HostResourceAccessKind.Allow);
+        core.Navigate("https://apnescan.app/ui.html");
     }
 
     private async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -95,6 +108,7 @@ public class MainForm : Form
         string color = "color";
         string source = "auto";
         bool on = false;
+        string dataUrl = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -105,6 +119,7 @@ public class MainForm : Form
             if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
             if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
             if (root.TryGetProperty("on", out var onEl) && (onEl.ValueKind == JsonValueKind.True || onEl.ValueKind == JsonValueKind.False)) on = onEl.GetBoolean();
+            if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
         }
         catch
         {
@@ -130,6 +145,9 @@ public class MainForm : Form
                 break;
             case "import":
                 await ImportFilesAsync();
+                break;
+            case "addPhoto":
+                await AddPhotoAsync(dataUrl);
                 break;
             case "rotateLeft":
                 RotatePage(-90);
@@ -441,6 +459,39 @@ public class MainForm : Form
         catch (Exception ex)
         {
             Status("Print error: " + ex.Message);
+        }
+    }
+
+    private async Task AddPhotoAsync(string dataUrl)
+    {
+        if (string.IsNullOrEmpty(dataUrl))
+        {
+            return;
+        }
+        try
+        {
+            var comma = dataUrl.IndexOf(',');
+            var b64 = comma >= 0 ? dataUrl[(comma + 1)..] : dataUrl;
+            var bytes = Convert.FromBase64String(b64);
+            var temp = Path.Combine(Path.GetTempPath(), "apnescan_cam_" + Guid.NewGuid().ToString("N") + ".jpg");
+            await File.WriteAllBytesAsync(temp, bytes);
+            var importer = new ImageImporter(_ctx);
+            int added = 0;
+            await foreach (var img in importer.Import(temp))
+            {
+                _pages.Add(img);
+                added++;
+            }
+            try { File.Delete(temp); } catch { /* temp cleanup best-effort */ }
+            if (added > 0)
+            {
+                SendPreview();
+                Status($"Photo added — {_pages.Count} page(s)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Status("Camera error: " + ex.Message);
         }
     }
 

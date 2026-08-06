@@ -142,6 +142,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .statusbar .d{width:7px;height:7px;border-radius:50%;background:var(--good)}
 .statusbar .r{margin-left:auto;display:flex;align-items:center;gap:14px;white-space:nowrap}
 .statusbar .r .free{color:#15803d;font-weight:600}
+.cam-overlay{position:fixed;inset:0;background:rgba(15,18,28,.72);display:none;place-items:center;z-index:60}
+.cam-overlay.on{display:grid}
+.cam-box{background:var(--panel);border-radius:16px;padding:16px;width:min(700px,92vw);box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.cam-box h3{margin:0 0 10px;font-size:16px;font-weight:700}
+.cam-box video{width:100%;border-radius:12px;background:#0b0e14;max-height:62vh;object-fit:contain}
+.cam-msg{color:var(--muted);font-size:12px;margin-top:8px;min-height:16px}
+.cam-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.cam-btn{padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--text);background:#f4f5f9}
+.cam-btn.primary{background:var(--accent);color:#fff;border:0;box-shadow:0 5px 14px rgba(109,40,217,.3)}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -250,7 +259,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
         <div class="tbtn" id="btnOcr"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
         <div class="tbtn" id="btnImport"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
+        <div class="tbtn" id="btnCamera"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
         <div class="sep"></div>
         <div class="tbtn" id="btnSave"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
@@ -315,7 +324,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
             <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
-            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
+            <div class="qc" id="qcPhoto"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>merge · split…</small></div>
           </div>
@@ -356,6 +365,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="r">
       <span class="chip">v286</span>
       <span class="chip free"><span class="d"></span>Scanner ready</span>
+    </div>
+  </div>
+</div>
+
+<div class="cam-overlay" id="camOverlay">
+  <div class="cam-box">
+    <h3>📷 Camera — capture a document photo</h3>
+    <video id="camVideo" autoplay playsinline muted></video>
+    <div class="cam-msg" id="camMsg"></div>
+    <div class="cam-actions">
+      <div class="cam-btn" id="camClose">Close</div>
+      <div class="cam-btn primary" id="camCapture">Capture photo</div>
     </div>
   </div>
 </div>
@@ -457,6 +478,34 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function doImport(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); }
   var bim=byId('btnImport'); if(bim) bim.addEventListener('click', doImport);
   var qim=byId('qcImport'); if(qim) qim.addEventListener('click', doImport);
+  // camera capture (webcam → page)
+  var camStream=null;
+  function openCamera(){
+    var ov=byId('camOverlay'); if(!ov) return;
+    ov.classList.add('on');
+    var msg=byId('camMsg'); if(msg){ msg.textContent='Starting camera…'; msg.style.color='var(--muted)'; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ if(msg) msg.textContent='Camera not available on this device.'; return; }
+    navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} }, audio:false })
+      .then(function(s){ camStream=s; var v=byId('camVideo'); if(v) v.srcObject=s; if(msg) msg.textContent='Point at the document and press “Capture photo”.'; })
+      .catch(function(err){ if(msg){ msg.textContent='Cannot access camera: '+(err&&err.message?err.message:err); msg.style.color='#dc2626'; } });
+  }
+  function closeCamera(){
+    var ov=byId('camOverlay'); if(ov) ov.classList.remove('on');
+    if(camStream){ camStream.getTracks().forEach(function(t){ t.stop(); }); camStream=null; }
+  }
+  function capturePhoto(){
+    var v=byId('camVideo'); var msg=byId('camMsg');
+    if(!v || !v.videoWidth){ if(msg) msg.textContent='Camera not ready yet…'; return; }
+    var c=document.createElement('canvas'); c.width=v.videoWidth; c.height=v.videoHeight;
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+    var data=c.toDataURL('image/jpeg',0.92);
+    if(bridge) send({cmd:'addPhoto', dataUrl:data});
+    if(msg){ msg.textContent='Photo captured ✓  — take more, or Close.'; msg.style.color='var(--good)'; }
+  }
+  var bcam=byId('btnCamera'); if(bcam) bcam.addEventListener('click', openCamera);
+  var qcam=byId('qcPhoto'); if(qcam) qcam.addEventListener('click', openCamera);
+  var ccl=byId('camClose'); if(ccl) ccl.addEventListener('click', closeCamera);
+  var ccap=byId('camCapture'); if(ccap) ccap.addEventListener('click', capturePhoto);
   // OCR toggle — when on, saved PDFs get a searchable text layer
   var ocrOn=false;
   var bo=byId('btnOcr'); if(bo) bo.addEventListener('click', function(){
