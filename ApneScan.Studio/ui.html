@@ -251,15 +251,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
         <div class="sep"></div>
-        <div class="tbtn"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
-        <div class="tbtn"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
+        <div class="tbtn" id="btnSave"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
+        <div class="tbtn" id="btnPrint"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
         <div class="tbtn"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
         <div class="sep"></div>
         <div class="tbtn"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
+        <div class="tbtn" id="btnClear"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
         <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input placeholder="Search documents…  (Ctrl+K)"></div>
         <div class="status-pill"><span class="d"></span><span id="statusText">Starting…</span></div>
         <div class="tr-ic"><svg class="ic"><use href="#i-mail"/></svg></div>
@@ -366,22 +366,35 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function byId(id){ return document.getElementById(id); }
   function setStatus(t){ var e=byId('statusText'); if(e) e.textContent=t; var c=byId('connText'); if(c) c.textContent=t; }
   function setDevice(n){ var e=byId('deviceName'); if(e) e.textContent=n; }
+  function setPages(n){
+    if(typeof n!=='number') return;
+    var p1=byId('pageCount'); if(p1) p1.textContent=n+' page'+(n===1?'':'s');
+    var p2=byId('pageCount2'); if(p2) p2.textContent=(n>0?('Page '+n+' / '+n):'Page 0 / 0');
+  }
   function showPreview(url, pages){
     var img=byId('previewImg'), ph=byId('previewPage');
     if(img){ img.src=url; img.style.display='block'; }
     if(ph){ ph.style.display='none'; }
-    var p1=byId('pageCount'); if(p1) p1.textContent=pages+' pages';
-    var p2=byId('pageCount2'); if(p2) p2.textContent='Page 1 / '+pages;
+    setPages(pages);
     var t=byId('scanTitle'); if(t) t.textContent='Scan complete';
-    var s=byId('scanSub'); if(s) s.textContent='Choose where to save your PDF';
+    var s=byId('scanSub'); if(s) s.textContent='Save as PDF or Print — or Scan again to add pages';
+  }
+  function resetPreview(){
+    var img=byId('previewImg'), ph=byId('previewPage');
+    if(img){ img.removeAttribute('src'); img.style.display='none'; }
+    if(ph){ ph.style.display='block'; }
+    setPages(0);
+    var t=byId('scanTitle'); if(t) t.textContent='Ready to Scan';
+    var s=byId('scanSub'); if(s) s.textContent='Place your document in the feeder and press Scan';
   }
   if(bridge){
     window.chrome.webview.addEventListener('message', function(ev){
       var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
       if(!m || !m.type) return;
       if(m.type==='devices'){ devices=m.devices||[]; setDevice(devices.length?devices[0]:'No scanner found'); }
-      else if(m.type==='status'){ setStatus(m.text); }
+      else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); }
+      else if(m.type==='cleared'){ resetPreview(); }
       else if(m.type==='done'){ setStatus('Saved'); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
@@ -389,6 +402,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   } else {
     setStatus('Ready (design preview)');
   }
+  // toolbar actions wired to the real engine
+  var bs=byId('btnSave'); if(bs) bs.addEventListener('click', function(){ if(bridge){ setStatus('Saving…'); send({cmd:'savePdf'}); } });
+  var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(){ if(bridge){ setStatus('Printing…'); send({cmd:'print'}); } });
+  var bc=byId('btnClear'); if(bc) bc.addEventListener('click', function(){ if(bridge){ send({cmd:'clear'}); } else { resetPreview(); } });
   function doScan(){
     var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
     var s=byId('scanSub'); if(s) s.textContent='Feeding page from your scanner';
