@@ -10,6 +10,7 @@ using Microsoft.Web.WebView2.WinForms;
 using NAPS2.Images;
 using NAPS2.Images.Gdi;
 using NAPS2.Images.Transforms;
+using NAPS2.ImportExport;
 using NAPS2.Ocr;
 using NAPS2.Pdf;
 using NAPS2.Scan;
@@ -126,6 +127,9 @@ public class MainForm : Form
                 break;
             case "clear":
                 ClearPages();
+                break;
+            case "import":
+                await ImportFilesAsync();
                 break;
             case "rotateLeft":
                 RotatePage(-90);
@@ -437,6 +441,49 @@ public class MainForm : Form
         catch (Exception ex)
         {
             Status("Print error: " + ex.Message);
+        }
+    }
+
+    private async Task ImportFilesAsync()
+    {
+        using var ofd = new OpenFileDialog
+        {
+            Multiselect = true,
+            Title = "Import files",
+            Filter = "Documents & images (*.pdf;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp)" +
+                     "|*.pdf;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp|All files (*.*)|*.*"
+        };
+        if (ofd.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+        try
+        {
+            Status("Importing…");
+            var imageImporter = new ImageImporter(_ctx);
+            var pdfImporter = new PdfImporter(_ctx);
+            int added = 0;
+            foreach (var file in ofd.FileNames)
+            {
+                var ext = Path.GetExtension(file).ToLowerInvariant();
+                var importer = ext == ".pdf" ? pdfImporter.Import(file) : imageImporter.Import(file);
+                await foreach (var img in importer)
+                {
+                    _pages.Add(img);
+                    added++;
+                }
+            }
+            if (added == 0)
+            {
+                Status("Nothing was imported");
+                return;
+            }
+            SendPreview();
+            Status($"Imported {added} page(s) — {_pages.Count} total");
+        }
+        catch (Exception ex)
+        {
+            Status("Import error: " + ex.Message);
         }
     }
 

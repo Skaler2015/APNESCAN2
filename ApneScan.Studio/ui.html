@@ -249,7 +249,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn on"><svg class="ic" style="stroke:#fff"><use href="#i-scan"/></svg><small>Scan</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
         <div class="tbtn" id="btnOcr"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
-        <div class="tbtn"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
+        <div class="tbtn" id="btnImport"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
         <div class="tbtn"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
         <div class="sep"></div>
@@ -314,7 +314,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="grid-q">
             <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
-            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
+            <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
             <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>merge · split…</small></div>
@@ -453,6 +453,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brl=byId('btnRotL'); if(brl) brl.addEventListener('click', function(){ if(bridge) send({cmd:'rotateLeft'}); });
   var bde=byId('btnDelete'); if(bde) bde.addEventListener('click', function(){ if(bridge) send({cmd:'deletePage'}); });
+  // import existing images / PDFs
+  function doImport(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); }
+  var bim=byId('btnImport'); if(bim) bim.addEventListener('click', doImport);
+  var qim=byId('qcImport'); if(qim) qim.addEventListener('click', doImport);
   // OCR toggle — when on, saved PDFs get a searchable text layer
   var ocrOn=false;
   var bo=byId('btnOcr'); if(bo) bo.addEventListener('click', function(){
