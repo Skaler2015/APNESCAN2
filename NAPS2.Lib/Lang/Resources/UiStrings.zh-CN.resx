@@ -217,7 +217,7 @@
     <value>应用</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>仅允许单个 NAPS2 实例</value>
+    <value>仅允许单个 ApneScan 实例</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>关于</value>
@@ -361,13 +361,13 @@
     <value>在后台运行</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR 设置</value>
@@ -739,7 +739,7 @@
     <value>扫描之间的间隔（秒）:</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>载入图片至 NAPS2</value>
+    <value>载入图片至 ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>保存为单个文件</value>
@@ -775,7 +775,7 @@
     <value>扫描仪共享</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>共享的扫描仪可以通过在其他计算机的 NAPS2 配置中选择 “ESCL 驱动程序” 从本地网络上的其他计算机中使用。</value>
+    <value>共享的扫描仪可以通过在其他计算机的 ApneScan 配置中选择 “ESCL 驱动程序” 从本地网络上的其他计算机中使用。</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>共享扫描仪设置</value>
@@ -784,7 +784,7 @@
     <value>您确定想要停止分享 {0} 吗？</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>即使在NAPS2关闭时也共享</value>
+    <value>即使在ApneScan关闭时也共享</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>多语言...</value>

@@ -217,7 +217,7 @@
     <value>Application</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Only allow a single NAPS2 instance</value>
+    <value>Only allow a single ApneScan instance</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Apie programą</value>
@@ -361,13 +361,13 @@
     <value>Run in Background</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Teksto atpažinimo nustatymai</value>
@@ -739,7 +739,7 @@
     <value>Laikas tarp skenavimų (sekundės):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Įkrauti vaizdus į NAPS2</value>
+    <value>Įkrauti vaizdus į ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Išsaugoti į vieną bylą</value>
@@ -775,7 +775,7 @@
     <value>Scanner Sharing</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Shared scanners can be used from other computers on the local network by selecting "ESCL Driver" in the other computer's NAPS2 profile settings.</value>
+    <value>Shared scanners can be used from other computers on the local network by selecting "ESCL Driver" in the other computer's ApneScan profile settings.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Shared Scanner Settings</value>
@@ -784,7 +784,7 @@
     <value>Are you sure you want to stop sharing {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Share even when NAPS2 is closed</value>
+    <value>Share even when ApneScan is closed</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Multiple Languages...</value>
@@ -838,7 +838,7 @@
     <value>Sidebar</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Can't find your scanner? Read about limitations of the NAPS2 Flatpak.</value>
+    <value>Can't find your scanner? Read about limitations of the ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>

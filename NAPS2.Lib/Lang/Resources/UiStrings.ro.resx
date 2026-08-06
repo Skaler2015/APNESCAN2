@@ -217,7 +217,7 @@
     <value>Aplicație</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Permite doar o singură instanță NAPS2</value>
+    <value>Permite doar o singură instanță ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Despre</value>
@@ -361,10 +361,10 @@
     <value>Rulează în fundal</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
     <value>Nici alt scaner PDF</value>
@@ -739,7 +739,7 @@
     <value>Durată între scanări (secunde):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Încarcă imagini în NAPS2</value>
+    <value>Încarcă imagini în ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Salvează într-un singur fișier</value>
@@ -775,7 +775,7 @@
     <value>Distribuire scaner</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Scanerele partajate pot fi utilizate de alte calculatoare din rețeaua locală selectând "ESCL Driver" din setările de profil ale celorlalte calculatoare NAPS2.</value>
+    <value>Scanerele partajate pot fi utilizate de alte calculatoare din rețeaua locală selectând "ESCL Driver" din setările de profil ale celorlalte calculatoare ApneScan.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Setări scaner partajat</value>
@@ -784,7 +784,7 @@
     <value>Ești sigur că vrei să oprești distribuirea {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Distribuie chiar și atunci când NAPS2 este închis</value>
+    <value>Distribuie chiar și atunci când ApneScan este închis</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Limbi multiple...</value>
@@ -838,7 +838,7 @@
     <value>Bară laterală</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Nu îți găsești scanerul? Citește despre limitările NAPS2 Flatpak.</value>
+    <value>Nu îți găsești scanerul? Citește despre limitările ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Comenzi rapide tastatură</value>

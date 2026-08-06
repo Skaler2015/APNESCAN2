@@ -217,7 +217,7 @@
     <value>Uygulama</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Yalnızca tek NAPS2 örneğine izin ver</value>
+    <value>Yalnızca tek ApneScan örneğine izin ver</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Hakkında</value>
@@ -361,13 +361,13 @@
     <value>Arka Planda Çalıştır</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OKT Kurulumu</value>
@@ -739,7 +739,7 @@
     <value>Taramalar arası zaman (saniye):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Resimleri NAPS2'ye yükle</value>
+    <value>Resimleri ApneScan'ye yükle</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Tek dosyaya kaydet</value>
@@ -775,7 +775,7 @@
     <value>Tarayıcı Paylaşımı</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Paylaşılan tarayıcılar, yerel ağdaki diğer bilgisayarların NAPS2 profil ayarlarında "ESCL Sürücüsü" seçilerek kullanılabilir.</value>
+    <value>Paylaşılan tarayıcılar, yerel ağdaki diğer bilgisayarların ApneScan profil ayarlarında "ESCL Sürücüsü" seçilerek kullanılabilir.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Paylaşılan Tarayıcı Ayarları</value>
@@ -784,7 +784,7 @@
     <value>Paylaşımı durdurmak istediğinize emin misiniz {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>NAPS2 kapalıyken de paylaş</value>
+    <value>ApneScan kapalıyken de paylaş</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Çoklu Dil...</value>
@@ -838,7 +838,7 @@
     <value>Kenar çubuğu</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Tarayıcınızı bulamıyor musunuz? NAPS2 Flatpak'ın kısıtlamalarını okuyun.</value>
+    <value>Tarayıcınızı bulamıyor musunuz? ApneScan Flatpak'ın kısıtlamalarını okuyun.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Klavye Kısayolları</value>

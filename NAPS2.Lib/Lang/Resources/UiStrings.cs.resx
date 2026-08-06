@@ -217,7 +217,7 @@
     <value>Aplikace</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Povolit pouze jednu instanci NAPS2</value>
+    <value>Povolit pouze jednu instanci ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>O aplikaci</value>
@@ -361,13 +361,13 @@
     <value>Spustit na pozadí</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Nastavení OCR</value>
@@ -739,7 +739,7 @@
     <value>Čas mezi skeny (vteřiny):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Nahrát obrázky do NAPS2</value>
+    <value>Nahrát obrázky do ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Uložit do jednoho souboru</value>
@@ -775,7 +775,7 @@
     <value>Sdílení skeneru</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Sdílené skenery lze používat z jiných počítačů v místní síti výběrem možnosti "ESCL ovladač" v nastavení profilu NAPS2 jiného počítače.</value>
+    <value>Sdílené skenery lze používat z jiných počítačů v místní síti výběrem možnosti "ESCL ovladač" v nastavení profilu ApneScan jiného počítače.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Nastavení sdíleného skeneru</value>
@@ -784,7 +784,7 @@
     <value>Opravdu chcete přestat sdílet {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Sdílet, i když je NAPS2 zavřený</value>
+    <value>Sdílet, i když je ApneScan zavřený</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Více jazyků...</value>
@@ -838,7 +838,7 @@
     <value>Postranní panel</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Nemůžete najít skener? Přečtěte si o omezeních Flatpaku NAPS2.</value>
+    <value>Nemůžete najít skener? Přečtěte si o omezeních Flatpaku ApneScan.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Klávesové zkratky</value>

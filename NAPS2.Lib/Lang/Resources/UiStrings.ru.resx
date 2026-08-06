@@ -217,7 +217,7 @@
     <value>Приложение</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Разрешать только один экземпляр NAPS2</value>
+    <value>Разрешать только один экземпляр ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>О программе</value>
@@ -361,13 +361,13 @@
     <value>Запустить в фоновом режиме</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Настройка распознавания</value>
@@ -739,7 +739,7 @@
     <value>Время между сканированием (в секундах):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Загрузить изображения в NAPS2</value>
+    <value>Загрузить изображения в ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Сохранить в один файл</value>
@@ -775,7 +775,7 @@
     <value>Общий доступ к сканеру</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Общие сканеры можно использовать с других компьютеров в локальной сети, выбрав "ESCL Driver" в настройках профиля NAPS2 на другом компьютере.</value>
+    <value>Общие сканеры можно использовать с других компьютеров в локальной сети, выбрав "ESCL Driver" в настройках профиля ApneScan на другом компьютере.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Настройки общего сканера</value>
@@ -784,7 +784,7 @@
     <value>Вы уверены, что хотите отключить общий доступ к {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Сохранять общий доступ даже при закрытом NAPS2</value>
+    <value>Сохранять общий доступ даже при закрытом ApneScan</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Несколько языков...</value>
@@ -838,7 +838,7 @@
     <value>Боковая панель</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Не удается найти сканер? Читайте об ограничениях NAPS2 Flatpak.</value>
+    <value>Не удается найти сканер? Читайте об ограничениях ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Горячие клавиши</value>

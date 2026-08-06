@@ -217,7 +217,7 @@
     <value>Aplicação</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Permitir apenas uma instância NAPS2</value>
+    <value>Permitir apenas uma instância ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Acerca</value>
@@ -361,13 +361,13 @@
     <value>Enviar para segundo plano</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Configurar OCR</value>
@@ -739,7 +739,7 @@
     <value>Tempo entre digitalizações (segundos):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Carregar imagens em NAPS2</value>
+    <value>Carregar imagens em ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Guardar para um ficheiro</value>
@@ -775,7 +775,7 @@
     <value>Partilha de digitalizador</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Os digitalizadores partilhados podem ser usados a partir de outros computadores na rede local, selecionando "Controlador ESCL" nas definições do perfil NAPS2 do outro computador.</value>
+    <value>Os digitalizadores partilhados podem ser usados a partir de outros computadores na rede local, selecionando "Controlador ESCL" nas definições do perfil ApneScan do outro computador.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Definições do digitalizador partilhado</value>
@@ -784,7 +784,7 @@
     <value>Tem a certeza que pretende parar de partilhar {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Partilhar mesmo se NAPS2 estiver fechado</value>
+    <value>Partilhar mesmo se ApneScan estiver fechado</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Vários idiomas...</value>
@@ -838,7 +838,7 @@
     <value>Barra lateral</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Não consegue encontrar o seu digitalizador? Leia sobre as limitações do NAPS2 Flatpak.</value>
+    <value>Não consegue encontrar o seu digitalizador? Leia sobre as limitações do ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Teclas de atalho</value>

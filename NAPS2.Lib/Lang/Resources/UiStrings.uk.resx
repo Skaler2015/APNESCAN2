@@ -217,7 +217,7 @@
     <value>Програма</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Дозволити лише один примірник NAPS2</value>
+    <value>Дозволити лише один примірник ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Про програму</value>
@@ -361,13 +361,13 @@
     <value>Виконувати у фоновому режимі</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Налаштування розпізнавання тексту</value>
@@ -739,7 +739,7 @@
     <value>Затримка між скануванням (у секундах):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Завантажити зображення в NAPS2</value>
+    <value>Завантажити зображення в ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Зберегти в один файл</value>
@@ -775,7 +775,7 @@
     <value>Спільний доступ до сканера</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Сканери, що використовуються спільно, можна використовувати з інших комп'ютерів у локальній мережі, вибравши «Драйвер ESCL» у налаштуваннях профілю NAPS2 іншого комп'ютера.</value>
+    <value>Сканери, що використовуються спільно, можна використовувати з інших комп'ютерів у локальній мережі, вибравши «Драйвер ESCL» у налаштуваннях профілю ApneScan іншого комп'ютера.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Налаштування сканера у спільному доступі</value>
@@ -784,7 +784,7 @@
     <value>Ви впевнені, що хочете скасувати спільний доступ до {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Надавати спільний доступ навіть тоді, коли NAPS2 закрито</value>
+    <value>Надавати спільний доступ навіть тоді, коли ApneScan закрито</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Декілька мов...</value>
@@ -838,7 +838,7 @@
     <value>Бічна панель</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Не можете знайти свій сканер? Прочитайте про обмеження NAPS2 Flatpak.</value>
+    <value>Не можете знайти свій сканер? Прочитайте про обмеження ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Комбінації клавіш</value>

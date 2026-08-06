@@ -217,7 +217,7 @@
     <value>แอพลิเคชัน</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Only allow a single NAPS2 instance</value>
+    <value>Only allow a single ApneScan instance</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>เกี่ยวกับ</value>
@@ -361,13 +361,13 @@
     <value>ทำงานอยู่เบื้องหลัง</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR Setup</value>
@@ -739,7 +739,7 @@
     <value>Time between scans (seconds):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>โหลดรูปเข้าสู่ NAPS2</value>
+    <value>โหลดรูปเข้าสู่ ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>บันทึกเป็นไฟล์เดียว</value>
@@ -775,7 +775,7 @@
     <value>Scanner Sharing</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Scanner ที่ถูกแชร์สามารถใช้งานจากคอมพิวเตอร์เครื่องอื่นที่อยู่ในเครือข่ายในที่เดียวกันด้วยการเลือก "ESCL Driver" โปรไฟล์ของ NAPS2 ในคอมพิวเตอร์เครื่องอื่น</value>
+    <value>Scanner ที่ถูกแชร์สามารถใช้งานจากคอมพิวเตอร์เครื่องอื่นที่อยู่ในเครือข่ายในที่เดียวกันด้วยการเลือก "ESCL Driver" โปรไฟล์ของ ApneScan ในคอมพิวเตอร์เครื่องอื่น</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>แชร์การตั้งค่า Scanner</value>
@@ -784,7 +784,7 @@
     <value>คุณต้องการ หยุดการแชร์ "{0}" ใช่หรือไม่?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>แชร์ แม้ว่า NAPS2 จะถูกปิดอยู่</value>
+    <value>แชร์ แม้ว่า ApneScan จะถูกปิดอยู่</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>หลายภาษา...</value>
@@ -838,7 +838,7 @@
     <value>Sidebar</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>หา Scanner ไม่เจอ? ลองอ่านเกี่ยวกับ ข้อจำกัด ของ NAPS2 Flatpak</value>
+    <value>หา Scanner ไม่เจอ? ลองอ่านเกี่ยวกับ ข้อจำกัด ของ ApneScan Flatpak</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>คีย์บอร์ดลัด</value>

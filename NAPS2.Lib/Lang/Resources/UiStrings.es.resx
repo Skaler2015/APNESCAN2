@@ -217,7 +217,7 @@
     <value>Aplicación</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Permitir sólo una sola instancia de NAPS2</value>
+    <value>Permitir sólo una sola instancia de ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Acerca de</value>
@@ -361,10 +361,10 @@
     <value>Ejecutar en segundo plano</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
     <value>No es otro escáner PDF</value>
@@ -739,7 +739,7 @@
     <value>Tiempo entre escaneos (segundos):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Cargar imágenes en NAPS2</value>
+    <value>Cargar imágenes en ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Guardar en un único archivo</value>
@@ -775,7 +775,7 @@
     <value>Compartir escáner</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Los escáneres compartidos se pueden utilizar desde otros ordenadores de la red local seleccionando "ESCL Driver" en la configuración del perfil NAPS2 del resto de equipos.</value>
+    <value>Los escáneres compartidos se pueden utilizar desde otros ordenadores de la red local seleccionando "ESCL Driver" en la configuración del perfil ApneScan del resto de equipos.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Configuración de Escáner Compartido</value>
@@ -784,7 +784,7 @@
     <value>¿Estás seguro de que quieres dejar de compartir {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Compartir incluso cuando NAPS2 esté cerrado</value>
+    <value>Compartir incluso cuando ApneScan esté cerrado</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Varios idiomas...</value>
@@ -838,7 +838,7 @@
     <value>Barra lateral</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>¿No encuentras tu escáner? Lee las limitaciones del Flatpak NAPS2.</value>
+    <value>¿No encuentras tu escáner? Lee las limitaciones del Flatpak ApneScan.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Atajos del teclado</value>

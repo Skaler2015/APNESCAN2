@@ -217,7 +217,7 @@
     <value>Sovellus</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Salli vain yksi NAPS2-instanssi</value>
+    <value>Salli vain yksi ApneScan-instanssi</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Tietoja</value>
@@ -361,13 +361,13 @@
     <value>Aja taustalla</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR asetus</value>
@@ -739,7 +739,7 @@
     <value>Aika skannausten välillä (sekuntia):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Lataa kuvia NAPS2:een</value>
+    <value>Lataa kuvia ApneScan:een</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Tallenna yhteen tiedostoon</value>
@@ -775,7 +775,7 @@
     <value>Skannerin Jakaminen</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Jaettuja skannereita voidaan käyttää muista paikallisessa verkossa olevista tietokoneista valitsemalla "ESCL Driver" toisen tietokoneen NAPS2-profiiliasetuksista.</value>
+    <value>Jaettuja skannereita voidaan käyttää muista paikallisessa verkossa olevista tietokoneista valitsemalla "ESCL Driver" toisen tietokoneen ApneScan-profiiliasetuksista.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Jaetut Skannerin Asetukset</value>
@@ -784,7 +784,7 @@
     <value>Haluatko varmasti lopettaa jakamisen {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Jaa vaikka NAPS2 olisi suljettu</value>
+    <value>Jaa vaikka ApneScan olisi suljettu</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Useita kieliä...</value>
@@ -838,7 +838,7 @@
     <value>Sivupalkki</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Skanneria ei löytynyt? Lue NAPS2 Flatpakin rajoituksista.</value>
+    <value>Skanneria ei löytynyt? Lue ApneScan Flatpakin rajoituksista.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Pikanäppäimet</value>

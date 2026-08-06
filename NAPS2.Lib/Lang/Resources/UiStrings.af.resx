@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutFormTitle" xml:space="preserve">
-    <value>Meer omtrent NAPS2</value>
+    <value>Meer omtrent ApneScan</value>
   </data>
   <data name="CopyrightFormat" xml:space="preserve">
     <value>Kopiereg {0} NAPS2-bydraers</value>
@@ -217,10 +217,10 @@
     <value>Toepassing</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Laat slegs 'n enkele NAPS2-instansie toe</value>
+    <value>Laat slegs 'n enkele ApneScan-instansie toe</value>
   </data>
   <data name="About" xml:space="preserve">
-    <value>Meer omtrent NAPS2</value>
+    <value>Meer omtrent ApneScan</value>
   </data>
   <data name="Zoom" xml:space="preserve">
     <value>Zoom</value>
@@ -361,10 +361,10 @@
     <value>Hardloop in agtergrond</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
     <value>Netta A+ PDF Skandeerder</value>
@@ -739,7 +739,7 @@
     <value>Time between scans (seconds):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Laai Beelde in tot NAPS2</value>
+    <value>Laai Beelde in tot ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Stoor na 'n enkele lêer</value>
@@ -775,7 +775,7 @@
     <value>Skandeerder Deel</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Gedeelde skandeerders kan vanaf ander rekenaars op die plaaslike netwerk gebruik word deur "ESCL Driver" in die ander rekenaar se NAPS2-profielinstellings te kies.</value>
+    <value>Gedeelde skandeerders kan vanaf ander rekenaars op die plaaslike netwerk gebruik word deur "ESCL Driver" in die ander rekenaar se ApneScan-profielinstellings te kies.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Gedeelde skandeer-instellings</value>
@@ -784,7 +784,7 @@
     <value>Bevestig stop van deel {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Deel selfs wanneer NAPS2 toe is</value>
+    <value>Deel selfs wanneer ApneScan toe is</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Veelvuldige Tale...</value>
@@ -838,7 +838,7 @@
     <value>Sidebar</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Can't find your scanner? Read about limitations of the NAPS2 Flatpak.</value>
+    <value>Can't find your scanner? Read about limitations of the ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>

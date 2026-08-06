@@ -217,7 +217,7 @@
     <value>Toepassing</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Slechts één NAPS2-instantie toestaan</value>
+    <value>Slechts één ApneScan-instantie toestaan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Over</value>
@@ -361,13 +361,13 @@
     <value>Op de achtergrond uitvoeren</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR-instellingen</value>
@@ -739,7 +739,7 @@
     <value>Tijd tussen scans (seconden):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Afbeeldingen laden in NAPS2</value>
+    <value>Afbeeldingen laden in ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Opslaan naar één bestand</value>
@@ -775,7 +775,7 @@
     <value>Gedeelde scanner</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Gedeelde scanners kunnen worden gebruikt vanaf andere computers op het lokale netwerk door "ESCL-driver" te selecteren in de NAPS2-profielinstellingen van de andere computer.</value>
+    <value>Gedeelde scanners kunnen worden gebruikt vanaf andere computers op het lokale netwerk door "ESCL-driver" te selecteren in de ApneScan-profielinstellingen van de andere computer.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Instellingen gedeelde scanner</value>
@@ -784,7 +784,7 @@
     <value>Weet u zeker dat u wilt stoppen met het delen van {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Delen zelfs als NAPS2 gesloten is</value>
+    <value>Delen zelfs als ApneScan gesloten is</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Meerdere talen...</value>
@@ -838,7 +838,7 @@
     <value>Zijbalk</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Kunt u uw scanner niet vinden? Lees dan over de beperkingen van NAPS2 Flatpak.</value>
+    <value>Kunt u uw scanner niet vinden? Lees dan over de beperkingen van ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Sneltoetsen</value>
@@ -880,7 +880,7 @@
     <value>Bewerken met...</value>
   </data>
   <data name="ErrorStartingApplication" xml:space="preserve">
-    <value>Fout bij starten van NAPS2 {0}</value>
+    <value>Fout bij starten van ApneScan {0}</value>
   </data>
   <data name="StopScannerSharing" xml:space="preserve">
     <value>Scanner delen stoppen</value>

@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutFormTitle" xml:space="preserve">
-    <value>NAPS2について</value>
+    <value>ApneScanについて</value>
   </data>
   <data name="CopyrightFormat" xml:space="preserve">
     <value>Copyright {0} NAPS2 貢献者</value>
@@ -217,10 +217,10 @@
     <value>アプリケーション</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>NAPS2 インスタンスを複数開かない</value>
+    <value>ApneScan インスタンスを複数開かない</value>
   </data>
   <data name="About" xml:space="preserve">
-    <value>NAPS2について</value>
+    <value>ApneScanについて</value>
   </data>
   <data name="Zoom" xml:space="preserve">
     <value>ズーム</value>
@@ -361,10 +361,10 @@
     <value>バックグラウンドで実行</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
     <value>他の PDF スキャナーではなく</value>
@@ -739,7 +739,7 @@
     <value>スキャン間隔 (秒)：</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>NAPS2にイメージを読み込む</value>
+    <value>ApneScanにイメージを読み込む</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>1つのファイルに保存</value>
@@ -775,7 +775,7 @@
     <value>スキャナー共有</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>共有スキャナーは、ローカルネットワーク上の他のコンピュータから利用できます。そのコンピューター上の NAPS2 プロファイル設定で「ESCL ドライバー」を選択してください。</value>
+    <value>共有スキャナーは、ローカルネットワーク上の他のコンピュータから利用できます。そのコンピューター上の ApneScan プロファイル設定で「ESCL ドライバー」を選択してください。</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>共有スキャナー設定</value>
@@ -784,7 +784,7 @@
     <value>{0} の共有を停止しますか？</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>NAPS2 を閉じていても共有</value>
+    <value>ApneScan を閉じていても共有</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>複数言語...</value>
@@ -838,7 +838,7 @@
     <value>サイドバー</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>スキャナーが見つからない場合は、NAPS2 Flatpak の制限事項をお読みください。</value>
+    <value>スキャナーが見つからない場合は、ApneScan Flatpak の制限事項をお読みください。</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>キーボード ショートカット</value>

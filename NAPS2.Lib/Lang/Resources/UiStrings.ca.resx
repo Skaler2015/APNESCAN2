@@ -217,7 +217,7 @@
     <value>Aplicació</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Permet només una única instància del NAPS2</value>
+    <value>Permet només una única instància del ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Quant a</value>
@@ -361,13 +361,13 @@
     <value>Executa en rerefons</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>(Not Another PDF Scanner)</value>
+    <value>(Document Scanner)</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Configuració de l'OCR</value>
@@ -739,7 +739,7 @@
     <value>Temps entre escanejos (segons):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Carrega les imatges al NAPS2</value>
+    <value>Carrega les imatges al ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Desa en un únic fitxer</value>
@@ -775,7 +775,7 @@
     <value>Compartició d'escàner</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Els escàners compartits es poden utilitzar des d'altres ordinadors de la xarxa local seleccionant «Controlador ESCL» a la configuració del perfil NAPS2 de l'altre ordinador.</value>
+    <value>Els escàners compartits es poden utilitzar des d'altres ordinadors de la xarxa local seleccionant «Controlador ESCL» a la configuració del perfil ApneScan de l'altre ordinador.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Configuració de l'escàner compartit</value>
@@ -784,7 +784,7 @@
     <value>Segur que voleu aturar la compartició de {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Comparteix fins i tot quan NAPS2 és tancat</value>
+    <value>Comparteix fins i tot quan ApneScan és tancat</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Diversos idiomes...</value>
@@ -838,7 +838,7 @@
     <value>Barra lateral</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>No trobeu el vostre escàner? Informeu-vos de les limitacions del NAPS2 en versió Flatpak.</value>
+    <value>No trobeu el vostre escàner? Informeu-vos de les limitacions del ApneScan en versió Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Dreceres de teclat</value>

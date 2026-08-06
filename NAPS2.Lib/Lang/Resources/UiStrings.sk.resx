@@ -217,7 +217,7 @@
     <value>Aplikácia</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Povoliť len jednu inštanciu NAPS2</value>
+    <value>Povoliť len jednu inštanciu ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>O programe</value>
@@ -361,10 +361,10 @@
     <value>Spustiť na pozadí</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
     <value>Nie je to ďalší skener PDF</value>
@@ -739,7 +739,7 @@
     <value>Čas medzi skenovaniami (v sekundách):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Načítanie obrázkov do NAPS2</value>
+    <value>Načítanie obrázkov do ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Uložiť do jedného súboru</value>
@@ -775,7 +775,7 @@
     <value>Zdieľanie skenera</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Zdieľané skenery môžu byť použité z iných počítačov v miestnej sieti zvolením možnosti "Ovládač ESCL" v nastaveniach profilu NAPS2 iného počítača.</value>
+    <value>Zdieľané skenery môžu byť použité z iných počítačov v miestnej sieti zvolením možnosti "Ovládač ESCL" v nastaveniach profilu ApneScan iného počítača.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Nastavenia zdieľaného skeneru</value>
@@ -784,7 +784,7 @@
     <value>Naozaj chcete prestať zdieľať {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Zdieľať aj keď je NAPS2 zavretý</value>
+    <value>Zdieľať aj keď je ApneScan zavretý</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Viacero jazykov...</value>
@@ -838,7 +838,7 @@
     <value>Sidebar</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Can't find your scanner? Read about limitations of the NAPS2 Flatpak.</value>
+    <value>Can't find your scanner? Read about limitations of the ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>

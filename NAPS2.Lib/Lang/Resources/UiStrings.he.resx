@@ -217,7 +217,7 @@
     <value>יישום</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>לאפשר רק עותק יחיד של NAPS2</value>
+    <value>לאפשר רק עותק יחיד של ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>על אודות</value>
@@ -739,7 +739,7 @@
     <value>זמן בין סריקות (שניות):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>טעינת תמונות לתוך NAPS2</value>
+    <value>טעינת תמונות לתוך ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>לשמור לקובץ יחיד</value>
@@ -775,7 +775,7 @@
     <value>שיתוף סורק</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>אפשר להשתמש בסורקים משותפים במחשבים אחרים ברשת המקומית על ידי בחירה ב„מנהל התקן ESCL” בהגדרות הפרופיל של NAPS2 במחשב השני.</value>
+    <value>אפשר להשתמש בסורקים משותפים במחשבים אחרים ברשת המקומית על ידי בחירה ב„מנהל התקן ESCL” בהגדרות הפרופיל של ApneScan במחשב השני.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>הגדרות סורק משותף</value>
@@ -784,7 +784,7 @@
     <value>להפסיק לשתף את {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>לשתף אפילו כש־NAPS2 סגור</value>
+    <value>לשתף אפילו כש־ApneScan סגור</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>מגוון שפות…</value>
@@ -838,7 +838,7 @@
     <value>סרגל צד</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>הסורק לא נמצא? להלן הפרטים על המגבלות של ה־Flatpak של NAPS2.</value>
+    <value>הסורק לא נמצא? להלן הפרטים על המגבלות של ה־Flatpak של ApneScan.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>קיצורי מקלדת</value>

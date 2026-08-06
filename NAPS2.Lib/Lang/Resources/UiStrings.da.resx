@@ -217,7 +217,7 @@
     <value>Program</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Tillad kun en enkelt åben NAPS2</value>
+    <value>Tillad kun en enkelt åben ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Om</value>
@@ -361,13 +361,13 @@
     <value>Kør i baggrunden</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR opsætning</value>
@@ -739,7 +739,7 @@
     <value>Tid mellem scanninger (sekunder):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Hent billeder ind i NAPS2</value>
+    <value>Hent billeder ind i ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Gem som en enkelt fil</value>
@@ -775,7 +775,7 @@
     <value>Deling af scanner</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Delte scannere kan bruges fra andre computere på det lokale netværk, ved at vælge "ESCL Driver" i den anden computers NAPS2-profilindstillinger.</value>
+    <value>Delte scannere kan bruges fra andre computere på det lokale netværk, ved at vælge "ESCL Driver" i den anden computers ApneScan-profilindstillinger.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Delt scanner-indstillinger</value>
@@ -784,7 +784,7 @@
     <value>Er du sikker på, at du vil stoppe med at dele {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Del selv når NAPS2 er lukket</value>
+    <value>Del selv når ApneScan er lukket</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Flere sprog...</value>
@@ -838,7 +838,7 @@
     <value>Sidebar</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Kan du ikke finde din scanner? Læs om begrænsninger i NAPS2 Flatpak.</value>
+    <value>Kan du ikke finde din scanner? Læs om begrænsninger i ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>

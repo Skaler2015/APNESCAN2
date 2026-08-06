@@ -217,7 +217,7 @@
     <value>Приложение</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Lejo vetëm një instancë të NAPS2</value>
+    <value>Lejo vetëm një instancë të ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Rreth</value>
@@ -361,13 +361,13 @@
     <value>Ekzekuto në sfond</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Konfigurimi i OCR</value>
@@ -739,7 +739,7 @@
     <value>Koha ndërmjet skanimeve (sekonda):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Ngarko imazhet në NAPS2</value>
+    <value>Ngarko imazhet në ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Ruaj në skedar të vetëm</value>
@@ -775,7 +775,7 @@
     <value>Disponueshmëria e skanerit</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Skanerat e disponueshëm në rrjet mund të përdoren nga kompjuterat e tjerë në rrjetin lokal duke zgjedhur "Drajveri i ESCL" në cilësimet e profilit të NAPS2.</value>
+    <value>Skanerat e disponueshëm në rrjet mund të përdoren nga kompjuterat e tjerë në rrjetin lokal duke zgjedhur "Drajveri i ESCL" në cilësimet e profilit të ApneScan.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Cilësimet e skanerit të disponueshëm</value>
@@ -784,7 +784,7 @@
     <value>Je i sigurt se dëshiron të ndalosh disponueshmërinë e {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Bëje të disponueshme edhe kur NAPS2 është i mbyllur</value>
+    <value>Bëje të disponueshme edhe kur ApneScan është i mbyllur</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Shumë gjuhë...</value>
@@ -838,7 +838,7 @@
     <value>Rreshti anësor</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Nuk mund të gjeni skanerin? Lexoni rreth kufizimeve të NAPS2 Flatpak.</value>
+    <value>Nuk mund të gjeni skanerin? Lexoni rreth kufizimeve të ApneScan Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Shkurtimet nga tastiera</value>

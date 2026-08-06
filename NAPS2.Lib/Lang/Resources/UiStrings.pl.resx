@@ -217,7 +217,7 @@
     <value>Aplikacja</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Zezwól tylko na pojedynczą instancję NAPS2</value>
+    <value>Zezwól tylko na pojedynczą instancję ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>O programie</value>
@@ -361,13 +361,13 @@
     <value>Uruchom w tle</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Instalacja OCR</value>
@@ -739,7 +739,7 @@
     <value>Czas pomiędzy skanowaniami (sekundy):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Załaduj obrazy do NAPS2</value>
+    <value>Załaduj obrazy do ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Zapisz do pojedynczego pliku</value>
@@ -775,7 +775,7 @@
     <value>Udostępnianie skanera</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Udostępnionych skanerów można używać z innych komputerów w sieci lokalnej, wybierając opcję „Sterownik ESCL” w ustawieniach profilu NAPS2 drugiego komputera.</value>
+    <value>Udostępnionych skanerów można używać z innych komputerów w sieci lokalnej, wybierając opcję „Sterownik ESCL” w ustawieniach profilu ApneScan drugiego komputera.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Ustawienia udostępnionego skanera</value>
@@ -784,7 +784,7 @@
     <value>Czy na pewno chcesz zatrzymać udostępnianie {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Udostępnij, nawet jeśli NAPS2 jest zamknięty</value>
+    <value>Udostępnij, nawet jeśli ApneScan jest zamknięty</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Wiele języków...</value>
@@ -838,7 +838,7 @@
     <value>Pasek boczny</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Nie możesz znaleźć swojego skanera? Przeczytaj o ograniczeniach Flatpaka NAPS2.</value>
+    <value>Nie możesz znaleźć swojego skanera? Przeczytaj o ograniczeniach Flatpaka ApneScan.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Skróty klawiszowe</value>

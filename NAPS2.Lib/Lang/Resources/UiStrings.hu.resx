@@ -217,7 +217,7 @@
     <value>Alkalmazás</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Csak egyetlen NAPS2 példány lehet nyitva</value>
+    <value>Csak egyetlen ApneScan példány lehet nyitva</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Névjegy</value>
@@ -361,13 +361,13 @@
     <value>Futtatás a háttérben</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Karakterfelismerés beállítás</value>
@@ -739,7 +739,7 @@
     <value>Beolvasások közötti idő (másodperc):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Képek betöltése a NAPS2-be</value>
+    <value>Képek betöltése a ApneScan-be</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Mentés egyetlen fájlba</value>
@@ -775,7 +775,7 @@
     <value>Lapolvasó megosztása</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>A megosztott lapolvasók a helyi hálózat más számítógépeiről is használhatók, ha a másik számítógép NAPS2 profilbeállításaiban kiválasztja az "ESCL illesztőprogramot".</value>
+    <value>A megosztott lapolvasók a helyi hálózat más számítógépeiről is használhatók, ha a másik számítógép ApneScan profilbeállításaiban kiválasztja az "ESCL illesztőprogramot".</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Megosztott lapolvasó beállítások</value>
@@ -784,7 +784,7 @@
     <value>Biztos benne, hogy nem szeretné többé megosztani a {0} lapolvasót?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Megosztás akkor is, ha a NAPS2 be van zárva</value>
+    <value>Megosztás akkor is, ha a ApneScan be van zárva</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Több nyelv...</value>
@@ -838,7 +838,7 @@
     <value>Oldalsáv</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Nem találja a lapolvasóját? Olvasson a NAPS2 Flatpak korlátairól.</value>
+    <value>Nem találja a lapolvasóját? Olvasson a ApneScan Flatpak korlátairól.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Billentyűparancsok</value>

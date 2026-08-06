@@ -217,7 +217,7 @@
     <value>Applikation</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Tillåt endast en NAPS2-instans</value>
+    <value>Tillåt endast en ApneScan-instans</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>Om</value>
@@ -361,13 +361,13 @@
     <value>Körs i bakgrunden</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 − {0}</value>
+    <value>ApneScan − {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>OCR-installation</value>
@@ -739,7 +739,7 @@
     <value>Tid mellan skanningar (sekunder):</value>
   </data>
   <data name="LoadIn" xml:space="preserve">
-    <value>Läs in bilder i NAPS2</value>
+    <value>Läs in bilder i ApneScan</value>
   </data>
   <data name="SaveToSingleFile" xml:space="preserve">
     <value>Spara som en fil</value>
@@ -775,7 +775,7 @@
     <value>Skannerdelning</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Det går att använda delade skannrar från andra datorer på det lokala nätverket genom att välja "ESCL-drivrutin" i NAPS2:s profilinställningar på den andra datorn.</value>
+    <value>Det går att använda delade skannrar från andra datorer på det lokala nätverket genom att välja "ESCL-drivrutin" i ApneScan:s profilinställningar på den andra datorn.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Inställningar för delad skanner</value>
@@ -784,7 +784,7 @@
     <value>Är du säker på att du vill sluta dela {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Dela också när NAPS2 är stängt</value>
+    <value>Dela också när ApneScan är stängt</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Flera språk...</value>
@@ -838,7 +838,7 @@
     <value>Sidofält</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Hittar du inte din skanner? Läs om begränsningar i NAPS2 som Flatpak.</value>
+    <value>Hittar du inte din skanner? Läs om begränsningar i ApneScan som Flatpak.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Kortkommandon</value>

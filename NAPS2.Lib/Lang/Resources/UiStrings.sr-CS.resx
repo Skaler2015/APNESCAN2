@@ -217,7 +217,7 @@
     <value>Aplikacija</value>
   </data>
   <data name="SingleInstanceDesc" xml:space="preserve">
-    <value>Dozvoli samo jednu programsku instancu NAPS2</value>
+    <value>Dozvoli samo jednu programsku instancu ApneScan</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>O programu</value>
@@ -361,13 +361,13 @@
     <value>Pokreni u pozadini</value>
   </data>
   <data name="Naps2" xml:space="preserve">
-    <value>NAPS2</value>
+    <value>ApneScan</value>
   </data>
   <data name="Naps2TitleFormat" xml:space="preserve">
-    <value>NAPS2 - {0}</value>
+    <value>ApneScan - {0}</value>
   </data>
   <data name="Naps2FullName" xml:space="preserve">
-    <value>Not Another PDF Scanner</value>
+    <value>Document Scanner</value>
   </data>
   <data name="OcrSetupFormTitle" xml:space="preserve">
     <value>Podesi OCR</value>
@@ -775,7 +775,7 @@
     <value>Deljenje skenera</value>
   </data>
   <data name="ScannerSharingIntro" xml:space="preserve">
-    <value>Deljeni skeneri se mogu koristiti s drugih računara na lokalnoj mreži ako odaberete "ESCL upravljački program" u podešavanjima NAPS2 profila na drugim računarima.</value>
+    <value>Deljeni skeneri se mogu koristiti s drugih računara na lokalnoj mreži ako odaberete "ESCL upravljački program" u podešavanjima ApneScan profila na drugim računarima.</value>
   </data>
   <data name="SharedDeviceFormTitle" xml:space="preserve">
     <value>Podešavanja deljenog skenera</value>
@@ -784,7 +784,7 @@
     <value>Da li ste sigurni da želite da želite da prekinete deljenje {0}?</value>
   </data>
   <data name="ShareAsService" xml:space="preserve">
-    <value>Deli i kada je NAPS2 zatvoren</value>
+    <value>Deli i kada je ApneScan zatvoren</value>
   </data>
   <data name="MultipleLanguages" xml:space="preserve">
     <value>Višestruki jezici...</value>
@@ -838,7 +838,7 @@
     <value>Bočni meni</value>
   </data>
   <data name="CantFindScannerFlatpak" xml:space="preserve">
-    <value>Ne možete pronaći vaš skener? Pročitajte o ograničenjima NAPS2 Flatpak-a.</value>
+    <value>Ne možete pronaći vaš skener? Pročitajte o ograničenjima ApneScan Flatpak-a.</value>
   </data>
   <data name="KeyboardShortcuts" xml:space="preserve">
     <value>Prečice na tastaturi</value>
