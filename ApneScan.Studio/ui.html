@@ -67,6 +67,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .sep{width:1px;height:34px;background:var(--border);margin:0 5px;flex:none}
 .search{margin-left:8px;flex:1;max-width:340px;display:flex;align-items:center;gap:8px;background:#f3f4f9;border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--muted)}
 .search input{border:0;background:none;outline:none;font:inherit;color:var(--text);width:100%}
+.search{position:relative}
+.search-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(20,20,50,.16);max-height:340px;overflow:auto;z-index:40;display:none;padding:6px}
+.search-drop.on{display:block}
+.search-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.search-item:hover{background:#f4f5f9}
+.search-item .si{width:26px;height:34px;border-radius:4px;background:#fff;border:1px solid var(--border);position:relative;flex:none}
+.search-item .si::before{content:"";position:absolute;left:0;top:0;width:3px;height:100%;background:var(--accent);border-radius:4px 0 0 4px}
+.search-item b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-item small{color:var(--muted);font-size:10.5px}
+.search-empty{padding:12px;color:var(--muted);font-size:12px;text-align:center}
 .status-pill{margin-left:8px;display:flex;align-items:center;gap:8px;background:var(--good-soft);color:#15803d;border:1px solid #bbf7d0;border-radius:10px;padding:7px 12px;font-weight:600;font-size:12px;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
 .status-pill .d{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(22,163,74,.15);flex:none}
 .tr-ic{margin-left:6px;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
@@ -296,7 +306,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="tbtn"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
         <div class="tbtn" id="btnDelete"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
         <div class="tbtn" id="btnClear"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
-        <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input placeholder="Search documents…  (Ctrl+K)"></div>
+        <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="searchInput" placeholder="Search documents…  (Ctrl+K)"><div class="search-drop" id="searchDrop"></div></div>
         <div class="status-pill"><span class="d"></span><span id="statusText">Starting…</span></div>
         <div class="tr-ic"><svg class="ic"><use href="#i-mail"/></svg></div>
         <div class="tr-ic"><svg class="ic"><use href="#i-help"/></svg></div>
@@ -513,6 +523,30 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       l.appendChild(r);
     });
   }
+  // search saved files (from history)
+  var searchInput=byId('searchInput'), searchDrop=byId('searchDrop');
+  function runSearch(q){
+    if(!searchDrop) return;
+    q=(q||'').trim().toLowerCase();
+    if(!q){ searchDrop.classList.remove('on'); searchDrop.innerHTML=''; return; }
+    var matches=(histItems||[]).filter(function(it){ return (it.Name||'').toLowerCase().indexOf(q)>=0; });
+    searchDrop.innerHTML='';
+    if(!matches.length){ searchDrop.innerHTML='<div class="search-empty">No matching saved files</div>'; searchDrop.classList.add('on'); return; }
+    matches.slice(0,12).forEach(function(it){
+      var d=document.createElement('div'); d.className='search-item';
+      d.innerHTML='<div class="si"></div><div style="flex:1;min-width:0"><b>'+esc(it.Name)+'</b><small>'+esc(it.Date)+' · '+esc(it.Size)+'</small></div>';
+      d.addEventListener('click', function(){ if(bridge) send({cmd:'openFile', path:it.Path}); searchDrop.classList.remove('on'); if(searchInput) searchInput.value=''; });
+      searchDrop.appendChild(d);
+    });
+    searchDrop.classList.add('on');
+  }
+  if(searchInput){
+    searchInput.addEventListener('input', function(){ runSearch(searchInput.value); });
+    searchInput.addEventListener('focus', function(){ if(searchInput.value.trim()) runSearch(searchInput.value); });
+  }
+  document.addEventListener('click', function(e){ if(searchDrop && searchInput && e.target!==searchInput && !searchDrop.contains(e.target)){ searchDrop.classList.remove('on'); } });
+  document.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')){ e.preventDefault(); if(searchInput) searchInput.focus(); } });
+
   function openHist(){ renderHistory(histItems); var ov=byId('histOverlay'); if(ov) ov.classList.add('on'); }
   function closeHist(){ var ov=byId('histOverlay'); if(ov) ov.classList.remove('on'); }
   var nH=byId('navHistory'); if(nH) nH.addEventListener('click', openHist);
