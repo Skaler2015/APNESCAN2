@@ -11,9 +11,7 @@ public class AboutForm : EtoDialogBase
 {
     private const string NAPS2_HOMEPAGE = "https://github.com/Skaler2015/APNESCAN2";
     private const string ICONS_HOMEPAGE = "https://www.fatcow.com/free-icons";
-    private const string DONATE_URL = "https://github.com/Skaler2015/APNESCAN2";
 
-    private readonly Button _donateButton;
     private readonly UpdateChecker _updateChecker;
     private readonly CheckBox _enableDebugLogging = C.CheckBox(UiStrings.EnableDebugLogging);
 
@@ -22,13 +20,6 @@ public class AboutForm : EtoDialogBase
     {
         Title = UiStrings.AboutFormTitle;
         IconName = "information_small";
-
-        _donateButton = C.Button(UiStrings.Donate, () => ProcessHelper.OpenUrl(DONATE_URL));
-        _donateButton.BackgroundColor = Color.FromRgb(0xfeda96);
-        _donateButton.TextColor = Color.FromRgb(0x1b464e);
-        _donateButton.Font = new Font(_donateButton.Font.Family, _donateButton.Font.Size * 11 / 10,
-            FontStyle.Italic | FontStyle.Bold);
-        EtoPlatform.Current.ConfigureDonateButton(_donateButton);
 
         _enableDebugLogging.Checked = config.Get(c => c.EnableDebugLogging);
         _enableDebugLogging.CheckedChanged += (_, _) =>
@@ -55,13 +46,7 @@ public class AboutForm : EtoDialogBase
                     L.Column(
                         C.NoWrap(string.Format(MiscResources.Version, AssemblyHelper.Version)),
                         C.UrlLink(NAPS2_HOMEPAGE)
-                    ),
-                    Config.Get(c => c.HiddenButtons).HasFlag(ToolbarButtons.Donate)
-                        ? C.None()
-                        : L.Column(
-                            C.Filler(),
-                            _donateButton
-                        ).Padding(left: 10)
+                    )
                 ),
                 GetUpdateWidget(),
                 C.TextSpace(),

@@ -223,6 +223,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="sec">SYSTEM</div>
         <div class="item"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
         <div class="item"><svg class="ic"><use href="#i-help"/></svg><span class="lbl">Help &amp; Guide</span></div>
+        <div class="item" id="checkUpdate"><svg class="ic"><use href="#i-refresh"/></svg><span class="lbl">Check for updates</span></div>
       </nav>
       <div class="sfoot">
         <div class="mini">
@@ -238,7 +239,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         </div>
         <div class="storage">Storage used <b class="num">174 / 237 GB</b><div class="bar"><i></i></div></div>
         <div class="row"><span>Scanner · <b>WIA</b></span></div>
-        <div class="row"><span>ApneScan · v286</span><span style="color:var(--good);font-weight:600">100% Free</span></div>
+        <div class="row"><span>ApneScan · v<span id="curVer">1.0.0</span></span><span style="color:var(--good);font-weight:600">100% Free</span></div>
+        <div id="updateLine" style="font-size:10.5px;color:var(--muted)">Checking for updates…</div>
       </div>
     </aside>
 
@@ -387,6 +389,21 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var t=byId('scanTitle'); if(t) t.textContent='Ready to Scan';
     var s=byId('scanSub'); if(s) s.textContent='Place your document in the feeder and press Scan';
   }
+  function setCurVer(v){ var e=byId('curVer'); if(e && v) e.textContent=v; }
+  function showUpdate(version, current){
+    setCurVer(current);
+    var el=byId('updateLine'); if(!el) return;
+    el.textContent='';
+    var a=document.createElement('span');
+    a.textContent='⬆ Version '+version+' available — Update now';
+    a.style.cssText='color:var(--accent);font-weight:700;cursor:pointer';
+    a.addEventListener('click', function(){ el.textContent='Updating…'; el.style.color='var(--accent)'; send({cmd:'update'}); });
+    el.appendChild(a);
+  }
+  function showNoUpdate(current){
+    setCurVer(current);
+    var el=byId('updateLine'); if(el){ el.textContent='✓ You are up to date'; el.style.color='var(--good)'; }
+  }
   if(bridge){
     window.chrome.webview.addEventListener('message', function(ev){
       var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
@@ -396,12 +413,20 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); }
       else if(m.type==='cleared'){ resetPreview(); }
       else if(m.type==='done'){ setStatus('Saved'); }
+      else if(m.type==='update'){ showUpdate(m.version, m.current); }
+      else if(m.type==='noupdate'){ showNoUpdate(m.current); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getDevices'});
+    send({cmd:'checkUpdate'});
   } else {
     setStatus('Ready (design preview)');
+    var ul=byId('updateLine'); if(ul){ ul.textContent='Updates check runs in the app'; }
   }
+  var cu=byId('checkUpdate'); if(cu) cu.addEventListener('click', function(){
+    var el=byId('updateLine'); if(el){ el.textContent='Checking for updates…'; el.style.color='var(--muted)'; }
+    if(bridge) send({cmd:'checkUpdate'});
+  });
   // toolbar actions wired to the real engine
   var bs=byId('btnSave'); if(bs) bs.addEventListener('click', function(){ if(bridge){ setStatus('Saving…'); send({cmd:'savePdf'}); } });
   var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(){ if(bridge){ setStatus('Printing…'); send({cmd:'print'}); } });

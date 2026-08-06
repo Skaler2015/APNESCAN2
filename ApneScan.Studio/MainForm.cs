@@ -1,5 +1,9 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Net.Http;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
@@ -24,6 +28,12 @@ public class MainForm : Form
     private readonly List<ProcessedImage> _pages = new();
     private List<ScanDevice> _devices = new();
     private bool _busy;
+
+    // One-click update: manifest published to the "latest" GitHub release.
+    private const string UpdateManifestUrl =
+        "https://github.com/Skaler2015/APNESCAN2/releases/latest/download/update.json";
+    private string? _updateUrl;
+    private string? _updateSha;
 
     public MainForm()
     {
@@ -93,6 +103,92 @@ public class MainForm : Form
             case "clear":
                 ClearPages();
                 break;
+            case "checkUpdate":
+                await CheckForUpdatesAsync();
+                break;
+            case "update":
+                await RunUpdateAsync();
+                break;
+        }
+    }
+
+    private static string CurrentVersion()
+    {
+        var v = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+        return $"{v.Major}.{v.Minor}.{Math.Max(v.Build, 0)}";
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        var current = CurrentVersion();
+        try
+        {
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("User-Agent", "ApneScan");
+            var json = await http.GetStringAsync(UpdateManifestUrl);
+            using var doc = JsonDocument.Parse(json);
+            var curVer = new Version(current);
+            foreach (var rel in doc.RootElement.GetProperty("versions").EnumerateArray())
+            {
+                var name = rel.GetProperty("name").GetString();
+                if (name == null || !Version.TryParse(name, out var v) || v <= curVer)
+                {
+                    continue;
+                }
+                var exe = rel.GetProperty("files").GetProperty("exe");
+                _updateUrl = exe.GetProperty("url").GetString();
+                _updateSha = exe.TryGetProperty("sha256", out var s) ? s.GetString() : null;
+                Post(new { type = "update", version = name, current });
+                return;
+            }
+            Post(new { type = "noupdate", current });
+        }
+        catch
+        {
+            // Offline or no release yet — just report the current version.
+            Post(new { type = "noupdate", current });
+        }
+    }
+
+    private async Task RunUpdateAsync()
+    {
+        if (string.IsNullOrEmpty(_updateUrl))
+        {
+            return;
+        }
+        try
+        {
+            Status("Downloading update…");
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("User-Agent", "ApneScan");
+            var bytes = await http.GetByteArrayAsync(_updateUrl);
+
+            // Verify the download against the manifest's SHA-256 (base64) before running it.
+            if (!string.IsNullOrEmpty(_updateSha))
+            {
+                var b64 = Convert.ToBase64String(SHA256.HashData(bytes));
+                if (b64 != _updateSha)
+                {
+                    Status("Update failed: the download did not verify.");
+                    return;
+                }
+            }
+
+            var path = Path.Combine(Path.GetTempPath(), "ApneScan-Setup.exe");
+            await File.WriteAllBytesAsync(path, bytes);
+
+            Status("Installing update…");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = path,
+                Arguments = "/SILENT /CLOSEAPPLICATIONS",
+                UseShellExecute = true
+            });
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            Status("Update error: " + ex.Message);
         }
     }
 
