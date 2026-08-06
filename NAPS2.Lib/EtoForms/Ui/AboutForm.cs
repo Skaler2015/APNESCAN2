@@ -9,9 +9,9 @@ namespace NAPS2.EtoForms.Ui;
 
 public class AboutForm : EtoDialogBase
 {
-    private const string NAPS2_HOMEPAGE = "https://www.naps2.com";
+    private const string NAPS2_HOMEPAGE = "https://github.com/Skaler2015/APNESCAN2";
     private const string ICONS_HOMEPAGE = "https://www.fatcow.com/free-icons";
-    private const string DONATE_URL = "https://www.naps2.com/donate?src=about";
+    private const string DONATE_URL = "https://github.com/Skaler2015/APNESCAN2";
 
     private readonly Button _donateButton;
     private readonly UpdateChecker _updateChecker;
