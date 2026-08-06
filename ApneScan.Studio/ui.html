@@ -309,6 +309,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .sc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-2);font-size:13px}
 .sc-row .sc-k{display:flex;align-items:center;gap:4px;color:var(--muted)}
 .sc-row kbd{background:#f4f5f9;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font:inherit;font-size:11px;color:#5b6376}
+.rn-chip{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:16px;background:var(--accent-soft);color:var(--accent-ink);cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.rn-chip:hover{border-color:var(--accent)}
+.rn-chip .rc-star{color:var(--amber);margin-right:3px}
 .kc-row{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid var(--border-2);font-size:13px}
 .kc-row .kc-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kc-key{min-width:140px;display:flex;justify-content:flex-end;align-items:center;gap:6px}
@@ -325,6 +328,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .mn-row.sel{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
 .mn-row .mn-edit{border:0;background:none;font:inherit;color:var(--text);flex:1;min-width:0;padding:2px 4px;border-bottom:1px solid var(--accent);outline:none}
 .mn-row .mn-ok{color:var(--good);font-weight:700;cursor:pointer;padding:0 4px}
+.mn-row .mn-star{color:#d7dae3;font-size:14px;cursor:pointer;flex:none}
+.mn-row .mn-star.on{color:var(--amber)}
+.mn-row .mn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mn-row .mn-cnt{font-size:10px;font-weight:700;color:var(--muted);background:#eef0f6;border-radius:20px;padding:1px 7px;flex:none}
+.mn-row.drag{opacity:.5}
+.mn-row.over{border-top:2px solid var(--accent)}
 .mn-empty{padding:14px;color:var(--muted);font-size:12px;text-align:center}
 .mn-b{padding:8px 12px;font-size:12px}
 @media (max-width:1180px){.rightpanel{display:none}}
@@ -707,16 +716,31 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
 <!-- Rename a scanned page -->
 <div class="cam-overlay" id="rnOverlay">
-  <div class="cam-box" style="max-width:420px;text-align:left">
+  <div class="cam-box" style="max-width:460px;text-align:left">
     <h3>Rename</h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Name for <span id="rnPageNo">this page</span>:</p>
-    <input id="rnInput" list="rnSuggest" placeholder="Type a name…" autocomplete="off"
-      style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
-    <datalist id="rnSuggest"></datalist>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;cursor:pointer">
+    <div id="rnMultiBar" style="display:none;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:6px 10px;border-radius:8px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <img id="rnThumb" alt="" style="width:66px;height:86px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:8px;flex:none;display:none">
+      <div style="flex:1;min-width:0">
+        <p style="color:var(--muted);font-size:12px;margin:0 0 6px">Name for <span id="rnPageNo">this page</span>:</p>
+        <div style="position:relative">
+          <input id="rnInput" list="rnSuggest" placeholder="Type a name…" autocomplete="off"
+            style="width:100%;box-sizing:border-box;padding:10px 30px 10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
+          <datalist id="rnSuggest"></datalist>
+          <span id="rnClear" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:17px;display:none;line-height:1">&times;</span>
+        </div>
+        <div id="rnChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:98px;overflow:auto"></div>
+      </div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12.5px;cursor:pointer">
       <input type="checkbox" id="rnRemember" style="width:18px;height:18px;accent-color:var(--accent)">
       Remember this name (suggestions + auto-naming)
     </label>
+    <label id="rnNumberRow" style="display:none;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;cursor:pointer">
+      <input type="checkbox" id="rnNumber" checked style="width:18px;height:18px;accent-color:var(--accent)">
+      Auto-number pages (Name_001, Name_002…)
+    </label>
+    <div style="font-size:10.5px;color:var(--muted-2);margin-top:8px">Tip: use tokens {date}, {page}, {n} in the name.</div>
     <div class="cam-actions">
       <div class="cam-btn" id="rnManage" style="margin-right:auto">Manage names</div>
       <div class="cam-btn no" id="rnCancel">Cancel</div>
@@ -731,7 +755,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <h3>Manage suggested names</h3>
     <p style="color:var(--muted);font-size:12px;margin:0 0 8px">These are the names suggested when renaming. Select to remove / edit.</p>
     <div class="dp-search" style="margin:0"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search…"></div>
-    <div id="mnList" style="max-height:44vh;overflow:auto;margin-top:10px;border:1px solid var(--border-2);border-radius:8px"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px">
+      <span style="color:var(--muted-2)">Sort:</span>
+      <select id="mnSort" style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font:inherit;background:#fff;color:var(--text)"><option value="used">Most used</option><option value="az">A–Z</option><option value="manual">Manual (drag)</option></select>
+      <span style="margin-left:auto"></span>
+      <div class="cam-btn mn-b" id="mnBulk">Bulk add</div>
+      <div class="cam-btn mn-b" id="mnImport">Import</div>
+      <div class="cam-btn mn-b" id="mnExport">Export</div>
+    </div>
+    <div id="mnList" style="max-height:42vh;overflow:auto;margin-top:8px;border:1px solid var(--border-2);border-radius:8px"></div>
     <div class="cam-actions" style="flex-wrap:wrap">
       <div class="cam-btn mn-b" id="mnAdd">＋ Add</div>
       <div class="cam-btn mn-b" id="mnRemove">Remove</div>
@@ -957,7 +989,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
   }
   // Center gallery of scanned pages (fills the main area after a scan)
-  var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0;
+  var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0, scannedThumbs=[], nameEntries=[];
   function isSel(i){ return selSet.length ? (selSet.indexOf(i)>=0) : (i===scannedSel); }
   function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; }
   function selectAllPages(){ if(!scannedTotal){ setStatus('Nothing to select'); return; } selSet=[]; for(var i=0;i<scannedTotal;i++) selSet.push(i); applyMultiHighlight(); setStatus(scannedTotal+' page(s) selected'); }
@@ -966,6 +998,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
     scannedNames=(names||[]).slice();
+    scannedThumbs=(thumbs||[]).slice();
     scannedTotal=thumbs?thumbs.length:0; selSet=[];
     if(typeof selected==='number') scannedSel=selected;
     // When scanned pages are shown, show ONLY them — hide the Scan card, hint,
@@ -1059,7 +1092,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
       else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); }
       else if(m.type==='pageName'){ scannedNames[m.index]=m.name||''; var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv+'  (double-click or F2 to rename)'; } }
-      else if(m.type==='names'){ nameSuggestions=m.items||[]; fillNameSuggest(); if(byId('mnOverlay').classList.contains('on')) renderNames(); }
+      else if(m.type==='names'){ nameEntries=m.items||[]; nameSuggestions=nameEntries.map(function(e){ return e.name; }); fillNameSuggest(); rebuildChips(); if(byId('mnOverlay') && byId('mnOverlay').classList.contains('on')) renderNames(); }
       else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; renderScanned(null); }
       else if(m.type==='done'){ setStatus('Saved'); }
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
@@ -1552,59 +1585,142 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var dl=byId('rnSuggest'); if(!dl) return; dl.innerHTML='';
     nameSuggestions.forEach(function(n){ var o=document.createElement('option'); o.value=n; dl.appendChild(o); });
   }
-  var rnIndex=-1;
+  function toggleRnClear(){ var inp=byId('rnInput'), x=byId('rnClear'); if(x) x.style.display=(inp&&inp.value)?'block':'none'; }
+  function rebuildChips(){
+    var box=byId('rnChips'); if(!box) return; box.innerHTML='';
+    var q=(byId('rnInput')?byId('rnInput').value:'').trim().toLowerCase();
+    var arr=nameEntries.slice().sort(function(a,b){ if((b.fav?1:0)!==(a.fav?1:0)) return (b.fav?1:0)-(a.fav?1:0); return (b.count||0)-(a.count||0); });
+    arr=arr.filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0; }).slice(0,24);
+    arr.forEach(function(e){
+      var c=document.createElement('span'); c.className='rn-chip';
+      c.innerHTML=(e.fav?'<span class="rc-star">&#9733;</span>':'')+esc(e.name);
+      c.addEventListener('click', function(){ var inp=byId('rnInput'); if(inp){ inp.value=e.name; inp.focus(); toggleRnClear(); rebuildChips(); } });
+      box.appendChild(c);
+    });
+  }
+  function twoPad(n){ n=String(n); while(n.length<3) n='0'+n; return n; }
+  function monShort(m){ return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]; }
+  function expandTokens(s, seq, pageNo){
+    var d=new Date(); var ds=('0'+d.getDate()).slice(-2)+'-'+monShort(d.getMonth());
+    return (s||'').replace(/\{date\}/gi, ds).replace(/\{page\}/gi, String(pageNo)).replace(/\{n\}/gi, String(seq));
+  }
+  var rnIndex=-1, rnMulti=null;
   function openRename(i){
-    if(typeof i!=='number' || i<0){ i=scannedSel; }
-    if(i<0) { setStatus('Select a page first, then rename'); return; }
-    rnIndex=i;
-    var no=byId('rnPageNo'); if(no) no.textContent='page '+(i+1);
-    var inp=byId('rnInput'); if(inp) inp.value=scannedNames[i]||'';
+    if(selSet && selSet.length>1){ rnMulti=selSet.slice().sort(function(a,b){return a-b;}); }
+    else { rnMulti=null; if(typeof i!=='number' || i<0){ i=scannedSel; } if(i<0){ setStatus('Select a page first, then rename'); return; } rnIndex=i; }
+    var mb=byId('rnMultiBar'), no=byId('rnPageNo'), thumb=byId('rnThumb'), numRow=byId('rnNumberRow');
+    if(rnMulti){
+      if(mb){ mb.style.display='block'; mb.textContent='Renaming '+rnMulti.length+' pages'; }
+      if(no) no.textContent='these pages';
+      if(thumb) thumb.style.display='none';
+      if(numRow) numRow.style.display='flex';
+      var inp0=byId('rnInput'); if(inp0) inp0.value='';
+    } else {
+      if(mb) mb.style.display='none';
+      if(no) no.textContent='page '+(rnIndex+1);
+      if(thumb){ if(scannedThumbs[rnIndex]){ thumb.src=scannedThumbs[rnIndex]; thumb.style.display='block'; } else thumb.style.display='none'; }
+      if(numRow) numRow.style.display='none';
+      var inp1=byId('rnInput'); if(inp1) inp1.value=scannedNames[rnIndex]||'';
+    }
     var rem=byId('rnRemember'); if(rem) rem.checked=false;
-    fillNameSuggest();
+    fillNameSuggest(); rebuildChips(); toggleRnClear();
     overlay('rnOverlay', true);
-    if(inp){ inp.focus(); inp.select(); }
+    var inp=byId('rnInput'); if(inp){ inp.focus(); inp.select(); }
   }
   function doRename(){
     var inp=byId('rnInput'), rem=byId('rnRemember');
-    var name=inp?inp.value.trim():'';
-    if(bridge) send({cmd:'renamePage', index:rnIndex, name:name, on:!!(rem&&rem.checked)});
+    var base=inp?inp.value.trim():'';
+    var remember=!!(rem&&rem.checked);
+    if(rnMulti){
+      var auto=byId('rnNumber'); var num=!!(auto&&auto.checked);
+      rnMulti.forEach(function(idx,k){
+        var nm=num ? (expandTokens(base,k+1,idx+1)+'_'+twoPad(k+1)) : expandTokens(base,k+1,idx+1);
+        if(bridge) send({cmd:'renamePage', index:idx, name:nm, on:false});
+      });
+      if(remember && base && bridge) send({cmd:'addName', name:base});
+      setStatus('Renamed '+rnMulti.length+' pages');
+    } else {
+      var name=expandTokens(base,1,rnIndex+1);
+      if(bridge) send({cmd:'renamePage', index:rnIndex, name:name, on:remember});
+    }
     overlay('rnOverlay', false);
   }
   var rnOk=byId('rnOk'); if(rnOk) rnOk.addEventListener('click', doRename);
   var rnCancel=byId('rnCancel'); if(rnCancel) rnCancel.addEventListener('click', function(){ overlay('rnOverlay', false); });
-  var rnInp=byId('rnInput'); if(rnInp) rnInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doRename(); } });
+  var rnInp=byId('rnInput'); if(rnInp){ rnInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doRename(); } }); rnInp.addEventListener('input', function(){ toggleRnClear(); rebuildChips(); }); }
+  var rnClearBtn=byId('rnClear'); if(rnClearBtn) rnClearBtn.addEventListener('click', function(){ var inp=byId('rnInput'); if(inp){ inp.value=''; inp.focus(); toggleRnClear(); rebuildChips(); } });
   var rnManage=byId('rnManage'); if(rnManage) rnManage.addEventListener('click', openManageNames);
 
-  var mnSelected=null, mnEditing=null;
+  var mnSelected=null, mnEditing=null, mnDrag=null;
+  function mnSortedEntries(){
+    var q=(byId('mnSearch')?byId('mnSearch').value:'').trim().toLowerCase();
+    var sort=byId('mnSort')?byId('mnSort').value:'used';
+    var arr=nameEntries.slice().filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0; });
+    if(sort==='az') arr.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    else if(sort==='used') arr.sort(function(a,b){ if((b.fav?1:0)!==(a.fav?1:0)) return (b.fav?1:0)-(a.fav?1:0); if((b.count||0)!==(a.count||0)) return (b.count||0)-(a.count||0); return a.name.localeCompare(b.name); });
+    return { arr:arr, sort:sort };
+  }
   function renderNames(){
     var list=byId('mnList'); if(!list) return; list.innerHTML='';
-    var q=(byId('mnSearch')?byId('mnSearch').value:'').trim().toLowerCase();
-    if(mnSelected && nameSuggestions.indexOf(mnSelected)<0) mnSelected=null;
-    var arr=nameSuggestions.filter(function(n){ return !q || n.toLowerCase().indexOf(q)>=0; });
-    if(!arr.length){ list.innerHTML='<div class="mn-empty">'+(q?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; return; }
-    arr.forEach(function(n){
+    if(mnSelected && !nameEntries.some(function(e){ return e.name===mnSelected; })) mnSelected=null;
+    var s=mnSortedEntries(), arr=s.arr, manual=(s.sort==='manual');
+    if(!arr.length){ list.innerHTML='<div class="mn-empty">'+((byId('mnSearch')&&byId('mnSearch').value.trim())?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; return; }
+    arr.forEach(function(e){
+      var n=e.name;
       var row=document.createElement('div'); row.className='mn-row'+(n===mnSelected?' sel':'');
       if(n===mnEditing){
         var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=n;
         var ok=document.createElement('span'); ok.className='mn-ok'; ok.textContent='✓';
-        var save=function(){ var v=inp.value.trim(); mnEditing=null; if(bridge && v && v!==n){ send({cmd:'removeName', name:n}); send({cmd:'addName', name:v}); } else renderNames(); };
+        var save=function(){ var v=inp.value.trim(); mnEditing=null; if(bridge && v && v!==n){ send({cmd:'renameName', path:n, name:v}); } else renderNames(); };
         ok.addEventListener('click', save);
-        inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); if(e.key==='Escape'){ e.stopPropagation(); mnEditing=null; renderNames(); } });
+        inp.addEventListener('keydown', function(ev){ if(ev.key==='Enter') save(); if(ev.key==='Escape'){ ev.stopPropagation(); mnEditing=null; renderNames(); } });
         row.appendChild(inp); row.appendChild(ok); list.appendChild(row); inp.focus(); inp.select();
         return;
       }
-      row.textContent=n; row.title='Click to select · double-click to edit';
+      var star=document.createElement('span'); star.className='mn-star'+(e.fav?' on':''); star.innerHTML='&#9733;'; star.title='Favorite';
+      star.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'toggleNameFav', name:n}); });
+      var nm=document.createElement('span'); nm.className='mn-name'; nm.textContent=n;
+      var cnt=document.createElement('span'); cnt.className='mn-cnt'; cnt.textContent=(e.count||0); cnt.title=(e.count||0)+' uses';
+      row.appendChild(star); row.appendChild(nm); row.appendChild(cnt);
       row.addEventListener('click', function(){ mnSelected=(mnSelected===n?null:n); renderNames(); });
       row.addEventListener('dblclick', function(){ mnSelected=n; mnEditing=n; renderNames(); });
+      if(manual){
+        row.draggable=true;
+        row.addEventListener('dragstart', function(ev){ mnDrag=n; row.classList.add('drag'); try{ ev.dataTransfer.setData('text/apnescan-nameorder', n); ev.dataTransfer.effectAllowed='move'; }catch(_){} });
+        row.addEventListener('dragend', function(){ row.classList.remove('drag'); });
+        row.addEventListener('dragover', function(ev){ if(mnDrag){ ev.preventDefault(); row.classList.add('over'); } });
+        row.addEventListener('dragleave', function(){ row.classList.remove('over'); });
+        row.addEventListener('drop', function(ev){ if(!mnDrag) return; ev.preventDefault(); row.classList.remove('over'); reorderName(mnDrag, n); mnDrag=null; });
+      }
       list.appendChild(row);
     });
+  }
+  function reorderName(dragName, targetName){
+    var order=nameEntries.map(function(e){ return e.name; });
+    var from=order.indexOf(dragName); if(from<0) return;
+    order.splice(from,1);
+    var to=order.indexOf(targetName); if(to<0) to=order.length;
+    order.splice(to,0,dragName);
+    if(bridge) send({cmd:'reorderNames', data:JSON.stringify(order)});
   }
   function openManageNames(){ mnSelected=null; mnEditing=null; overlay('mnOverlay', true); if(bridge) send({cmd:'getNames'}); renderNames(); }
   var mnClose=byId('mnClose'); if(mnClose) mnClose.addEventListener('click', function(){ overlay('mnOverlay', false); });
   var mnSearch=byId('mnSearch'); if(mnSearch) mnSearch.addEventListener('input', renderNames);
+  var mnSortSel=byId('mnSort'); if(mnSortSel) mnSortSel.addEventListener('change', renderNames);
   var mnClear=byId('mnClear'); if(mnClear) mnClear.addEventListener('click', function(){ if(bridge) send({cmd:'clearNames'}); mnSelected=null; mnEditing=null; });
   var mnRemove=byId('mnRemove'); if(mnRemove) mnRemove.addEventListener('click', function(){ if(!mnSelected){ setStatus('Select a name to remove'); return; } if(bridge) send({cmd:'removeName', name:mnSelected}); mnSelected=null; });
   var mnEdit=byId('mnEdit'); if(mnEdit) mnEdit.addEventListener('click', function(){ if(!mnSelected){ setStatus('Select a name to edit'); return; } mnEditing=mnSelected; renderNames(); });
+  var mnExport=byId('mnExport'); if(mnExport) mnExport.addEventListener('click', function(){ if(bridge) send({cmd:'exportNames'}); });
+  var mnImport=byId('mnImport'); if(mnImport) mnImport.addEventListener('click', function(){ if(bridge) send({cmd:'importNames'}); });
+  var mnBulk=byId('mnBulk'); if(mnBulk) mnBulk.addEventListener('click', function(){
+    var list=byId('mnList'); if(!list) return;
+    if(byId('mnBulkArea')){ byId('mnBulkArea').focus(); return; }
+    var row=document.createElement('div'); row.className='mn-row'; row.style.display='block';
+    row.innerHTML='<textarea id="mnBulkArea" placeholder="One name per line…" style="width:100%;box-sizing:border-box;min-height:82px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font:inherit;resize:vertical"></textarea><div style="text-align:right;margin-top:6px"><span class="mn-ok" id="mnBulkOk">Add all ✓</span></div>';
+    list.insertBefore(row, list.firstChild);
+    var ta=byId('mnBulkArea'); if(ta) ta.focus();
+    byId('mnBulkOk').addEventListener('click', function(){ var v=ta?ta.value:''; if(v.trim() && bridge) send({cmd:'bulkAddNames', data:v}); else renderNames(); });
+  });
   var mnAdd=byId('mnAdd'); if(mnAdd) mnAdd.addEventListener('click', function(){
     var list=byId('mnList'); if(!list) return;
     if(byId('mnAddInput')){ byId('mnAddInput').focus(); return; }

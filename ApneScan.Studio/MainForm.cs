@@ -348,6 +348,24 @@ public class MainForm : Form
             case "clearNames":
                 ClearNames();
                 break;
+            case "renameName":
+                RenameName(filePath, name);
+                break;
+            case "toggleNameFav":
+                ToggleNameFav(name);
+                break;
+            case "reorderNames":
+                ReorderNames(data);
+                break;
+            case "bulkAddNames":
+                BulkAddNames(data);
+                break;
+            case "exportNames":
+                ExportNames();
+                break;
+            case "importNames":
+                ImportNames();
+                break;
             case "startPhone":
                 StartPhoneServer();
                 break;
@@ -1438,53 +1456,179 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ApneScan", "names.json");
 
-    private static List<string> LoadNames()
+    private sealed class NameEntry
+    {
+        public string Name { get; set; } = "";
+        public int Count { get; set; }
+        public bool Fav { get; set; }
+    }
+
+    // Loads names, transparently upgrading the old "array of strings" format.
+    private static List<NameEntry> LoadNameEntries()
     {
         try
         {
             if (File.Exists(NamesFile))
             {
-                return JsonSerializer.Deserialize<List<string>>(File.ReadAllText(NamesFile)) ?? new();
+                using var doc = JsonDocument.Parse(File.ReadAllText(NamesFile));
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    var list = new List<NameEntry>();
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        if (el.ValueKind == JsonValueKind.String)
+                        {
+                            var s = el.GetString();
+                            if (!string.IsNullOrWhiteSpace(s)) list.Add(new NameEntry { Name = s! });
+                        }
+                        else if (el.ValueKind == JsonValueKind.Object)
+                        {
+                            var n = el.TryGetProperty("Name", out var nm) ? nm.GetString() : null;
+                            if (string.IsNullOrWhiteSpace(n)) continue;
+                            int c = el.TryGetProperty("Count", out var cc) && cc.ValueKind == JsonValueKind.Number ? cc.GetInt32() : 0;
+                            bool f = el.TryGetProperty("Fav", out var ff) && ff.ValueKind == JsonValueKind.True;
+                            list.Add(new NameEntry { Name = n!, Count = c, Fav = f });
+                        }
+                    }
+                    return list;
+                }
             }
         }
         catch { /* non-fatal */ }
         return new();
     }
 
-    private void StoreNames(List<string> list)
+    private void StoreEntries(List<NameEntry> list)
     {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(NamesFile)!);
         File.WriteAllText(NamesFile, JsonSerializer.Serialize(list));
     }
 
-    private void SendNames() => Post(new { type = "names", items = LoadNames() });
+    // Plain name strings (for the rename autocomplete and OCR matching).
+    private static List<string> LoadNames() => LoadNameEntries().Select(e => e.Name).ToList();
+
+    private void SendNames() => Post(new
+    {
+        type = "names",
+        items = LoadNameEntries().Select(e => new { name = e.Name, count = e.Count, fav = e.Fav }).ToArray()
+    });
 
     private void AddName(string n)
     {
         n = (n ?? "").Trim();
         if (n.Length == 0) return;
-        var l = LoadNames();
-        if (!l.Any(x => string.Equals(x, n, StringComparison.OrdinalIgnoreCase)))
+        var l = LoadNameEntries();
+        if (!l.Any(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase)))
         {
-            l.Insert(0, n);
-            if (l.Count > 300) l = l.GetRange(0, 300);
-            StoreNames(l);
+            l.Insert(0, new NameEntry { Name = n });
+            if (l.Count > 400) l = l.GetRange(0, 400);
+            StoreEntries(l);
         }
         SendNames();
     }
 
     private void RemoveName(string n)
     {
-        var l = LoadNames();
-        l.RemoveAll(x => string.Equals(x, n, StringComparison.OrdinalIgnoreCase));
-        StoreNames(l);
+        var l = LoadNameEntries();
+        l.RemoveAll(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase));
+        StoreEntries(l);
         SendNames();
     }
 
     private void ClearNames()
     {
-        StoreNames(new());
+        StoreEntries(new());
         SendNames();
+    }
+
+    private void RenameName(string oldName, string newName)
+    {
+        newName = (newName ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(oldName) || newName.Length == 0) { SendNames(); return; }
+        var l = LoadNameEntries();
+        var e = l.FirstOrDefault(x => string.Equals(x.Name, oldName, StringComparison.OrdinalIgnoreCase));
+        if (e != null && !l.Any(x => string.Equals(x.Name, newName, StringComparison.OrdinalIgnoreCase)))
+        {
+            e.Name = newName;
+            StoreEntries(l);
+        }
+        SendNames();
+    }
+
+    private void ToggleNameFav(string n)
+    {
+        var l = LoadNameEntries();
+        var e = l.FirstOrDefault(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase));
+        if (e != null) { e.Fav = !e.Fav; StoreEntries(l); }
+        SendNames();
+    }
+
+    private void BumpName(string n)
+    {
+        n = (n ?? "").Trim();
+        if (n.Length == 0) return;
+        var l = LoadNameEntries();
+        var e = l.FirstOrDefault(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase));
+        if (e != null) { e.Count++; StoreEntries(l); SendNames(); }
+    }
+
+    private void ReorderNames(string json)
+    {
+        try
+        {
+            var order = JsonSerializer.Deserialize<List<string>>(json) ?? new();
+            var l = LoadNameEntries();
+            var result = new List<NameEntry>();
+            foreach (var name in order)
+            {
+                var e = l.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (e != null && !result.Contains(e)) result.Add(e);
+            }
+            foreach (var e in l) if (!result.Contains(e)) result.Add(e);
+            StoreEntries(result);
+        }
+        catch { /* non-fatal */ }
+        SendNames();
+    }
+
+    private void BulkAddNames(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) { SendNames(); return; }
+        var l = LoadNameEntries();
+        foreach (var raw in text.Replace("\r", "").Split('\n'))
+        {
+            var n = raw.Trim();
+            if (n.Length == 0) continue;
+            if (!l.Any(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase)))
+                l.Insert(0, new NameEntry { Name = n });
+        }
+        if (l.Count > 400) l = l.GetRange(0, 400);
+        StoreEntries(l);
+        SendNames();
+    }
+
+    private void ExportNames()
+    {
+        try
+        {
+            using var sfd = new SaveFileDialog { Filter = "Text file (*.txt)|*.txt", FileName = "apnescan-names.txt" };
+            if (sfd.ShowDialog(this) != DialogResult.OK) return;
+            File.WriteAllLines(sfd.FileName, LoadNameEntries().Select(e => e.Name));
+            Status("Names exported: " + sfd.FileName);
+        }
+        catch (Exception ex) { Status("Export error: " + ex.Message); }
+    }
+
+    private void ImportNames()
+    {
+        try
+        {
+            using var ofd = new OpenFileDialog { Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*" };
+            if (ofd.ShowDialog(this) != DialogResult.OK) return;
+            BulkAddNames(File.ReadAllText(ofd.FileName));
+            Status("Names imported");
+        }
+        catch (Exception ex) { Status("Import error: " + ex.Message); }
     }
 
     private void RenamePage(int index, string name, bool remember)
@@ -1494,7 +1638,11 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         name = (name ?? "").Trim();
         _pageNames[index] = name;
         Post(new { type = "pageName", index, name });
-        if (remember && name.Length > 0) AddName(name);
+        if (name.Length > 0)
+        {
+            if (remember) AddName(name);
+            BumpName(name); // track usage of known names
+        }
         Status(name.Length > 0 ? $"Page {index + 1} named “{name}”" : $"Page {index + 1} name cleared");
     }
 
