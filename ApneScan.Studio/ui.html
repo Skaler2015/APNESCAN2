@@ -402,8 +402,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           </div>
           <div class="h3" id="scannedHead" style="display:none;align-items:center;gap:8px">Scanned Pages <span class="badge num" id="scannedCount">0</span></div>
           <div class="grid-pages" id="scannedGrid" style="display:none"></div>
-          <div class="h3">Quick Actions</div>
-          <div class="grid-q">
+          <div class="h3" id="qaHead">Quick Actions</div>
+          <div class="grid-q" id="qaGrid">
             <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
             <div class="qc" id="qcPhone"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
             <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
@@ -411,7 +411,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="qc" id="qcHistory"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
             <div class="qc" id="qcTools"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>save · print · share</small></div>
           </div>
-          <div class="h3">Recent Files</div>
+          <div class="h3" id="rfHead">Recent Files</div>
           <div class="grid-r" id="recentFiles"></div>
         </div>
 
@@ -763,11 +763,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function renderScanned(thumbs, selected){
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
-    // When scanned pages are shown below, hide the big Scan card/hint above.
+    // When scanned pages are shown, show ONLY them — hide the Scan card, hint,
+    // Quick Actions and Recent Files. They return after Clear.
     var has=!!(thumbs&&thumbs.length);
-    var card=byId('scanCard'), hint=byId('scanHint');
-    if(card) card.style.display=has?'none':'';
-    if(hint) hint.style.display=has?'none':'';
+    ['scanCard','scanHint','qaHead','qaGrid','rfHead','recentFiles'].forEach(function(id){
+      var el=byId(id); if(el) el.style.display=has?'none':'';
+    });
     grid.innerHTML='';
     if(!has){
       if(head) head.style.display='none';
