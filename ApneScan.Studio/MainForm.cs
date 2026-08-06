@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using NAPS2.Images;
 using NAPS2.Images.Gdi;
 using NAPS2.Pdf;
 using NAPS2.Scan;
