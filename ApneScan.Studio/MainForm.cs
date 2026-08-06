@@ -39,6 +39,9 @@ public class MainForm : Form
     private bool _ocr;
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
+    // Auto-detected document name per page (from OCR of the page's top area).
+    private readonly List<string> _pageNames = new();
+    private bool _naming;
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
 
@@ -68,8 +71,10 @@ public class MainForm : Form
         foreach (var p in _pages) p.Dispose();
         _pages.Clear();
         _pages.AddRange(snap);
+        _pageNames.Clear();
         _selected = _pages.Count - 1;
         await RefreshAsync(false);
+        _ = AutoNameAsync();
         Status("Undone");
     }
 
@@ -341,6 +346,7 @@ public class MainForm : Form
         var pg = _pages[idx];
         _pages.RemoveAt(idx);
         pg.Dispose();
+        if (idx < _pageNames.Count) _pageNames.RemoveAt(idx);
         if (_selected >= _pages.Count)
         {
             _selected = _pages.Count - 1;
@@ -527,6 +533,7 @@ public class MainForm : Form
             }
 
             await RefreshAsync(true);
+            _ = AutoNameAsync();
             Bump("scan", added);
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
         }
@@ -547,10 +554,11 @@ public class MainForm : Form
             Status("Nothing to save — scan a page first");
             return;
         }
+        var suggested = _pageNames.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
         using var sfd = new SaveFileDialog
         {
             Filter = "PDF document (*.pdf)|*.pdf",
-            FileName = "scan.pdf"
+            FileName = (string.IsNullOrWhiteSpace(suggested) ? "scan" : SanitizeFileName(suggested)) + ".pdf"
         };
         if (sfd.ShowDialog(this) != DialogResult.OK)
         {
@@ -687,6 +695,7 @@ public class MainForm : Form
             if (added > 0)
             {
                 await RefreshAsync(true);
+                _ = AutoNameAsync();
                 Bump("camera", 1);
                 Status($"Photo added — {_pages.Count} page(s)");
             }
@@ -733,6 +742,7 @@ public class MainForm : Form
                 return;
             }
             await RefreshAsync(true);
+            _ = AutoNameAsync();
             Bump("import", added);
             Status($"Imported {added} page(s) — {_pages.Count} total");
         }
@@ -858,6 +868,7 @@ public class MainForm : Form
             if (added > 0)
             {
                 await RefreshAsync(true);
+                _ = AutoNameAsync();
                 Bump("camera", added);
                 Status($"Photo received from phone — {_pages.Count} page(s)");
                 Post(new { type = "phonePhoto", pages = _pages.Count });
@@ -945,6 +956,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             p.Dispose();
         }
         _pages.Clear();
+        _pageNames.Clear();
         Post(new { type = "cleared" });
         Status("Cleared. Ready to scan.");
     }
@@ -981,9 +993,83 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 thumbs.Add("data:image/png;base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(tmp)));
                 try { File.Delete(tmp); } catch { /* best-effort */ }
             }
-            Post(new { type = "pages", thumbs, selected = Sel(), count = _pages.Count });
+            SyncNames();
+            Post(new { type = "pages", thumbs, selected = Sel(), count = _pages.Count, names = _pageNames.ToArray() });
         }
         catch { /* thumbnails best-effort */ }
+    }
+
+    // Keep the per-page name list the same length as the page list.
+    private void SyncNames()
+    {
+        while (_pageNames.Count < _pages.Count) _pageNames.Add("");
+        while (_pageNames.Count > _pages.Count) _pageNames.RemoveAt(_pageNames.Count - 1);
+    }
+
+    // Read the top of each page with OCR and use the first strong line as the
+    // document's name. Runs in the background; names stream back one by one.
+    private async Task AutoNameAsync()
+    {
+        if (_ctx.OcrEngine == null || _naming) return;
+        _naming = true;
+        try
+        {
+            SyncNames();
+            for (int i = 0; i < _pages.Count; i++)
+            {
+                if (i < _pageNames.Count && !string.IsNullOrEmpty(_pageNames[i])) continue;
+                string name = "";
+                try { name = await DetectNameAsync(_pages[i]); } catch { /* per-page best-effort */ }
+                if (i < _pageNames.Count) _pageNames[i] = name;
+                Post(new { type = "pageName", index = i, name });
+            }
+        }
+        finally { _naming = false; }
+    }
+
+    private async Task<string> DetectNameAsync(ProcessedImage page)
+    {
+        int w, h;
+        using (var r = page.Render()) { w = r.Width; h = r.Height; }
+        // Keep only the top ~38% (where a title/letterhead usually is) — faster
+        // and more accurate than OCR-ing the whole page.
+        var top = page.WithTransform(
+            new CropTransform(0, 0, 0, (int) (h * 0.62), w, h), disposeSelf: false);
+        try
+        {
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "apnescan_name_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            top.Save(tmp);
+            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            try { File.Delete(tmp); } catch { /* best-effort */ }
+            return CleanName(result);
+        }
+        finally { top.Dispose(); }
+    }
+
+    private static string CleanName(OcrResult? result)
+    {
+        if (result == null) return "";
+        foreach (var line in result.Lines)
+        {
+            var t = System.Text.RegularExpressions.Regex.Replace((line.Text ?? "").Trim(), @"\s+", " ");
+            if (t.Count(char.IsLetter) >= 3 && t.Length >= 4)
+            {
+                if (t.Length > 42) t = t[..42].Trim();
+                return t;
+            }
+        }
+        return "";
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        foreach (var c in System.IO.Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, ' ');
+        }
+        name = System.Text.RegularExpressions.Regex.Replace(name, @"\s+", " ").Trim();
+        return name.Length == 0 ? "scan" : name;
     }
 
     private async Task RefreshAsync(bool selectLast)
@@ -1009,6 +1095,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             return;
         }
         (_pages[i], _pages[j]) = (_pages[j], _pages[i]);
+        SyncNames();
+        if (i < _pageNames.Count && j < _pageNames.Count) (_pageNames[i], _pageNames[j]) = (_pageNames[j], _pageNames[i]);
         _selected = j;
         await RefreshAsync(false);
         Status($"Moved to position {j + 1}");
@@ -1284,10 +1372,12 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         bool png = string.Equals(format, "png", StringComparison.OrdinalIgnoreCase);
         var ext = png ? "png" : "jpg";
         var fmt = png ? ImageFileFormat.Png : ImageFileFormat.Jpeg;
+        var baseSuggested = _pageNames.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+        var stem = string.IsNullOrWhiteSpace(baseSuggested) ? "scan" : SanitizeFileName(baseSuggested);
         using var sfd = new SaveFileDialog
         {
             Filter = png ? "PNG image (*.png)|*.png" : "JPEG image (*.jpg)|*.jpg",
-            FileName = _pages.Count > 1 ? $"scan_1.{ext}" : $"scan.{ext}"
+            FileName = _pages.Count > 1 ? $"{stem}_1.{ext}" : $"{stem}.{ext}"
         };
         if (sfd.ShowDialog(this) != DialogResult.OK)
         {
