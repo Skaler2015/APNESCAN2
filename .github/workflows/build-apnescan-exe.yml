@@ -38,10 +38,12 @@ jobs:
           /p:DebugType=None
           /p:DebugSymbols=false
 
-      - name: Rename to ApneScan-Setup.exe and show result
+      - name: Rename output to ApneScan.exe and show result
         shell: bash
         run: |
-          cp publish/ApneScan/ApneScan.exe ApneScan.exe
+          # The project's AssemblyName is still "NAPS2", so the published
+          # single-file exe is NAPS2.exe. Ship it under the ApneScan name.
+          cp publish/ApneScan/NAPS2.exe ApneScan.exe
           echo "Single-file exe:"
           ls -lh ApneScan.exe
 
