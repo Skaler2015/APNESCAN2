@@ -243,6 +243,12 @@ public class MainForm : Form
             case "import":
                 await ImportFilesAsync();
                 break;
+            case "importPath":
+                await ImportPathAsync(filePath);
+                break;
+            case "importDropped":
+                await ImportDroppedAsync(dataUrl, name);
+                break;
             case "addPhoto":
                 await AddPhotoAsync(dataUrl);
                 break;
@@ -1012,6 +1018,67 @@ public class MainForm : Form
             _ = AutoNameAsync();
             Bump("import", added);
             Status($"Imported {added} page(s) — {_pages.Count} total");
+        }
+        catch (Exception ex)
+        {
+            Status("Import error: " + ex.Message);
+        }
+    }
+
+    // Import a single file by path (used by drag-and-drop from the sidebar).
+    private async Task ImportPathAsync(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            Status("File not found");
+            return;
+        }
+        try
+        {
+            Status("Importing…");
+            PushUndo();
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            var importer = ext == ".pdf"
+                ? new PdfImporter(_ctx).Import(path)
+                : new ImageImporter(_ctx).Import(path);
+            int added = 0;
+            await foreach (var img in importer)
+            {
+                _pages.Add(img);
+                added++;
+            }
+            if (added == 0)
+            {
+                Status("Nothing was imported");
+                return;
+            }
+            await RefreshAsync(true);
+            _ = AutoNameAsync();
+            Bump("import", added);
+            Status($"Imported {added} page(s) — {_pages.Count} total");
+        }
+        catch (Exception ex)
+        {
+            Status("Import error: " + ex.Message);
+        }
+    }
+
+    // Import a file dropped from Windows Explorer (sent as a data URL).
+    private async Task ImportDroppedAsync(string dataUrl, string name)
+    {
+        if (string.IsNullOrEmpty(dataUrl)) return;
+        try
+        {
+            var comma = dataUrl.IndexOf(',');
+            var b64 = comma >= 0 ? dataUrl[(comma + 1)..] : dataUrl;
+            var bytes = Convert.FromBase64String(b64);
+            var ext = System.IO.Path.GetExtension(name ?? "");
+            if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+            var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "apnescan_drop_" + Guid.NewGuid().ToString("N")[..8] + ext);
+            await File.WriteAllBytesAsync(temp, bytes);
+            await ImportPathAsync(temp);
+            try { File.Delete(temp); } catch { /* best-effort */ }
         }
         catch (Exception ex)
         {

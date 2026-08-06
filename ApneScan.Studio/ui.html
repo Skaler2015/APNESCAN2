@@ -123,6 +123,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .dp-act:hover{background:#eceef5}
 .dp-act.primary{background:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(109,40,217,.3)}
 .dp-tip{font-size:10px;color:var(--muted-2);text-align:center;padding:6px 12px 10px}
+#dropHint{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(109,40,217,.12);pointer-events:none}
+#dropHint.on{display:grid}
+#dropHint .box{background:var(--panel);border:2.5px dashed var(--accent);border-radius:16px;padding:26px 44px;font-size:16px;font-weight:800;color:var(--accent-ink);box-shadow:0 16px 44px rgba(20,20,50,.25)}
+.docs-row[draggable="true"]{cursor:grab}
 .sfoot{border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
 .mini{border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .mini .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 9px;background:#fafbff;border-bottom:1px solid var(--border-2);font-size:10.5px}
@@ -733,6 +737,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     </div>
   </div>
 </div>
+
+<!-- Drag-and-drop import hint overlay -->
+<div id="dropHint"><div class="box">&#11015; Drop files here to import</div></div>
 
 <!-- Open-folder popup: browse and pick a folder to open in the sidebar -->
 <div class="cam-overlay" id="docsPopup">
@@ -1365,6 +1372,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         '<div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>'+
         '<span class="fav'+(en.fav?' on':'')+'" title="Favorite">&#9733;</span>';
       r.querySelector('.fav').addEventListener('click', function(ev){ ev.stopPropagation(); en.fav=!en.fav; renderDocsList(); if(bridge) send({cmd:'toggleFav', path:en.path}); });
+      if(!en.dir){ r.draggable=true; r.addEventListener('dragstart', function(ev){ try{ ev.dataTransfer.setData('text/apnescan-path', en.path); ev.dataTransfer.effectAllowed='copy'; }catch(_){} }); }
       r.addEventListener('click', function(){ if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); renderDocsList(); } });
       r.addEventListener('dblclick', function(){ if(!bridge) return; if(en.dir) send({cmd:'listFolder', path:en.path}); else send({cmd:'openFile', path:en.path}); });
       list.appendChild(r);
@@ -1449,6 +1457,23 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var p=byId('docsPanel'); if(p) p.classList.add('on');
     if(bridge) send({cmd:'listFolder', path:target});
     overlay('docsPopup', false);
+  });
+
+  // ---- Drag & drop import (from the sidebar file list or Windows Explorer) ----
+  function dtHasImport(e){ var dt=e.dataTransfer; if(!dt||!dt.types) return false; for(var i=0;i<dt.types.length;i++){ if(dt.types[i]==='Files'||dt.types[i]==='text/apnescan-path') return true; } return false; }
+  var dragDepth=0;
+  function showDrop(on){ var d=byId('dropHint'); if(d) d.classList.toggle('on', on); }
+  document.addEventListener('dragenter', function(e){ if(!dtHasImport(e)) return; e.preventDefault(); dragDepth++; showDrop(true); });
+  document.addEventListener('dragover', function(e){ if(!dtHasImport(e)) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='copy'; }catch(_){} });
+  document.addEventListener('dragleave', function(e){ if(!dtHasImport(e)) return; dragDepth--; if(dragDepth<=0){ dragDepth=0; showDrop(false); } });
+  document.addEventListener('drop', function(e){
+    if(!dtHasImport(e)) return; e.preventDefault(); dragDepth=0; showDrop(false);
+    var dt=e.dataTransfer;
+    var p=''; try{ p=dt.getData('text/apnescan-path'); }catch(_){}
+    if(p){ setStatus('Importing…'); if(bridge) send({cmd:'importPath', path:p}); return; }
+    var files=dt.files; if(!files||!files.length) return;
+    setStatus('Importing '+files.length+' file(s)…');
+    for(var i=0;i<files.length;i++){ (function(file){ var fr=new FileReader(); fr.onload=function(){ if(bridge) send({cmd:'importDropped', dataUrl:fr.result, name:file.name}); }; fr.onerror=function(){ setStatus('Could not read '+file.name); }; fr.readAsDataURL(file); })(files[i]); }
   });
   // Favorites pinned in the sidebar (whatever you ★ in My Documents shows here)
   function renderFavs(items){
