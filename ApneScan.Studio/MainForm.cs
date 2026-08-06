@@ -330,6 +330,9 @@ public class MainForm : Form
             case "savePdfHere":
                 await SavePdfHereAsync(filePath);
                 break;
+            case "savePagesToFolder":
+                await SavePagesToFolderAsync(filePath, indices);
+                break;
             case "renamePage":
                 RenamePage(index, name, on);
                 break;
@@ -2215,6 +2218,71 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         catch { /* best-effort */ }
     }
 
+    // Save dragged scanned pages into a folder as PDF(s), grouped by their
+    // (auto-detected/renamed) name — same name → one PDF, different names →
+    // separate PDFs, all in one drop.
+    private async Task SavePagesToFolderAsync(string folder, List<int> indices)
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to save — scan a page first");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            Status("Folder not found");
+            return;
+        }
+        var idx = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+        if (idx.Count == 0)
+        {
+            int s = Sel();
+            if (s >= 0) idx.Add(s);
+        }
+        if (idx.Count == 0)
+        {
+            Status("No pages to save");
+            return;
+        }
+
+        SyncNames();
+        // Group the chosen pages by name, preserving first-seen order.
+        var order = new List<string>();
+        var map = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var i in idx)
+        {
+            var nm = (i < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[i])) ? _pageNames[i] : "scan";
+            if (!map.TryGetValue(nm, out var lst)) { lst = new List<int>(); map[nm] = lst; order.Add(nm); }
+            lst.Add(i);
+        }
+
+        try
+        {
+            var exporter = new PdfExporter(_ctx);
+            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            int made = 0;
+            foreach (var nm in order)
+            {
+                var pages = map[nm].Select(i => _pages[i]).ToList();
+                var stem = SanitizeFileName(nm);
+                var file = System.IO.Path.Combine(folder, stem + ".pdf");
+                int k = 1;
+                while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
+                Status($"Saving {stem}.pdf …");
+                await exporter.Export(file, pages, ocrParams: ocrParams);
+                AddHistory(file, pages.Count);
+                made++;
+            }
+            Bump("pdf", made);
+            SendFolder(folder);
+            Status($"Saved {made} PDF(s) to “{System.IO.Path.GetFileName(folder)}”");
+        }
+        catch (Exception ex)
+        {
+            Status("Save error: " + ex.Message);
+        }
+    }
+
     private void OpenFolder(string path)
     {
         try
@@ -2266,10 +2334,16 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(path)) return;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
             name = SanitizeFileName(name);
-            Directory.CreateDirectory(System.IO.Path.Combine(path, name));
-            SendFolder(path);
+            if (name.Length == 0) { Status("Give the folder a name"); return; }
+            var full = System.IO.Path.Combine(path, name);
+            Directory.CreateDirectory(full);
+            Post(new { type = "openDocsPanel" });
+            SendFolder(full);   // open the newly created folder
             Status("Folder created: " + name);
         }
         catch (Exception ex)

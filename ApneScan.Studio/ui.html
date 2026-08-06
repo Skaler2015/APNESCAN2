@@ -110,6 +110,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .docs-row{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;cursor:pointer;color:#3b4254;border:1px solid var(--border-2);margin-bottom:6px;background:#fff;box-shadow:0 1px 2px rgba(20,20,50,.05)}
 .docs-row:hover{border-color:#dcd6f5}
 .docs-row.sel{border-color:var(--accent);background:var(--accent-soft)}
+.docs-row.drop{border-color:var(--good);background:var(--good-soft);box-shadow:0 0 0 2px var(--good-soft)}
+.pg-card{cursor:grab}
 .docs-row .ic{width:22px;height:22px;flex:none;color:var(--muted)}
 .docs-row.dir .ic{color:#f0b400}
 .docs-row.dim .dn b{color:var(--muted)}
@@ -743,6 +745,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 <!-- Drag-and-drop import hint overlay -->
 <div id="dropHint"><div class="box">&#11015; Drop files here to import</div></div>
 
+<!-- New folder dialog (Ctrl+Shift+N) -->
+<div class="cam-overlay" id="nfOverlay">
+  <div class="cam-box" style="max-width:380px;text-align:left">
+    <h3>New folder</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Create a folder in <b id="nfWhere">Documents</b>:</p>
+    <input id="nfInput" placeholder="Folder name" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
+    <div class="cam-actions"><div class="cam-btn no" id="nfCancel">Cancel</div><div class="cam-btn primary" id="nfOk">Create</div></div>
+  </div>
+</div>
+
 <!-- Open-folder popup: browse and pick a folder to open in the sidebar -->
 <div class="cam-overlay" id="docsPopup">
   <div class="cam-box" style="max-width:560px;width:560px;text-align:left;max-height:86vh;display:flex;flex-direction:column">
@@ -973,7 +985,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(cnt) cnt.textContent=thumbs.length;
     thumbs.forEach(function(src,i){
       var c=document.createElement('div'); c.className='pg-card'+(i===selected?' sel':'');
-      var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); c.appendChild(im);
+      var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); im.draggable=false; c.appendChild(im);
+      c.draggable=true;
+      c.addEventListener('dragstart', function(ev){
+        var idxs=(selSet.length && selSet.indexOf(i)>=0) ? selSet.slice() : [i];
+        try{ ev.dataTransfer.setData('text/apnescan-pages', JSON.stringify(idxs)); ev.dataTransfer.effectAllowed='copy'; }catch(_){}
+      });
       var pn=document.createElement('div'); pn.className='pn'; pn.textContent=(i+1); c.appendChild(pn);
       var nm=document.createElement('div'); nm.id='pgname-'+i;
       var nv=(names&&names[i])?names[i]:'';
@@ -1387,6 +1404,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         '<span class="fav'+(en.fav?' on':'')+'" title="Favorite">&#9733;</span>';
       r.querySelector('.fav').addEventListener('click', function(ev){ ev.stopPropagation(); en.fav=!en.fav; renderDocsList(); if(bridge) send({cmd:'toggleFav', path:en.path}); });
       if(!en.dir && en.prev){ r.draggable=true; r.addEventListener('dragstart', function(ev){ try{ ev.dataTransfer.setData('text/apnescan-path', en.path); ev.dataTransfer.effectAllowed='copy'; }catch(_){} }); }
+      if(en.dir){
+        r.addEventListener('dragover', function(ev){ if(dtHasPages(ev)){ ev.preventDefault(); ev.dataTransfer.dropEffect='copy'; r.classList.add('drop'); } });
+        r.addEventListener('dragleave', function(){ r.classList.remove('drop'); });
+        r.addEventListener('drop', function(ev){ if(!dtHasPages(ev)) return; ev.preventDefault(); ev.stopPropagation(); r.classList.remove('drop'); var idxs=parsePages(ev); if(idxs&&idxs.length && bridge){ setStatus('Saving to '+en.name+'…'); send({cmd:'savePagesToFolder', path:en.path, indices:idxs}); } });
+      }
       r.addEventListener('click', function(){
         if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); docsSelectedFile=''; renderDocsList(); }
         else { docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(en.prev){ if(bridge) send({cmd:'previewFile', path:en.path}); } else { setStatus('Preview is only for PDF & images — double-click to open'); } }
@@ -1417,17 +1439,22 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     renderDocsList();
   }); });
   // bottom actions
-  var docsNew=byId('docsNew'); if(docsNew) docsNew.addEventListener('click', function(){
-    var list=byId('docsList'); if(!list || !docsData.path) return;
-    if(byId('newFolderInput')) { byId('newFolderInput').focus(); return; }
-    var row=document.createElement('div'); row.className='docs-row dir';
-    row.innerHTML='<svg class="ic"><use href="#i-folder"/></svg><input id="newFolderInput" placeholder="New folder name" style="flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;padding:5px 7px;font:inherit"><span class="fav on" id="newFolderOk" title="Create">&#10003;</span>';
-    list.insertBefore(row, list.firstChild);
-    var inp=byId('newFolderInput'); if(inp) inp.focus();
-    function done(){ var v=inp?inp.value.trim():''; if(v && bridge) send({cmd:'makeFolder', path:docsData.path, name:v}); }
-    byId('newFolderOk').addEventListener('click', done);
-    if(inp) inp.addEventListener('keydown', function(ev){ if(ev.key==='Enter') done(); if(ev.key==='Escape'){ ev.stopPropagation(); renderDocsList(); } });
-  });
+  function openNewFolder(){
+    var w=byId('nfWhere'); if(w) w.textContent=(docsData.name||'Documents');
+    var inp=byId('nfInput'); if(inp) inp.value='';
+    overlay('nfOverlay', true);
+    if(inp) inp.focus();
+  }
+  function submitNewFolder(){
+    var inp=byId('nfInput'); var v=inp?inp.value.trim():'';
+    if(!v){ if(inp) inp.focus(); return; }
+    if(bridge) send({cmd:'makeFolder', path:(docsData.path||''), name:v});
+    overlay('nfOverlay', false);
+  }
+  var docsNew=byId('docsNew'); if(docsNew) docsNew.addEventListener('click', openNewFolder);
+  var nfOk=byId('nfOk'); if(nfOk) nfOk.addEventListener('click', submitNewFolder);
+  var nfCancel=byId('nfCancel'); if(nfCancel) nfCancel.addEventListener('click', function(){ overlay('nfOverlay', false); });
+  var nfInput=byId('nfInput'); if(nfInput) nfInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitNewFolder(); } });
   var docsImport=byId('docsImport'); if(docsImport) docsImport.addEventListener('click', function(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); });
   var docsSaveHere=byId('docsSaveHere'); if(docsSaveHere) docsSaveHere.addEventListener('click', function(){
     var target=docsSelected||docsData.path;
@@ -1492,6 +1519,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     setStatus('Importing '+files.length+' file(s)…');
     for(var i=0;i<files.length;i++){ (function(file){ var fr=new FileReader(); fr.onload=function(){ if(bridge) send({cmd:'importDropped', dataUrl:fr.result, name:file.name}); }; fr.onerror=function(){ setStatus('Could not read '+file.name); }; fr.readAsDataURL(file); })(files[i]); }
   });
+
+  // ---- Drag scanned pages onto a folder to save them as PDF(s) ----
+  function dtHasPages(e){ var dt=e.dataTransfer; if(!dt||!dt.types) return false; for(var i=0;i<dt.types.length;i++){ if(dt.types[i]==='text/apnescan-pages') return true; } return false; }
+  function parsePages(e){ try{ return JSON.parse(e.dataTransfer.getData('text/apnescan-pages')); }catch(_){ return null; } }
+  var docsListEl=byId('docsList');
+  if(docsListEl){
+    docsListEl.addEventListener('dragover', function(ev){ if(dtHasPages(ev)){ ev.preventDefault(); try{ ev.dataTransfer.dropEffect='copy'; }catch(_){} } });
+    docsListEl.addEventListener('drop', function(ev){ if(!dtHasPages(ev)) return; ev.preventDefault(); var idxs=parsePages(ev); if(idxs&&idxs.length && bridge && docsData.path){ setStatus('Saving to '+(docsData.name||'this folder')+'…'); send({cmd:'savePagesToFolder', path:docsData.path, indices:idxs}); } });
+  }
   // Favorites pinned in the sidebar (whatever you ★ in My Documents shows here)
   function renderFavs(items){
     var box=byId('favList'); if(!box) return; box.innerHTML='';
@@ -1583,7 +1619,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
   // ---- Customizable keyboard shortcuts ----
   function anyOverlayOpen(){
-    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay'];
+    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay'];
     for(var i=0;i<ids.length;i++){ var el=byId(ids[i]); if(el && el.classList.contains('on')) return true; }
     var dp=byId('docsPanel'); if(dp && dp.classList.contains('on')) return true;
     return false;
@@ -1618,6 +1654,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'moveR', sec:'Edit page', label:'Move page right', def:'Ctrl+Right', run:function(){ send({cmd:'moveRight'}); }},
     {id:'clear', sec:'Edit page', label:'Clear all pages', def:'Ctrl+Shift+Delete', run:function(){ send({cmd:'clear'}); }},
     {id:'myDocs', sec:'Navigate', label:'My Documents', def:'Ctrl+D', run:function(){ openDocs(); }},
+    {id:'newFolder', sec:'Navigate', label:'New folder', def:'Ctrl+Shift+N', run:function(){ var p=byId('docsPanel'); if(p) p.classList.add('on'); openNewFolder(); }},
     {id:'history', sec:'Navigate', label:'Scan History', def:'Ctrl+H', run:function(){ openHist(); }},
     {id:'profiles', sec:'Navigate', label:'Profiles', def:'Ctrl+L', run:function(){ openProfiles(); }},
     {id:'settings', sec:'Navigate', label:'Settings', def:'Ctrl+Alt+S', run:function(){ openSettings(); }},
@@ -1734,7 +1771,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
