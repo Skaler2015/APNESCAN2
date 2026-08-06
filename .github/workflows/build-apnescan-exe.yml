@@ -36,9 +36,9 @@ jobs:
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "App version: $VER"
 
-      - name: Publish ApneScan (self-contained folder)
+      - name: Publish ApneScan Studio (WebView2 UI + real scan engine)
         run: >
-          dotnet publish NAPS2.App.WinForms/NAPS2.App.WinForms.csproj
+          dotnet publish ApneScan.Studio/ApneScan.Studio.csproj
           -c Release
           -r win-x64
           --self-contained true

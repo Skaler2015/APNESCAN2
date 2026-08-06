@@ -1,0 +1,407 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>ApneScan — Document Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#eef0f6; --panel:#ffffff; --sidebar:#ffffff;
+  --border:#e6e8f0; --border-2:#eef0f5;
+  --text:#1f2430; --muted:#828a9c; --muted-2:#9aa1b2;
+  --accent:#6d28d9; --accent-2:#7c3aed; --accent-soft:#efeafe; --accent-ink:#5b21b6;
+  --good:#16a34a; --good-soft:#dcfce7; --amber:#f59e0b; --blue:#2563eb;
+  --r:12px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(20,20,50,.04), 0 4px 14px rgba(30,30,60,.05);
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased;overflow:hidden}
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.num{font-variant-numeric:tabular-nums}
+.app{display:flex;flex-direction:column;height:100vh;min-height:0}
+.titlebar{height:34px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#fbfbfe;border-bottom:1px solid var(--border);flex:none}
+.titlebar .tt-ic{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#ff6a5a,#ff3d71);display:grid;place-items:center;color:#fff}
+.titlebar .tt-name{font-weight:600;font-size:12.5px}
+.body{flex:1;display:flex;min-height:0}
+.sidebar{width:236px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.brand{display:flex;gap:10px;align-items:center;padding:14px 14px 12px}
+.brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff7a5c,#f43f5e);display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 4px 10px rgba(244,63,94,.28)}
+.brand h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.2px}
+.brand .sub{font-size:10.5px;color:var(--muted);margin-top:1px}
+.brand .by{font-size:10px;color:var(--muted-2)}
+.nav{flex:1;overflow:auto;padding:4px 8px 8px}
+.sec{font-size:10px;font-weight:700;letter-spacing:.9px;color:var(--muted-2);padding:12px 10px 5px}
+.item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;color:#3b4254;cursor:pointer;position:relative;user-select:none}
+.item:hover{background:#f4f5f9}
+.item .ic{color:var(--muted)}
+.item.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.item.active .ic{color:var(--accent)}
+.item.active::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.item .star{color:var(--amber);font-size:14px;width:18px;text-align:center}
+.item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
+.item.active .badge{background:#fff;color:var(--accent-ink)}
+.sfoot{border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
+.mini{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.mini .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 9px;background:#fafbff;border-bottom:1px solid var(--border-2);font-size:10.5px}
+.mini table{width:100%;border-collapse:collapse;font-size:11px}
+.mini th{font-size:9.5px;letter-spacing:.4px;color:var(--muted-2);font-weight:600;text-align:right;padding:3px 9px}
+.mini th:first-child{text-align:left}
+.mini td{padding:3px 9px;text-align:right;color:#4a5164}
+.mini td:first-child{text-align:left;color:#3b4254;display:flex;align-items:center;gap:6px}
+.mini td .d{width:7px;height:7px;border-radius:50%}
+.mini .t{color:var(--good);font-weight:600}
+.storage{font-size:10.5px;color:var(--muted)}
+.bar{height:6px;border-radius:6px;background:#eceef5;margin-top:4px;overflow:hidden}
+.bar>i{display:block;height:100%;width:73%;background:linear-gradient(90deg,#7c3aed,#a855f7)}
+.sfoot .row{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted)}
+.workarea{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.toolbar{display:flex;align-items:center;gap:2px;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--border);flex:none}
+.tbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 9px;border-radius:10px;color:#4a5164;cursor:pointer;min-width:52px;position:relative}
+.tbtn:hover{background:#f4f5f9}
+.tbtn small{font-size:10.5px;font-weight:500}
+.tbtn.on{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(109,40,217,.32)}
+.tbtn .cap{position:absolute;top:5px;right:8px;font-size:8px;color:var(--muted-2)}
+.tbtn .gdot{position:absolute;top:5px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--good);border:1.5px solid #fff}
+.tbtn .cv{position:absolute;top:8px;right:5px;color:var(--muted-2)}
+.sep{width:1px;height:34px;background:var(--border);margin:0 5px;flex:none}
+.search{margin-left:8px;flex:1;max-width:340px;display:flex;align-items:center;gap:8px;background:#f3f4f9;border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--muted)}
+.search input{border:0;background:none;outline:none;font:inherit;color:var(--text);width:100%}
+.status-pill{margin-left:8px;display:flex;align-items:center;gap:8px;background:var(--good-soft);color:#15803d;border:1px solid #bbf7d0;border-radius:10px;padding:7px 12px;font-weight:600;font-size:12px;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.status-pill .d{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(22,163,74,.15);flex:none}
+.tr-ic{margin-left:6px;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.tr-ic:hover{background:#f4f5f9;color:var(--text)}
+.subbar{display:flex;align-items:center;gap:0;padding:9px 12px;background:#fbfbfe;border-bottom:1px solid var(--border);flex:none;overflow-x:auto}
+.field{display:flex;flex-direction:column;gap:2px;padding:0 16px;border-right:1px solid var(--border);white-space:nowrap}
+.field:first-child{padding-left:2px}
+.field .k{font-size:9.5px;letter-spacing:.6px;color:var(--muted-2);font-weight:700}
+.field .v{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+.field .v .dev{width:9px;height:9px;border-radius:50%;background:var(--good)}
+.field .v .cv{color:var(--muted-2)}
+.field .rf{width:22px;height:22px;border-radius:6px;background:#efeafe;color:var(--accent);display:grid;place-items:center;margin-left:2px;cursor:pointer}
+.scan-sm{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:9px 20px;border-radius:10px;cursor:pointer;box-shadow:0 5px 14px rgba(109,40,217,.3);white-space:nowrap}
+.toolrow{display:flex;align-items:center;gap:14px;padding:7px 14px;background:var(--panel);border-bottom:1px solid var(--border);flex:none}
+.zoom{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.slider{width:120px;height:5px;border-radius:6px;background:#e6e8f0;position:relative}
+.slider>i{position:absolute;left:26%;top:50%;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tools{display:flex;align-items:center;gap:3px}
+.tool{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.tool:hover{background:#f4f5f9;color:var(--text)}
+.tool.g{color:var(--good)}
+.pages{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--muted);font-weight:600}
+.content{flex:1;display:flex;min-height:0}
+.center{flex:1;min-width:0;overflow:auto;padding:20px 24px 26px}
+.scan-card{background:linear-gradient(180deg,#ffffff,#fdfdff);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:38px 20px 30px;text-align:center;position:relative;overflow:hidden}
+.scan-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(180deg,transparent,#f3f0ff)}
+.scan-card h2{margin:0;font-size:27px;font-weight:800;letter-spacing:-.6px}
+.scan-card p{margin:7px 0 0;color:var(--muted);font-size:13.5px}
+.scan-btn{position:relative;z-index:1;margin:22px auto 0;width:132px;height:132px;border-radius:50%;background:radial-gradient(120% 120% at 30% 25%,#8b5cf6,#6d28d9);color:#fff;display:grid;place-items:center;gap:2px;cursor:pointer;box-shadow:0 16px 34px rgba(109,40,217,.4),inset 0 2px 0 rgba(255,255,255,.25)}
+.scan-btn svg{width:34px;height:34px;stroke-width:1.6}
+.scan-btn b{font-size:15px;letter-spacing:2px;font-weight:700}
+.scan-btn::before{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(124,58,237,.28);animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.18);opacity:0}}
+.hint{text-align:center;color:var(--muted-2);font-size:11.5px;margin:14px 0 0;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.hint kbd{background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font:inherit;font-size:10.5px;color:#5b6376}
+.h3{font-size:15px;font-weight:700;margin:26px 2px 12px}
+.grid-q{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.qc{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}
+.qc:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#dcd6f5}
+.qc .qi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;margin-bottom:10px;color:#fff}
+.qc b{font-size:13px}
+.qc small{display:block;color:var(--muted);margin-top:2px;font-size:11px}
+.grid-r{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.rc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;gap:11px;align-items:center;cursor:pointer}
+.rc:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
+.rc .thumb{width:40px;height:52px;border-radius:6px;background:#fff;border:1px solid #e6e8f0;position:relative;flex:none;overflow:hidden}
+.rc .thumb::before{content:"";position:absolute;left:6px;right:6px;top:8px;height:2px;background:#dfe3ee;box-shadow:0 6px 0 #e7eaf2,0 12px 0 #eef0f5,0 18px 0 #eef0f5,0 24px 0 #f2f4f8}
+.rc .thumb.p::after{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--accent)}
+.rc b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc small{color:var(--muted);font-size:10.5px}
+.rightpanel{width:326px;flex:none;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.rp-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.rp-head b{font-size:13.5px}
+.rp-head .pg{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11.5px}
+.rp-head .pg .nav-a{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--border);color:var(--muted)}
+.tabs{display:flex;gap:6px;padding:9px 14px 0}
+.tab{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px 8px 0 0;color:var(--muted);font-weight:600;cursor:pointer;font-size:12px}
+.tab.on{background:#f5f3ff;color:var(--accent-ink)}
+.rp-view{flex:1;margin:8px 14px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(45deg,#f6f7fb 25%,transparent 25%,transparent 75%,#f6f7fb 75%),linear-gradient(45deg,#f6f7fb 25%,#fbfcff 25%,#fbfcff 75%,#f6f7fb 75%);background-size:18px 18px;background-position:0 0,9px 9px;display:grid;place-items:center;min-height:0;overflow:hidden;position:relative}
+.rp-page{width:150px;height:196px;background:#fff;border:1px solid #e3e6ef;box-shadow:0 8px 22px rgba(30,30,60,.12)}
+.rp-page i{display:block;height:3px;background:#e9ebf2;margin:16px 16px 0}
+.rp-page i:first-child{margin-top:22px;width:60%}
+#previewImg{max-width:92%;max-height:92%;box-shadow:0 8px 22px rgba(30,30,60,.16);background:#fff}
+.rp-thumbs{padding:6px 14px;display:flex;gap:8px}
+.rp-thumbs .th{width:52px;height:66px;border:2px solid var(--accent);border-radius:6px;background:#fff;position:relative;padding:6px}
+.rp-thumbs .th i{display:block;height:2px;background:#e6e8f0;margin-bottom:4px}
+.rp-thumbs .th b{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--accent);background:#fff;padding:0 4px}
+.rp-open{margin:8px 14px 14px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;box-shadow:0 6px 16px rgba(109,40,217,.3)}
+.statusbar{height:28px;flex:none;background:#fbfbfe;border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 12px;font-size:11px;color:var(--muted)}
+.statusbar .l{display:flex;align-items:center;gap:14px;overflow:hidden}
+.statusbar .chip{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.statusbar .conn{color:#15803d;font-weight:600}
+.statusbar .d{width:7px;height:7px;border-radius:50%;background:var(--good)}
+.statusbar .r{margin-left:auto;display:flex;align-items:center;gap:14px;white-space:nowrap}
+.statusbar .r .free{color:#15803d;font-weight:600}
+@media (max-width:1180px){.rightpanel{display:none}}
+@media (max-width:900px){.sidebar{display:none}}
+@media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){.scan-btn::before{animation:none}}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2"/><path d="M3 12h18"/></symbol>
+<symbol id="i-profiles" viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4"/></symbol>
+<symbol id="i-ocr" viewBox="0 0 24 24"><path d="M5 5h14M5 5v3M19 5v3M9 5v14M15 5v14M5 19h14"/></symbol>
+<symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M5 21h14"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.4"/><path d="M11 18h2"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7M8 20v-6h8v6"/></symbol>
+<symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V4h10v4"/><path d="M5 8h14a2 2 0 0 1 2 2v6h-4M5 16H3v-6a2 2 0 0 1 2-2"/><rect x="7" y="14" width="10" height="6"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="6" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8.3 10.8l7.4-3.6M8.3 13.2l7.4 3.6"/></symbol>
+<symbol id="i-editor" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></symbol>
+<symbol id="i-delete" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+<symbol id="i-clear" viewBox="0 0 24 24"><path d="M6 7h12M9 7V5h6v2M7 7l1 13h8l1-13"/><path d="M10 11l4 4M14 11l-4 4"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 16h6"/></symbol>
+<symbol id="i-files" viewBox="0 0 24 24"><path d="M4 7h5l2 2h9v9a2 2 0 0 1-2 2H4z"/></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 5v4h4"/><path d="M12 8v4l3 2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 5v14h14"/><path d="M8 15l3-4 3 3 4-6"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 6h5l2 2h9v11H4z"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.4l2-1.5-2-3.5-2.3 1a7 7 0 0 0-2.4-1.4L13.7 2h-3.4l-.5 2.2a7 7 0 0 0-2.4 1.4l-2.3-1-2 3.5 2 1.5A7 7 0 0 0 5 12c0 .5 0 .9.1 1.4l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 2.4 1.4l.5 2.2h3.4l.5-2.2a7 7 0 0 0 2.4-1.4l2.3 1 2-3.5-2-1.5c.1-.5.1-.9.1-1.4z"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4M4 5v4h4M4 13a8 8 0 0 0 14 4M20 19v-4h-4"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+<symbol id="i-wrench" viewBox="0 0 24 24"><path d="M15 6a4 4 0 0 0-5 5l-6 6 3 3 6-6a4 4 0 0 0 5-5l-2.5 2.5L13 9l1.5-3z"/></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h3v3M20 14v6M14 20h3"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <div class="titlebar">
+    <div class="tt-ic"><svg class="ic" style="width:12px;height:12px;stroke:#fff"><use href="#i-scan"/></svg></div>
+    <span class="tt-name">ApneScan <span style="color:var(--muted);font-weight:500">v286</span></span>
+  </div>
+  <div class="body">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo"><svg class="ic" style="stroke:#fff;width:20px;height:20px"><use href="#i-doc"/></svg></div>
+        <div><h1>ApneScan</h1><div class="sub">Document Studio · v286</div><div class="by">by Subhash Kaler</div></div>
+      </div>
+      <nav class="nav">
+        <div class="sec">WORKSPACE</div>
+        <div class="item active"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Dashboard</span></div>
+        <div class="item"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span><span class="badge num">998</span></div>
+        <div class="item"><svg class="ic"><use href="#i-files"/></svg><span class="lbl">Recent Files</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD and Daycare</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS IPD</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">RGHS IPD</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">Downloads</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHSCARD</span></div>
+        <div class="item"><span class="star">&#9733;</span><span class="lbl">08-2026</span></div>
+        <div class="item"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
+        <div class="item"><svg class="ic"><use href="#i-chart"/></svg><span class="lbl">Analytics</span></div>
+        <div class="item"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
+        <div class="sec">LIBRARY</div>
+        <div class="item"><svg class="ic"><use href="#i-folder"/></svg><span class="lbl">Profiles</span></div>
+        <div class="item"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">Phone to PC</span></div>
+        <div class="item"><svg class="ic"><use href="#i-wrench"/></svg><span class="lbl">Tools</span></div>
+        <div class="sec">SYSTEM</div>
+        <div class="item"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
+        <div class="item"><svg class="ic"><use href="#i-help"/></svg><span class="lbl">Help &amp; Guide</span></div>
+      </nav>
+      <div class="sfoot">
+        <div class="mini">
+          <div class="mh"><span style="color:var(--good)">&#9679;</span> <b>World</b> <span style="margin-left:auto;color:var(--muted)">Analytics</span></div>
+          <table class="num">
+            <tr><th>Activity</th><th>World</th><th>Today</th></tr>
+            <tr><td><span class="d" style="background:#6d28d9"></span>Scan</td><td>2 130</td><td class="t">133</td></tr>
+            <tr><td><span class="d" style="background:#2563eb"></span>Rename</td><td>672</td><td class="t">73</td></tr>
+            <tr><td><span class="d" style="background:#16a34a"></span>PDF Save</td><td>716</td><td class="t">71</td></tr>
+            <tr><td><span class="d" style="background:#f59e0b"></span>Import</td><td>554</td><td class="t">23</td></tr>
+            <tr><td><span class="d" style="background:#ef4444"></span>Print</td><td>114</td><td class="t">10</td></tr>
+          </table>
+        </div>
+        <div class="storage">Storage used <b class="num">174 / 237 GB</b><div class="bar"><i></i></div></div>
+        <div class="row"><span>Scanner · <b>WIA</b></span></div>
+        <div class="row"><span>ApneScan · v286</span><span style="color:var(--good);font-weight:600">100% Free</span></div>
+      </div>
+    </aside>
+
+    <main class="workarea">
+      <div class="toolbar">
+        <div class="tbtn on"><svg class="ic" style="stroke:#fff"><use href="#i-scan"/></svg><small>Scan</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-profiles"/></svg><small>Profiles</small></div>
+        <div class="tbtn"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
+        <div class="sep"></div>
+        <div class="tbtn"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
+        <div class="tbtn"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
+        <div class="tbtn"><span class="gdot"></span><svg class="ic"><use href="#i-share"/></svg><small>Share</small></div>
+        <div class="sep"></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-editor"/></svg><small>Editor</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-rotate"/></svg><small>Rotate</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-undo"/></svg><small>Undo</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-delete"/></svg><small>Delete</small></div>
+        <div class="tbtn"><svg class="ic"><use href="#i-clear"/></svg><small>Clear</small></div>
+        <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input placeholder="Search documents…  (Ctrl+K)"></div>
+        <div class="status-pill"><span class="d"></span><span id="statusText">Starting…</span></div>
+        <div class="tr-ic"><svg class="ic"><use href="#i-mail"/></svg></div>
+        <div class="tr-ic"><svg class="ic"><use href="#i-help"/></svg></div>
+        <div class="tr-ic"><svg class="ic"><use href="#i-info"/></svg></div>
+      </div>
+
+      <div class="subbar">
+        <div class="field">
+          <span class="k">CONNECTED SCANNER</span>
+          <span class="v"><span class="dev"></span><span id="deviceName">Detecting…</span> <span class="rf" id="refreshBtn"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg></span></span>
+        </div>
+        <div class="field"><span class="k">RESOLUTION</span><span class="v">200 dpi <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field"><span class="k">COLOR</span><span class="v">24-bit Color <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field"><span class="k">PAPER</span><span class="v">Auto <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="field"><span class="k">PAPER SOURCE</span><span class="v">Auto <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
+        <div class="scan-sm" id="scanSm">&#9654; Scan</div>
+      </div>
+
+      <div class="toolrow">
+        <div class="zoom"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><div class="slider"><i></i></div></div>
+        <div class="tools">
+          <div class="tool"><svg class="ic"><use href="#i-list"/></svg></div>
+          <div class="tool"><svg class="ic"><use href="#i-crop"/></svg></div>
+          <div class="tool"><svg class="ic"><use href="#i-rotate"/></svg></div>
+          <div class="tool"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
+          <div class="tool"><svg class="ic"><use href="#i-print"/></svg></div>
+          <div class="tool g"><svg class="ic"><use href="#i-check"/></svg></div>
+          <div class="tool"><svg class="ic"><use href="#i-wrench"/></svg></div>
+        </div>
+        <div class="pages"><svg class="ic" style="width:15px;height:15px"><use href="#i-doc"/></svg><span id="pageCount">1 pages</span></div>
+      </div>
+
+      <div class="content">
+        <div class="center">
+          <div class="scan-card">
+            <h2 id="scanTitle">Ready to Scan</h2>
+            <p id="scanSub">Place your document in the feeder and press Scan</p>
+            <div class="scan-btn" id="scanBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-scan"/></svg>
+              <b>SCAN</b>
+            </div>
+          </div>
+          <div class="hint">
+            <span>Press <kbd>Enter</kbd> to scan</span>
+            <span><kbd>F3</kbd>–<kbd>F6</kbd> quick DPI</span>
+            <span><kbd>Ctrl</kbd>+<kbd>P</kbd> print</span>
+          </div>
+          <div class="h3">Quick Actions</div>
+          <div class="grid-q">
+            <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
+            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
+            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
+            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
+            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
+            <div class="qc"><div class="qi" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg class="ic" style="stroke:#fff"><use href="#i-wrench"/></svg></div><b>Tools</b><small>merge · split…</small></div>
+          </div>
+          <div class="h3">Recent Files</div>
+          <div class="grid-r">
+            <div class="rc"><div class="thumb p"></div><div><b>OPD.pdf</b><small>05-Aug · 364 KB</small></div></div>
+            <div class="rc"><div class="thumb"></div><div><b>Bills.pdf</b><small>05-Aug · 186 KB</small></div></div>
+            <div class="rc"><div class="thumb p"></div><div><b>Diagnosis.pdf</b><small>05-Aug · 349 KB</small></div></div>
+            <div class="rc"><div class="thumb"></div><div><b>Lab_Reports.pdf</b><small>05-Aug · 1.8 MB</small></div></div>
+          </div>
+        </div>
+
+        <aside class="rightpanel">
+          <div class="rp-head">
+            <b>Document Preview</b>
+            <div class="pg"><span class="num" id="pageCount2">Page 1 / 1</span></div>
+          </div>
+          <div class="tabs">
+            <div class="tab on"><svg class="ic" style="width:14px;height:14px"><use href="#i-grid"/></svg>Preview</div>
+            <div class="tab"><svg class="ic" style="width:14px;height:14px"><use href="#i-ocr"/></svg>Text</div>
+          </div>
+          <div class="rp-view">
+            <div class="rp-page" id="previewPage"><i></i><i></i><i></i><i></i></div>
+            <img id="previewImg" alt="Scanned preview">
+          </div>
+          <div class="rp-thumbs"><div class="th"><i></i><i></i><i style="width:70%"></i><b>1</b></div></div>
+          <div class="rp-open"><svg class="ic" style="width:16px;height:16px;stroke:#fff"><use href="#i-editor"/></svg>Open in Editor</div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="statusbar">
+    <div class="l">
+      <span class="chip conn"><span class="d"></span><span id="connText">Ready</span></span>
+      <span class="chip">ApneScan Document Studio</span>
+    </div>
+    <div class="r">
+      <span class="chip">v286</span>
+      <span class="chip free"><span class="d"></span>Scanner ready</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
+  var devices = [];
+  function send(o){ if(bridge){ bridge.postMessage(JSON.stringify(o)); } }
+  function byId(id){ return document.getElementById(id); }
+  function setStatus(t){ var e=byId('statusText'); if(e) e.textContent=t; var c=byId('connText'); if(c) c.textContent=t; }
+  function setDevice(n){ var e=byId('deviceName'); if(e) e.textContent=n; }
+  function showPreview(url, pages){
+    var img=byId('previewImg'), ph=byId('previewPage');
+    if(img){ img.src=url; img.style.display='block'; }
+    if(ph){ ph.style.display='none'; }
+    var p1=byId('pageCount'); if(p1) p1.textContent=pages+' pages';
+    var p2=byId('pageCount2'); if(p2) p2.textContent='Page 1 / '+pages;
+    var t=byId('scanTitle'); if(t) t.textContent='Scan complete';
+    var s=byId('scanSub'); if(s) s.textContent='Choose where to save your PDF';
+  }
+  if(bridge){
+    window.chrome.webview.addEventListener('message', function(ev){
+      var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
+      if(!m || !m.type) return;
+      if(m.type==='devices'){ devices=m.devices||[]; setDevice(devices.length?devices[0]:'No scanner found'); }
+      else if(m.type==='status'){ setStatus(m.text); }
+      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); }
+      else if(m.type==='done'){ setStatus('Saved'); }
+    });
+    setDevice('Detecting…'); setStatus('Starting…');
+    send({cmd:'getDevices'});
+  } else {
+    setStatus('Ready (design preview)');
+  }
+  function doScan(){
+    var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
+    var s=byId('scanSub'); if(s) s.textContent='Feeding page from your scanner';
+    setStatus('Scanning…');
+    if(bridge){ send({cmd:'scan', device:0}); }
+    else { setTimeout(function(){ if(t)t.textContent='Ready to Scan'; if(s)s.textContent='Place your document in the feeder and press Scan'; setStatus('Ready (design preview)'); }, 1600); }
+  }
+  ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
+  var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
+
+  document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
+  document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
+  document.querySelectorAll('.tabs .tab').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.tabs .tab').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
+})();
+</script>
+</body></html>
