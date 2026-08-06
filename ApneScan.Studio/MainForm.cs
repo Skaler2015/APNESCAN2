@@ -266,8 +266,26 @@ public class MainForm : Form
             case "toggleFav":
                 ToggleFav(filePath);
                 break;
+            case "getFavs":
+                SendFavs();
+                break;
             case "savePdfHere":
                 await SavePdfHereAsync(filePath);
+                break;
+            case "renamePage":
+                RenamePage(index, name, on);
+                break;
+            case "getNames":
+                SendNames();
+                break;
+            case "addName":
+                AddName(name);
+                break;
+            case "removeName":
+                RemoveName(name);
+                break;
+            case "clearNames":
+                ClearNames();
                 break;
             case "startPhone":
                 StartPhoneServer();
@@ -1024,11 +1042,19 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         try
         {
             SyncNames();
+            var suggestions = LoadNames();
             for (int i = 0; i < _pages.Count; i++)
             {
                 if (i < _pageNames.Count && !string.IsNullOrEmpty(_pageNames[i])) continue;
                 string name = "";
-                try { name = await DetectNameAsync(_pages[i]); } catch { /* per-page best-effort */ }
+                try
+                {
+                    var text = await OcrTopTextAsync(_pages[i]);
+                    // A remembered name that appears in the page wins (clean label);
+                    // otherwise fall back to the first strong line of text.
+                    name = MatchName(text, suggestions) ?? FirstStrongLine(text);
+                }
+                catch { /* per-page best-effort */ }
                 if (i < _pageNames.Count) _pageNames[i] = name;
                 Post(new { type = "pageName", index = i, name });
             }
@@ -1036,12 +1062,11 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         finally { _naming = false; }
     }
 
-    private async Task<string> DetectNameAsync(ProcessedImage page)
+    private async Task<string> OcrTopTextAsync(ProcessedImage page)
     {
         int w, h;
         using (var r = page.Render()) { w = r.Width; h = r.Height; }
-        // Keep only the top ~38% (where a title/letterhead usually is) — faster
-        // and more accurate than OCR-ing the whole page.
+        // OCR only the top ~38% (letterhead/title area) — faster and cleaner.
         var top = page.WithTransform(
             new CropTransform(0, 0, 0, (int) (h * 0.62), w, h), disposeSelf: false);
         try
@@ -1051,17 +1076,31 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             top.Save(tmp);
             var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
             try { File.Delete(tmp); } catch { /* best-effort */ }
-            return CleanName(result);
+            return result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
         }
         finally { top.Dispose(); }
     }
 
-    private static string CleanName(OcrResult? result)
+    private static string Norm(string s) =>
+        System.Text.RegularExpressions.Regex.Replace((s ?? "").ToLowerInvariant(), "[^a-z0-9]+", " ").Trim();
+
+    private static string? MatchName(string text, List<string> names)
     {
-        if (result == null) return "";
-        foreach (var line in result.Lines)
+        var nt = Norm(text);
+        if (nt.Length == 0) return null;
+        foreach (var n in names)
         {
-            var t = System.Text.RegularExpressions.Regex.Replace((line.Text ?? "").Trim(), @"\s+", " ");
+            var nn = Norm(n);
+            if (nn.Length >= 3 && nt.Contains(nn)) return n;
+        }
+        return null;
+    }
+
+    private static string FirstStrongLine(string text)
+    {
+        foreach (var raw in (text ?? "").Split('\n'))
+        {
+            var t = System.Text.RegularExpressions.Regex.Replace(raw.Trim(), @"\s+", " ");
             if (t.Count(char.IsLetter) >= 3 && t.Length >= 4)
             {
                 if (t.Length > 42) t = t[..42].Trim();
@@ -1069,6 +1108,72 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             }
         }
         return "";
+    }
+
+    // ---- Remembered / suggested names ---------------------------------------
+
+    private static string NamesFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "names.json");
+
+    private static List<string> LoadNames()
+    {
+        try
+        {
+            if (File.Exists(NamesFile))
+            {
+                return JsonSerializer.Deserialize<List<string>>(File.ReadAllText(NamesFile)) ?? new();
+            }
+        }
+        catch { /* non-fatal */ }
+        return new();
+    }
+
+    private void StoreNames(List<string> list)
+    {
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(NamesFile)!);
+        File.WriteAllText(NamesFile, JsonSerializer.Serialize(list));
+    }
+
+    private void SendNames() => Post(new { type = "names", items = LoadNames() });
+
+    private void AddName(string n)
+    {
+        n = (n ?? "").Trim();
+        if (n.Length == 0) return;
+        var l = LoadNames();
+        if (!l.Any(x => string.Equals(x, n, StringComparison.OrdinalIgnoreCase)))
+        {
+            l.Insert(0, n);
+            if (l.Count > 300) l = l.GetRange(0, 300);
+            StoreNames(l);
+        }
+        SendNames();
+    }
+
+    private void RemoveName(string n)
+    {
+        var l = LoadNames();
+        l.RemoveAll(x => string.Equals(x, n, StringComparison.OrdinalIgnoreCase));
+        StoreNames(l);
+        SendNames();
+    }
+
+    private void ClearNames()
+    {
+        StoreNames(new());
+        SendNames();
+    }
+
+    private void RenamePage(int index, string name, bool remember)
+    {
+        SyncNames();
+        if (index < 0 || index >= _pageNames.Count) return;
+        name = (name ?? "").Trim();
+        _pageNames[index] = name;
+        Post(new { type = "pageName", index, name });
+        if (remember && name.Length > 0) AddName(name);
+        Status(name.Length > 0 ? $"Page {index + 1} named “{name}”" : $"Page {index + 1} name cleared");
     }
 
     private static string SanitizeFileName(string name)
@@ -1664,6 +1769,25 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             if (!s.Add(path)) s.Remove(path);
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FavFile)!);
             File.WriteAllText(FavFile, JsonSerializer.Serialize(s.ToList()));
+            SendFavs();
+        }
+        catch { /* best-effort */ }
+    }
+
+    // The pinned favorites shown in the sidebar (folders/files the user starred).
+    private void SendFavs()
+    {
+        try
+        {
+            var items = new List<object>();
+            foreach (var p in LoadFavs())
+            {
+                bool dir = Directory.Exists(p);
+                bool file = File.Exists(p);
+                if (!dir && !file) continue;
+                items.Add(new { path = p, name = System.IO.Path.GetFileName(p.TrimEnd('\\', '/')), dir });
+            }
+            Post(new { type = "favs", items });
         }
         catch { /* best-effort */ }
     }

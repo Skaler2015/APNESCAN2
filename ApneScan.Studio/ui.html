@@ -251,6 +251,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .sc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-2);font-size:13px}
 .sc-row .sc-k{display:flex;align-items:center;gap:4px;color:var(--muted)}
 .sc-row kbd{background:#f4f5f9;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font:inherit;font-size:11px;color:#5b6376}
+.mn-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-2);border-radius:8px;margin-bottom:6px;font-size:13px}
+.mn-row .mn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+.mn-row .mn-edit{border:0;background:none;font:inherit;color:var(--text);flex:1;min-width:0;padding:2px 4px;border-bottom:1px solid var(--accent);outline:none}
+.mn-row .mn-x{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;cursor:pointer;color:#dc2626;flex:none}
+.mn-row .mn-x:hover{background:#fee2e2}
+.mn-empty{padding:14px;color:var(--muted);font-size:12px;text-align:center}
 @media (max-width:1180px){.rightpanel{display:none}}
 @media (max-width:900px){.sidebar{display:none}}
 @media (max-width:760px){.grid-q{grid-template-columns:repeat(3,1fr)}.grid-r{grid-template-columns:repeat(2,1fr)}}
@@ -311,13 +317,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         <div class="item active"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Dashboard</span></div>
         <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span></div>
         <div class="item"><svg class="ic"><use href="#i-files"/></svg><span class="lbl">Recent Files</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD and Daycare</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS IPD</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">RGHS IPD</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">Downloads</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHSCARD</span></div>
-        <div class="item"><span class="star">&#9733;</span><span class="lbl">08-2026</span></div>
+        <div id="favList"></div>
         <div class="item" id="navHistory"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
         <div class="item"><svg class="ic"><use href="#i-chart"/></svg><span class="lbl">Analytics</span></div>
         <div class="item" id="navShortcuts"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
@@ -620,6 +620,41 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<!-- Rename a scanned page -->
+<div class="cam-overlay" id="rnOverlay">
+  <div class="cam-box" style="max-width:420px;text-align:left">
+    <h3>✏️ Rename <span id="rnPageNo"></span></h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">Name for this page:</p>
+    <input id="rnInput" list="rnSuggest" placeholder="Type a name…" autocomplete="off"
+      style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
+    <datalist id="rnSuggest"></datalist>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;cursor:pointer">
+      <input type="checkbox" id="rnRemember" style="width:18px;height:18px;accent-color:var(--accent)">
+      Remember this name (suggestions + auto-naming)
+    </label>
+    <div class="cam-actions">
+      <div class="cam-btn" id="rnManage" style="margin-right:auto">Manage names</div>
+      <div class="cam-btn no" id="rnCancel">Cancel</div>
+      <div class="cam-btn primary" id="rnOk">OK</div>
+    </div>
+  </div>
+</div>
+
+<!-- Manage suggested names -->
+<div class="cam-overlay" id="mnOverlay">
+  <div class="cam-box" style="max-width:440px;text-align:left">
+    <h3>🗂️ Manage suggested names</h3>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">These names are offered when renaming and used for auto-naming. Click a name to edit, ✕ to remove.</p>
+    <div class="dp-search" style="margin:0"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search names…"></div>
+    <div id="mnList" style="max-height:44vh;overflow:auto;margin-top:10px"></div>
+    <div class="cam-actions">
+      <div class="cam-btn" id="mnAdd" style="margin-right:auto">＋ Add</div>
+      <div class="cam-btn no" id="mnClear">Clear all</div>
+      <div class="cam-btn primary" id="mnClose">Close</div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
@@ -799,9 +834,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
   }
   // Center gallery of scanned pages (fills the main area after a scan)
+  var scannedNames=[], scannedSel=-1, nameSuggestions=[];
   function renderScanned(thumbs, selected, names){
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
+    scannedNames=(names||[]).slice();
+    if(typeof selected==='number') scannedSel=selected;
     // When scanned pages are shown, show ONLY them — hide the Scan card, hint,
     // Quick Actions and Recent Files. They return after Clear.
     var has=!!(thumbs&&thumbs.length);
@@ -823,10 +861,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       var pn=document.createElement('div'); pn.className='pn'; pn.textContent=(i+1); c.appendChild(pn);
       var nm=document.createElement('div'); nm.id='pgname-'+i;
       var nv=(names&&names[i])?names[i]:'';
-      if(nv){ nm.className='pg-name'; nm.textContent=nv; nm.title=nv; }
-      else { nm.className='pg-name reading'; nm.textContent='Reading name…'; }
+      if(nv){ nm.className='pg-name'; nm.textContent=nv; nm.title=nv+'  (double-click or F2 to rename)'; }
+      else { nm.className='pg-name reading'; nm.textContent='Reading name…'; nm.title='Double-click or F2 to rename'; }
+      nm.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openRename(i); });
       c.appendChild(nm);
-      c.addEventListener('click', function(){ if(bridge) send({cmd:'select', index:i}); });
+      c.addEventListener('click', function(){ scannedSel=i; if(bridge) send({cmd:'select', index:i}); });
       grid.appendChild(c);
     });
   }
@@ -879,9 +918,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       if(!m || !m.type) return;
       if(m.type==='devices'){ applyDeviceList(m.devices); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
-      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ highlightThumb(m.index); highlightScanned(m.index); } }
+      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
       else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); }
-      else if(m.type==='pageName'){ var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv; } }
+      else if(m.type==='pageName'){ scannedNames[m.index]=m.name||''; var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv+'  (double-click or F2 to rename)'; } }
+      else if(m.type==='names'){ nameSuggestions=m.items||[]; fillNameSuggest(); if(byId('mnOverlay').classList.contains('on')) renderNames(); }
       else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; renderScanned(null); }
       else if(m.type==='done'){ setStatus('Saved'); }
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
@@ -894,6 +934,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='analytics'){ renderAnalytics(m.rows); }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ renderFolder(m); }
+      else if(m.type==='favs'){ renderFavs(m.items); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
@@ -902,6 +943,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     send({cmd:'getHistory'});
     send({cmd:'getAnalytics'});
     send({cmd:'getProfiles'});
+    send({cmd:'getNames'});
+    send({cmd:'getFavs'});
   } else {
     renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
     renderRecent([]);
@@ -1210,14 +1253,96 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var target=docsSelected||docsData.path;
     setStatus('Saving…'); if(bridge) send({cmd:'savePdfHere', path:target});
   });
+  // Favorites pinned in the sidebar (whatever you ★ in My Documents shows here)
+  function renderFavs(items){
+    var box=byId('favList'); if(!box) return; box.innerHTML='';
+    (items||[]).forEach(function(it){
+      var el=document.createElement('div'); el.className='item'; el.title=it.path||'';
+      el.innerHTML='<span class="star">&#9733;</span><span class="lbl">'+esc(it.name||it.path||'')+'</span>';
+      el.addEventListener('click', function(){
+        if(!bridge) return;
+        if(it.dir){ var p=byId('docsPanel'); if(p) p.classList.add('on'); send({cmd:'listFolder', path:it.path}); }
+        else { send({cmd:'openFile', path:it.path}); }
+      });
+      box.appendChild(el);
+    });
+  }
 
   // Shortcuts dialog
   var navShortcuts=byId('navShortcuts'); if(navShortcuts) navShortcuts.addEventListener('click', function(){ overlay('scOverlay', true); });
   var scClose=byId('scClose'); if(scClose) scClose.addEventListener('click', function(){ overlay('scOverlay', false); });
 
+  // ---- Rename a page + manage suggested names ----
+  function fillNameSuggest(){
+    var dl=byId('rnSuggest'); if(!dl) return; dl.innerHTML='';
+    nameSuggestions.forEach(function(n){ var o=document.createElement('option'); o.value=n; dl.appendChild(o); });
+  }
+  var rnIndex=-1;
+  function openRename(i){
+    if(typeof i!=='number' || i<0){ i=scannedSel; }
+    if(i<0) { setStatus('Select a page first, then rename'); return; }
+    rnIndex=i;
+    var no=byId('rnPageNo'); if(no) no.textContent='page '+(i+1);
+    var inp=byId('rnInput'); if(inp) inp.value=scannedNames[i]||'';
+    var rem=byId('rnRemember'); if(rem) rem.checked=false;
+    fillNameSuggest();
+    overlay('rnOverlay', true);
+    if(inp){ inp.focus(); inp.select(); }
+  }
+  function doRename(){
+    var inp=byId('rnInput'), rem=byId('rnRemember');
+    var name=inp?inp.value.trim():'';
+    if(bridge) send({cmd:'renamePage', index:rnIndex, name:name, on:!!(rem&&rem.checked)});
+    overlay('rnOverlay', false);
+  }
+  var rnOk=byId('rnOk'); if(rnOk) rnOk.addEventListener('click', doRename);
+  var rnCancel=byId('rnCancel'); if(rnCancel) rnCancel.addEventListener('click', function(){ overlay('rnOverlay', false); });
+  var rnInp=byId('rnInput'); if(rnInp) rnInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doRename(); } });
+  var rnManage=byId('rnManage'); if(rnManage) rnManage.addEventListener('click', openManageNames);
+
+  function renderNames(){
+    var list=byId('mnList'); if(!list) return; list.innerHTML='';
+    var q=(byId('mnSearch')?byId('mnSearch').value:'').trim().toLowerCase();
+    var arr=nameSuggestions.filter(function(n){ return !q || n.toLowerCase().indexOf(q)>=0; });
+    if(!arr.length){ list.innerHTML='<div class="mn-empty">'+(q?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; return; }
+    arr.forEach(function(n){
+      var row=document.createElement('div'); row.className='mn-row';
+      var nm=document.createElement('span'); nm.className='mn-name'; nm.textContent=n; nm.title='Click to edit';
+      nm.addEventListener('click', function(){ startEditName(row, n); });
+      var x=document.createElement('div'); x.className='mn-x'; x.innerHTML='✕'; x.title='Remove';
+      x.addEventListener('click', function(){ if(bridge) send({cmd:'removeName', name:n}); });
+      row.appendChild(nm); row.appendChild(x);
+      list.appendChild(row);
+    });
+  }
+  function startEditName(row, oldName){
+    row.innerHTML='';
+    var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=oldName;
+    var ok=document.createElement('div'); ok.className='mn-x'; ok.style.color='var(--good)'; ok.innerHTML='✓'; ok.title='Save';
+    function save(){ var v=inp.value.trim(); if(bridge && v && v!==oldName){ send({cmd:'removeName', name:oldName}); send({cmd:'addName', name:v}); } else { renderNames(); } }
+    ok.addEventListener('click', save);
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); if(e.key==='Escape'){ e.stopPropagation(); renderNames(); } });
+    row.appendChild(inp); row.appendChild(ok); inp.focus(); inp.select();
+  }
+  function openManageNames(){ overlay('mnOverlay', true); if(bridge) send({cmd:'getNames'}); renderNames(); }
+  var mnClose=byId('mnClose'); if(mnClose) mnClose.addEventListener('click', function(){ overlay('mnOverlay', false); });
+  var mnSearch=byId('mnSearch'); if(mnSearch) mnSearch.addEventListener('input', renderNames);
+  var mnClear=byId('mnClear'); if(mnClear) mnClear.addEventListener('click', function(){ if(bridge) send({cmd:'clearNames'}); });
+  var mnAdd=byId('mnAdd'); if(mnAdd) mnAdd.addEventListener('click', function(){
+    var list=byId('mnList'); if(!list) return;
+    if(byId('mnAddInput')){ byId('mnAddInput').focus(); return; }
+    var row=document.createElement('div'); row.className='mn-row';
+    row.innerHTML='<input id="mnAddInput" class="mn-edit" placeholder="New name"><div class="mn-x" id="mnAddOk" style="color:var(--good)">✓</div>';
+    list.insertBefore(row, list.firstChild);
+    var inp=byId('mnAddInput'); if(inp) inp.focus();
+    function add(){ var v=inp?inp.value.trim():''; if(v && bridge) send({cmd:'addName', name:v}); else renderNames(); }
+    byId('mnAddOk').addEventListener('click', add);
+    if(inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') add(); if(e.key==='Escape'){ e.stopPropagation(); renderNames(); } });
+  });
+
   // Keyboard shortcuts (the ones listed in the Shortcuts dialog)
   function anyOverlayOpen(){
-    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay'];
+    var ids=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay'];
     for(var i=0;i<ids.length;i++){ var el=byId(ids[i]); if(el && el.classList.contains('on')) return true; }
     var dp=byId('docsPanel'); if(dp && dp.classList.contains('on')) return true;
     return false;
@@ -1225,6 +1350,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function typingTarget(t){ return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable); }
   document.addEventListener('keydown', function(e){
     if(!bridge || typingTarget(e.target)) return;
+    if(e.key==='F2'){ if(!anyOverlayOpen() && scannedSel>=0){ e.preventDefault(); openRename(scannedSel); } return; }
     if(e.key==='F3'||e.key==='F4'||e.key==='F5'||e.key==='F6'){
       var map={F3:100,F4:200,F5:300,F6:600}; e.preventDefault();
       settings.dpi=map[e.key]; var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; persistSettings(); setStatus(settings.dpi+' dpi selected');
@@ -1277,7 +1403,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay'].forEach(function(id){ overlay(id, false); }); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
