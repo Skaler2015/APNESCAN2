@@ -1,12 +1,17 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using QRCoder;
 using NAPS2.Images;
 using NAPS2.Images.Gdi;
 using NAPS2.Images.Transforms;
@@ -38,6 +43,10 @@ public class MainForm : Form
     private string? _updateUrl;
     private string? _updateSha;
 
+    // Phone-to-PC: a tiny HTTP server phones on the same WiFi upload photos to.
+    private TcpListener? _phoneServer;
+    private const int PhonePort = 8765;
+
     public MainForm()
     {
         Text = "ApneScan";
@@ -60,6 +69,7 @@ public class MainForm : Form
         Load += async (_, _) => await InitAsync();
         FormClosed += (_, _) =>
         {
+            StopPhoneServer();
             foreach (var p in _pages) p.Dispose();
             _ctx.Dispose();
         };
@@ -151,6 +161,12 @@ public class MainForm : Form
                 break;
             case "share":
                 await SharePdfAsync();
+                break;
+            case "startPhone":
+                StartPhoneServer();
+                break;
+            case "stopPhone":
+                StopPhoneServer();
                 break;
             case "rotateLeft":
                 RotatePage(-90);
@@ -593,6 +609,199 @@ public class MainForm : Form
             Status("Import error: " + ex.Message);
         }
     }
+
+    private void StartPhoneServer()
+    {
+        var url = $"http://{GetLocalIp()}:{PhonePort}/";
+        try
+        {
+            if (_phoneServer == null)
+            {
+                _phoneServer = new TcpListener(IPAddress.Any, PhonePort);
+                _phoneServer.Start();
+                _ = Task.Run(PhoneServerLoop);
+            }
+            var gen = new QRCodeGenerator();
+            var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+            var png = new PngByteQRCode(data).GetGraphic(8);
+            var qr = "data:image/png;base64," + Convert.ToBase64String(png);
+            Post(new { type = "phone", qr, url });
+            Status("Phone-to-PC ready — scan the QR with your phone (same WiFi)");
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "phone", qr = (string?) null, url });
+            Status("Phone-to-PC error: " + ex.Message);
+        }
+    }
+
+    private void StopPhoneServer()
+    {
+        try { _phoneServer?.Stop(); } catch { /* ignore */ }
+        _phoneServer = null;
+    }
+
+    private async Task PhoneServerLoop()
+    {
+        var server = _phoneServer;
+        while (server != null && ReferenceEquals(server, _phoneServer))
+        {
+            TcpClient client;
+            try { client = await server.AcceptTcpClientAsync(); }
+            catch { break; }
+            _ = Task.Run(() => HandlePhoneClient(client));
+        }
+    }
+
+    private async Task HandlePhoneClient(TcpClient client)
+    {
+        try
+        {
+            using (client)
+            {
+                var stream = client.GetStream();
+                var header = new List<byte>();
+                var one = new byte[1];
+                while (true)
+                {
+                    int r = await stream.ReadAsync(one.AsMemory(0, 1));
+                    if (r == 0) return;
+                    header.Add(one[0]);
+                    int n = header.Count;
+                    if (n >= 4 && header[n - 4] == 13 && header[n - 3] == 10 && header[n - 2] == 13 && header[n - 1] == 10) break;
+                    if (n > 32768) return;
+                }
+                var headerText = Encoding.ASCII.GetString(header.ToArray());
+                var firstLine = headerText.Split("\r\n")[0];
+                var parts = firstLine.Split(' ');
+                var method = parts.Length > 0 ? parts[0] : "";
+                var pathReq = parts.Length > 1 ? parts[1] : "/";
+
+                if (method == "POST" && pathReq.StartsWith("/upload"))
+                {
+                    int len = ParseContentLength(headerText);
+                    if (len <= 0 || len > 40 * 1024 * 1024)
+                    {
+                        await WriteResponse(stream, "400 Bad Request", "text/plain", Encoding.UTF8.GetBytes("bad"));
+                        return;
+                    }
+                    var buf = new byte[len];
+                    int read = 0;
+                    while (read < len)
+                    {
+                        int r = await stream.ReadAsync(buf.AsMemory(read, len - read));
+                        if (r == 0) break;
+                        read += r;
+                    }
+                    var temp = Path.Combine(Path.GetTempPath(), "apnescan_phone_" + Guid.NewGuid().ToString("N")[..8] + ".jpg");
+                    await File.WriteAllBytesAsync(temp, read == len ? buf : buf[..read]);
+                    if (IsHandleCreated)
+                    {
+                        BeginInvoke(new Action(() => { _ = AddPhoneFileAsync(temp); }));
+                    }
+                    await WriteResponse(stream, "200 OK", "text/plain", Encoding.UTF8.GetBytes("OK"));
+                }
+                else
+                {
+                    await WriteResponse(stream, "200 OK", "text/html; charset=utf-8", Encoding.UTF8.GetBytes(PhoneUploadPage()));
+                }
+            }
+        }
+        catch { /* per-connection errors are non-fatal */ }
+    }
+
+    private async Task AddPhoneFileAsync(string path)
+    {
+        try
+        {
+            var importer = new ImageImporter(_ctx);
+            int added = 0;
+            await foreach (var img in importer.Import(path))
+            {
+                _pages.Add(img);
+                added++;
+            }
+            try { File.Delete(path); } catch { /* best-effort */ }
+            if (added > 0)
+            {
+                SendPreview();
+                Status($"Photo received from phone — {_pages.Count} page(s)");
+                Post(new { type = "phonePhoto", pages = _pages.Count });
+            }
+        }
+        catch (Exception ex)
+        {
+            Status("Phone receive error: " + ex.Message);
+        }
+    }
+
+    private static async Task WriteResponse(NetworkStream stream, string status, string contentType, byte[] body)
+    {
+        var head = $"HTTP/1.1 {status}\r\nContent-Type: {contentType}\r\nContent-Length: {body.Length}\r\n" +
+                   "Connection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
+        await stream.WriteAsync(body);
+        await stream.FlushAsync();
+    }
+
+    private static int ParseContentLength(string header)
+    {
+        foreach (var line in header.Split("\r\n"))
+        {
+            if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(line["Content-Length:".Length..].Trim(), out var v))
+            {
+                return v;
+            }
+        }
+        return 0;
+    }
+
+    private static string GetLocalIp()
+    {
+        try
+        {
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (ni.OperationalStatus != OperationalStatus.Up ||
+                    ni.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+                foreach (var ua in ni.GetIPProperties().UnicastAddresses)
+                {
+                    if (ua.Address.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        var s = ua.Address.ToString();
+                        if (!s.StartsWith("169.254") && s != "127.0.0.1")
+                        {
+                            return s;
+                        }
+                    }
+                }
+            }
+        }
+        catch { /* fall through */ }
+        return "127.0.0.1";
+    }
+
+    private static string PhoneUploadPage() => """
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>ApneScan</title>
+<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#eef0f6;color:#1f2430}
+.card{background:#fff;margin:18px;padding:24px;border-radius:16px;box-shadow:0 6px 18px rgba(30,30,60,.1);text-align:center}
+h1{color:#6d28d9;margin:0 0 6px}p{color:#6b7280}
+.btn{display:block;width:100%;box-sizing:border-box;padding:16px;margin:14px 0;border-radius:12px;background:#6d28d9;color:#fff;font-size:18px;font-weight:700;border:0}
+input{display:none}#log{color:#16a34a;font-weight:700;margin-top:10px;min-height:20px}</style></head>
+<body><div class="card"><h1>ApneScan</h1><p>Send photos to your PC</p>
+<label class="btn">Take / choose photo<input type="file" accept="image/*" multiple capture="environment" id="f"></label>
+<div id="log"></div></div>
+<script>
+var f=document.getElementById('f'),log=document.getElementById('log');
+f.addEventListener('change',function(){var files=f.files,done=0,total=files.length;log.textContent='Sending...';
+for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',body:file}).then(function(){done++;log.textContent='Sent '+done+'/'+total+' photo(s) to PC';}).catch(function(){log.textContent='Failed - same WiFi as PC?';});})(files[i]);}});
+</script></body></html>
+""";
 
     private void ClearPages()
     {
