@@ -165,6 +165,12 @@ public class UpdateOperation : OperationBase
 
     private bool VerifySignature()
     {
+        // ApneScan self-hosted updates are not code-signed. When no signature is
+        // supplied, integrity is enforced by the SHA-256 hash check (VerifyHash).
+        if (_update!.Signature256 == null || _update.Signature256.Length == 0)
+        {
+            return true;
+        }
         var cert = X509CertificateLoader.LoadCertificate(ClientCreds_.naps2_public);
         var csp = cert.GetRSAPublicKey();
         if (csp == null) return false;

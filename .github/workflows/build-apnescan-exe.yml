@@ -1,9 +1,11 @@
 name: Build ApneScan EXE (Windows)
 
-# Manually runnable from the Actions tab, and also runs automatically
-# whenever this branch is pushed. Produces a SINGLE self-contained
-# ApneScan.exe (no separate .NET install needed to run it) and publishes
-# it to a GitHub Release for a direct one-click .exe download.
+# Runs on every push to this branch and can be triggered manually.
+# Produces:
+#   - ApneScan-Setup.exe : a Windows installer (double-click to install)
+#   - update.json        : the manifest the in-app one-click updater reads
+# Both are published to the "apnescan-latest" GitHub Release so that
+# installed copies can update themselves in one click.
 on:
   workflow_dispatch:
   push:
@@ -26,41 +28,83 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Publish ApneScan as a single self-contained .exe
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          VER=$(grep -oE '<Version>[^<]+' NAPS2.Setup/targets/VersionTargets.targets | head -1 | sed 's/<Version>//')
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "App version: $VER"
+
+      - name: Publish ApneScan (self-contained folder)
         run: >
           dotnet publish NAPS2.App.WinForms/NAPS2.App.WinForms.csproj
           -c Release
           -r win-x64
           --self-contained true
           -o publish/ApneScan
-          /p:PublishSingleFile=true
-          /p:IncludeNativeLibrariesForSelfExtract=true
           /p:DebugType=None
           /p:DebugSymbols=false
 
-      - name: Rename output to ApneScan.exe and show result
-        shell: bash
-        run: |
-          # The project's AssemblyName is still "NAPS2", so the published
-          # single-file exe is NAPS2.exe. Ship it under the ApneScan name.
-          cp publish/ApneScan/NAPS2.exe ApneScan.exe
-          echo "Single-file exe:"
-          ls -lh ApneScan.exe
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
 
-      - name: Upload build artifact (backup download)
+      - name: Build ApneScan-Setup.exe
+        env:
+          APNESCAN_VERSION: ${{ steps.version.outputs.version }}
+        run: >
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          /DAppVersion=${{ steps.version.outputs.version }}
+          installer\apnescan.iss
+
+      - name: Generate update.json manifest
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $setup = "installer-out/ApneScan-Setup.exe"
+          $bytes = [System.IO.File]::ReadAllBytes($setup)
+          $sha = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+          $b64 = [Convert]::ToBase64String($sha)
+          $url = "https://github.com/Skaler2015/APNESCAN2/releases/latest/download/ApneScan-Setup.exe"
+          $manifest = [ordered]@{
+            versions = @(
+              [ordered]@{
+                name     = $env:APP_VERSION
+                requires = @{}
+                files    = @{ exe = [ordered]@{ url = $url; sha256 = $b64 } }
+              }
+            )
+          }
+          $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path "installer-out/update.json" -Encoding utf8
+          Write-Host "update.json:"
+          Get-Content "installer-out/update.json"
+
+      - name: Show output
+        shell: bash
+        run: ls -lh installer-out/
+
+      - name: Upload build artifacts (backup download)
         uses: actions/upload-artifact@v4
         with:
-          name: ApneScan-Windows-x64
-          path: ApneScan.exe
+          name: ApneScan-Windows-Setup
+          path: |
+            installer-out/ApneScan-Setup.exe
+            installer-out/update.json
           if-no-files-found: error
 
-      - name: Publish to a GitHub Release (direct .exe download)
+      - name: Publish to GitHub Release (installer + update manifest)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apnescan-latest
           name: ApneScan (latest Windows build)
           body: |
-            Single-file, self-contained Windows build of ApneScan.
-            Just download **ApneScan.exe** below and run it — no .NET install needed.
-          files: ApneScan.exe
+            Windows installer for ApneScan.
+
+            **Download `ApneScan-Setup.exe` below and run it to install.**
+            Once installed, ApneScan can update itself in one click
+            (Help/About → check for updates) whenever a newer version is released.
+          files: |
+            installer-out/ApneScan-Setup.exe
+            installer-out/update.json
           make_latest: true

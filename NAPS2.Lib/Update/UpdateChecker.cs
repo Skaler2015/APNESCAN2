@@ -8,7 +8,10 @@ public class UpdateChecker : IUpdateChecker
 {
     public static readonly TimeSpan CheckInterval = TimeSpan.FromDays(7);
 
-    private const string UPDATE_CHECK_ENDPOINT = "https://www.naps2.com/api/v1/update";
+    // ApneScan updates are served from the project's own GitHub Releases.
+    // The "latest" release always exposes update.json at this stable URL.
+    private const string UPDATE_CHECK_ENDPOINT =
+        "https://github.com/Skaler2015/APNESCAN2/releases/latest/download/update.json";
 #if ZIP
         private const string UPDATE_FILE_EXT = "zip";
 #elif MSI
@@ -45,11 +48,14 @@ public class UpdateChecker : IUpdateChecker
             if (updateFile == null) continue;
 
             var sha256 = updateFile.Value<string>("sha256");
+            if (sha256 == null) continue;
+            // The digital signature is optional for ApneScan self-hosted updates.
+            // When absent, integrity is still enforced via the SHA-256 hash below.
             var sig256 = updateFile.Value<string>("sig256");
-            if (sha256 == null || sig256 == null) continue;
+            var sigBytes = sig256 != null ? Convert.FromBase64String(sig256) : Array.Empty<byte>();
 
             return new UpdateInfo(versionName, updateFile.Value<string>("url")!, Convert.FromBase64String(sha256),
-                Convert.FromBase64String(sig256));
+                sigBytes);
         }
         return null;
     }
