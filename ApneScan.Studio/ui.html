@@ -38,6 +38,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
 .item.active .badge{background:#fff;color:var(--accent-ink)}
+.docs-tree{margin:0 4px 4px 12px;border-left:2px solid var(--border);padding-left:6px;max-height:280px;overflow:auto}
+.docs-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;font-size:10px;font-weight:700;color:var(--muted-2);letter-spacing:.4px}
+.docs-head .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docs-up{color:var(--accent);cursor:pointer;font-weight:700;white-space:nowrap}
+.docs-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;color:#3b4254;font-size:12px}
+.docs-row:hover{background:#f4f5f9}
+.docs-row .ic{color:var(--muted);width:15px;height:15px}
+.docs-row.dir .ic{color:var(--accent)}
+.docs-row .dn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docs-empty{padding:8px;color:var(--muted);font-size:11.5px}
 .sfoot{border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
 .mini{border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .mini .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 9px;background:#fafbff;border-bottom:1px solid var(--border-2);font-size:10.5px}
@@ -269,7 +279,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       <nav class="nav">
         <div class="sec">WORKSPACE</div>
         <div class="item active"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Dashboard</span></div>
-        <div class="item"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span><span class="badge num">998</span></div>
+        <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span><svg class="ic" id="docsChev" style="width:14px;height:14px;transition:transform .15s"><use href="#i-chevron"/></svg></div>
+        <div class="docs-tree" id="docsTree" style="display:none"></div>
         <div class="item"><svg class="ic"><use href="#i-files"/></svg><span class="lbl">Recent Files</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD and Daycare</span></div>
         <div class="item"><span class="star">&#9733;</span><span class="lbl">ECHS OPD</span></div>
@@ -298,7 +309,6 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <tbody id="analyticsBody"></tbody>
           </table>
         </div>
-        <div class="storage">Storage used <b class="num" id="storageText">…</b><div class="bar"><i id="storageBar"></i></div></div>
         <div class="row"><span>Scanner · <b>WIA</b></span></div>
         <div class="row"><span>ApneScan · v<span id="curVer">1.0.0</span></span><span style="color:var(--good);font-weight:600">100% Free</span></div>
         <div id="updateLine" style="font-size:10.5px;color:var(--muted)">Checking for updates…</div>
@@ -791,8 +801,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='settings'){ applySettings(m); }
       else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
       else if(m.type==='analytics'){ renderAnalytics(m.rows); }
-      else if(m.type==='storage'){ renderStorage(m); }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
+      else if(m.type==='folder'){ renderFolder(m); }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
@@ -800,7 +810,6 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     send({cmd:'checkUpdate'});
     send({cmd:'getHistory'});
     send({cmd:'getAnalytics'});
-    send({cmd:'getStorage'});
     send({cmd:'getProfiles'});
   } else {
     renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
@@ -1023,11 +1032,43 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(ni) ni.value='';
   });
 
-  // Storage (real disk usage of ApneScan's files)
-  function renderStorage(m){
-    var t=byId('storageText'); if(t) t.textContent=(m.used||'0 B')+' · disk '+(m.free||'')+' free';
-    var b=byId('storageBar'); if(b) b.style.width=Math.max(2, Math.min(100, m.percent||0))+'%';
+  // My Documents — a small folder browser that opens inside the sidebar
+  function renderFolder(m){
+    var tree=byId('docsTree'); if(!tree) return;
+    tree.innerHTML='';
+    var head=document.createElement('div'); head.className='docs-head';
+    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(m.name||'Documents'); head.appendChild(nm);
+    if(m.parent){
+      var up=document.createElement('span'); up.className='docs-up'; up.textContent='↑ Up';
+      up.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'listFolder', path:m.parent}); });
+      head.appendChild(up);
+    }
+    tree.appendChild(head);
+    var list=m.entries||[];
+    if(!list.length){
+      var e=document.createElement('div'); e.className='docs-empty'; e.textContent='No documents in this folder'; tree.appendChild(e); return;
+    }
+    list.forEach(function(en){
+      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'');
+      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg><span class="dn">'+esc(en.name)+'</span>';
+      r.title=en.name;
+      r.addEventListener('click', function(ev){ ev.stopPropagation();
+        if(!bridge) return;
+        if(en.dir) send({cmd:'listFolder', path:en.path});
+        else send({cmd:'openFile', path:en.path});
+      });
+      tree.appendChild(r);
+    });
   }
+  var docsOpen=false;
+  var navDocs=byId('navDocs');
+  if(navDocs) navDocs.addEventListener('click', function(){
+    var tree=byId('docsTree'), chev=byId('docsChev'); if(!tree) return;
+    docsOpen=!docsOpen;
+    tree.style.display=docsOpen?'block':'none';
+    if(chev) chev.style.transform=docsOpen?'rotate(180deg)':'';
+    if(docsOpen && bridge && !tree.children.length) send({cmd:'listFolder'});
+  });
 
   // Scanner picker — choose which scanner to scan from
   var scannerMenu=byId('scannerMenu'), setScanner=byId('setScanner');

@@ -252,6 +252,9 @@ public class MainForm : Form
             case "openFile":
                 OpenFile(filePath);
                 break;
+            case "listFolder":
+                SendFolder(filePath);
+                break;
             case "startPhone":
                 StartPhoneServer();
                 break;
@@ -1451,6 +1454,60 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Status($"Profile “{name}” removed");
         }
         catch { /* best-effort */ }
+    }
+
+    // ---- Browse the user's Documents folder inside the sidebar --------------
+
+    private void SendFolder(string path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+            var di = new DirectoryInfo(path);
+            if (!di.Exists)
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                di = new DirectoryInfo(path);
+            }
+
+            var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { ".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp" };
+
+            var entries = new List<object>();
+            try
+            {
+                foreach (var d in di.GetDirectories())
+                {
+                    if ((d.Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue;
+                    entries.Add(new { name = d.Name, path = d.FullName, dir = true });
+                    if (entries.Count >= 400) break;
+                }
+                foreach (var f in di.GetFiles())
+                {
+                    if ((f.Attributes & FileAttributes.Hidden) != 0) continue;
+                    if (!exts.Contains(f.Extension)) continue;
+                    entries.Add(new { name = f.Name, path = f.FullName, dir = false });
+                    if (entries.Count >= 400) break;
+                }
+            }
+            catch { /* some subfolders may deny access — show what we can */ }
+
+            Post(new
+            {
+                type = "folder",
+                path = di.FullName,
+                name = di.Name,
+                parent = di.Parent?.FullName,
+                entries
+            });
+        }
+        catch (Exception ex)
+        {
+            Status("Folder error: " + ex.Message);
+        }
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });
