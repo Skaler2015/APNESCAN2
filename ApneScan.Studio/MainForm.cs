@@ -260,6 +260,15 @@ public class MainForm : Form
             case "listFolder":
                 SendFolder(filePath);
                 break;
+            case "makeFolder":
+                MakeFolder(filePath, name);
+                break;
+            case "toggleFav":
+                ToggleFav(filePath);
+                break;
+            case "savePdfHere":
+                await SavePdfHereAsync(filePath);
+                break;
             case "startPhone":
                 StartPhoneServer();
                 break;
@@ -1569,6 +1578,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
             var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { ".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp" };
+            var favs = LoadFavs();
 
             var entries = new List<object>();
             try
@@ -1576,15 +1586,37 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 foreach (var d in di.GetDirectories())
                 {
                     if ((d.Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue;
-                    entries.Add(new { name = d.Name, path = d.FullName, dir = true });
-                    if (entries.Count >= 400) break;
+                    int cnt = 0;
+                    try { cnt = d.GetFiles().Length; } catch { /* access denied */ }
+                    entries.Add(new
+                    {
+                        name = d.Name,
+                        path = d.FullName,
+                        dir = true,
+                        date = d.LastWriteTime.ToString("dd MMM yyyy"),
+                        ms = new DateTimeOffset(d.LastWriteTime).ToUnixTimeMilliseconds(),
+                        count = cnt,
+                        size = 0L,
+                        fav = favs.Contains(d.FullName)
+                    });
+                    if (entries.Count >= 600) break;
                 }
                 foreach (var f in di.GetFiles())
                 {
                     if ((f.Attributes & FileAttributes.Hidden) != 0) continue;
                     if (!exts.Contains(f.Extension)) continue;
-                    entries.Add(new { name = f.Name, path = f.FullName, dir = false });
-                    if (entries.Count >= 400) break;
+                    entries.Add(new
+                    {
+                        name = f.Name,
+                        path = f.FullName,
+                        dir = false,
+                        date = f.LastWriteTime.ToString("dd MMM yyyy"),
+                        ms = new DateTimeOffset(f.LastWriteTime).ToUnixTimeMilliseconds(),
+                        count = 0,
+                        size = f.Length,
+                        fav = favs.Contains(f.FullName)
+                    });
+                    if (entries.Count >= 600) break;
                 }
             }
             catch { /* some subfolders may deny access — show what we can */ }
@@ -1601,6 +1633,89 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         catch (Exception ex)
         {
             Status("Folder error: " + ex.Message);
+        }
+    }
+
+    private static string FavFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "favorites.json");
+
+    private static HashSet<string> LoadFavs()
+    {
+        try
+        {
+            if (File.Exists(FavFile))
+            {
+                return new HashSet<string>(
+                    JsonSerializer.Deserialize<List<string>>(File.ReadAllText(FavFile)) ?? new(),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch { /* non-fatal */ }
+        return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void ToggleFav(string path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            var s = LoadFavs();
+            if (!s.Add(path)) s.Remove(path);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FavFile)!);
+            File.WriteAllText(FavFile, JsonSerializer.Serialize(s.ToList()));
+        }
+        catch { /* best-effort */ }
+    }
+
+    private void MakeFolder(string path, string name)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            name = SanitizeFileName(name);
+            Directory.CreateDirectory(System.IO.Path.Combine(path, name));
+            SendFolder(path);
+            Status("Folder created: " + name);
+        }
+        catch (Exception ex)
+        {
+            Status("Create folder error: " + ex.Message);
+        }
+    }
+
+    private async Task SavePdfHereAsync(string folder)
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Nothing to save — scan a page first");
+            return;
+        }
+        try
+        {
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+            {
+                folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+            var suggested = _pageNames.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+            var stem = string.IsNullOrWhiteSpace(suggested) ? "scan" : SanitizeFileName(suggested);
+            var file = System.IO.Path.Combine(folder, stem + ".pdf");
+            int k = 1;
+            while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
+
+            Status(_ocr ? "Saving PDF with OCR…" : "Saving PDF…");
+            var exporter = new PdfExporter(_ctx);
+            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            await exporter.Export(file, _pages, ocrParams: ocrParams);
+            AddHistory(file, _pages.Count);
+            Bump("pdf", 1);
+            SendFolder(folder);
+            Post(new { type = "done", path = file });
+            Status("Saved: " + file);
+        }
+        catch (Exception ex)
+        {
+            Status("Save error: " + ex.Message);
         }
     }
 

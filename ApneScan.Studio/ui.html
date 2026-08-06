@@ -38,22 +38,41 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{background:#eef0f6;color:#5b6376;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
 .item.active .badge{background:#fff;color:var(--accent-ink)}
-.docs-panel{position:absolute;inset:0;background:var(--sidebar);z-index:30;display:none;flex-direction:column;box-shadow:0 0 40px rgba(20,20,50,.08)}
+.docs-panel{position:absolute;top:0;left:0;bottom:0;width:302px;background:var(--sidebar);z-index:40;display:none;flex-direction:column;box-shadow:8px 0 44px rgba(20,20,50,.20);border-right:1px solid var(--border)}
 .docs-panel.on{display:flex}
 .dp-head{display:flex;align-items:center;gap:9px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex:none}
 .dp-head .dp-title{font-weight:700;font-size:14px;flex:1}
 .dp-x{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
 .dp-x:hover{background:#f4f5f9;color:var(--text)}
-.dp-bar{display:flex;align-items:center;gap:8px;padding:7px 14px;color:var(--muted-2);font-size:10.5px;font-weight:700;letter-spacing:.3px;border-bottom:1px solid var(--border-2);flex:none}
-.dp-bar .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dp-up{color:var(--accent);cursor:pointer;white-space:nowrap}
-.docs-list{flex:1;overflow:auto;padding:5px 8px 12px}
-.docs-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;color:#3b4254;font-size:12px}
-.docs-row:hover{background:#f4f5f9}
-.docs-row .ic{color:var(--muted);width:15px;height:15px}
-.docs-row.dir .ic{color:var(--accent)}
-.docs-row .dn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.docs-empty{padding:8px;color:var(--muted);font-size:11.5px}
+.dp-search{display:flex;align-items:center;gap:8px;margin:10px 12px 0;padding:8px 10px;background:#f3f4f9;border:1px solid var(--border);border-radius:9px;color:var(--muted)}
+.dp-search input{border:0;background:none;outline:none;font:inherit;color:var(--text);width:100%}
+.dp-chips{display:flex;gap:6px;padding:9px 12px 0;flex-wrap:wrap}
+.dp-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:#f0f1f6;color:#5b6376;cursor:pointer;border:1px solid transparent}
+.dp-chip.on{background:var(--accent);color:#fff}
+.dp-sort{display:flex;gap:6px;padding:9px 12px 8px;border-bottom:1px solid var(--border)}
+.dp-sortbtn{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:5px;border-radius:8px;background:#f4f5f9;color:#5b6376;cursor:pointer;user-select:none}
+.dp-sortbtn.on{background:var(--accent-soft);color:var(--accent-ink)}
+.dp-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border-2);flex:none}
+.dp-navb{width:27px;height:27px;border-radius:7px;border:1px solid var(--border);display:grid;place-items:center;color:var(--accent);cursor:pointer;flex:none;font-weight:700}
+.dp-navb:hover{background:#f4f5f9}
+.dp-bar .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3b4254;font-size:11.5px;font-weight:700}
+.docs-list{flex:1;overflow:auto;padding:7px 9px 8px}
+.docs-row{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;cursor:pointer;color:#3b4254;border:1px solid var(--border-2);margin-bottom:6px;background:#fff;box-shadow:0 1px 2px rgba(20,20,50,.05)}
+.docs-row:hover{border-color:#dcd6f5}
+.docs-row.sel{border-color:var(--accent);background:var(--accent-soft)}
+.docs-row .ic{width:22px;height:22px;flex:none;color:var(--muted)}
+.docs-row.dir .ic{color:#f0b400}
+.docs-row .dn{flex:1;min-width:0}
+.docs-row .dn b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docs-row .dn small{color:var(--muted);font-size:10px}
+.docs-row .fav{color:#d7dae3;font-size:15px;cursor:pointer;flex:none;line-height:1}
+.docs-row .fav.on{color:var(--amber)}
+.docs-empty{padding:16px;color:var(--muted);font-size:12px;text-align:center}
+.dp-actions{display:flex;gap:6px;padding:9px 12px 4px;border-top:1px solid var(--border);flex:none}
+.dp-act{flex:1;text-align:center;font-size:12px;font-weight:700;padding:9px 6px;border-radius:9px;background:#f4f5f9;color:#3b4254;cursor:pointer}
+.dp-act:hover{background:#eceef5}
+.dp-act.primary{background:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(109,40,217,.3)}
+.dp-tip{font-size:10px;color:var(--muted-2);text-align:center;padding:6px 12px 10px}
 .sfoot{border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
 .mini{border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .mini .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 9px;background:#fafbff;border-bottom:1px solid var(--border-2);font-size:10.5px}
@@ -331,8 +350,26 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <span class="dp-title">My Documents</span>
           <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
         </div>
+        <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
+        <div class="dp-chips">
+          <div class="dp-chip" data-f="fav">&#9733; Fav</div>
+          <div class="dp-chip" data-f="recent">Recent</div>
+          <div class="dp-chip" data-f="today">Today</div>
+          <div class="dp-chip on" data-f="all">All</div>
+        </div>
+        <div class="dp-sort">
+          <div class="dp-sortbtn" data-s="name">Name</div>
+          <div class="dp-sortbtn on" data-s="date">Date &#8595;</div>
+          <div class="dp-sortbtn" data-s="size">Size</div>
+        </div>
         <div class="dp-bar" id="docsBar"></div>
         <div class="docs-list" id="docsList"></div>
+        <div class="dp-actions">
+          <div class="dp-act" id="docsNew">&#43; New</div>
+          <div class="dp-act" id="docsImport">Import</div>
+          <div class="dp-act primary" id="docsSaveHere">Save here</div>
+        </div>
+        <div class="dp-tip">Double-click a folder to open · single-click to select</div>
       </div>
     </aside>
 
@@ -1088,33 +1125,50 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(ni) ni.value='';
   });
 
-  // My Documents — a folder browser that opens as a panel over the sidebar
+  // My Documents — a file-manager panel over the sidebar
+  var docsData={path:'',name:'',parent:'',entries:[]};
+  var docsFilter='all', docsSort='date', docsDir=-1, docsQuery='', docsSelected='';
+  function fmtBytes(b){ b=b||0; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return Math.round(b/1024)+' KB'; return b+' B'; }
   function renderFolder(m){
-    var bar=byId('docsBar'), list=byId('docsList');
-    if(!list) return;
-    if(bar){
-      bar.innerHTML='';
-      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(m.name||'Documents'); bar.appendChild(nm);
-      if(m.parent){
-        var up=document.createElement('span'); up.className='dp-up'; up.textContent='↑ Up';
-        up.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'listFolder', path:m.parent}); });
-        bar.appendChild(up);
-      }
-    }
-    list.innerHTML='';
-    var items=m.entries||[];
-    if(!items.length){
-      var e=document.createElement('div'); e.className='docs-empty'; e.textContent='No documents in this folder'; list.appendChild(e); return;
-    }
-    items.forEach(function(en){
-      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'');
-      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg><span class="dn">'+esc(en.name)+'</span>';
-      r.title=en.name;
-      r.addEventListener('click', function(ev){ ev.stopPropagation();
-        if(!bridge) return;
-        if(en.dir) send({cmd:'listFolder', path:en.path});
-        else send({cmd:'openFile', path:en.path});
-      });
+    docsData=m||{entries:[]}; docsSelected='';
+    renderDocsBar(); renderDocsList();
+  }
+  function renderDocsBar(){
+    var bar=byId('docsBar'); if(!bar) return; bar.innerHTML='';
+    var back=document.createElement('div'); back.className='dp-navb'; back.textContent='‹'; back.title='Up one folder';
+    back.addEventListener('click', function(){ if(docsData.parent && bridge) send({cmd:'listFolder', path:docsData.parent}); });
+    bar.appendChild(back);
+    var home=document.createElement('div'); home.className='dp-navb'; home.innerHTML='<svg class="ic" style="width:14px;height:14px"><use href="#i-home"/></svg>'; home.title='Documents';
+    home.addEventListener('click', function(){ if(bridge) send({cmd:'listFolder'}); });
+    bar.appendChild(home);
+    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=(docsData.name||'Documents'); nm.title=docsData.path||''; bar.appendChild(nm);
+  }
+  function renderDocsList(){
+    var list=byId('docsList'); if(!list) return; list.innerHTML='';
+    var arr=(docsData.entries||[]).slice();
+    var q=docsQuery.trim().toLowerCase();
+    if(q) arr=arr.filter(function(e){ return (e.name||'').toLowerCase().indexOf(q)>=0; });
+    if(docsFilter==='fav') arr=arr.filter(function(e){ return e.fav; });
+    else if(docsFilter==='today') arr=arr.filter(function(e){ return e.ms && new Date(e.ms).toDateString()===new Date().toDateString(); });
+    else if(docsFilter==='recent') arr=arr.filter(function(e){ return e.ms && (Date.now()-e.ms)<7*86400000; });
+    arr.sort(function(a,b){
+      if(a.dir!==b.dir) return a.dir?-1:1;
+      var r=0;
+      if(docsSort==='name') r=(a.name||'').localeCompare(b.name||'');
+      else if(docsSort==='size') r=(a.size||0)-(b.size||0);
+      else r=(a.ms||0)-(b.ms||0);
+      return r*docsDir;
+    });
+    if(!arr.length){ list.innerHTML='<div class="docs-empty">Nothing here yet</div>'; return; }
+    arr.forEach(function(en){
+      var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+(en.dir&&en.path===docsSelected?' sel':'');
+      var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
+      r.innerHTML='<svg class="ic"><use href="#'+(en.dir?'i-folder':'i-doc')+'"/></svg>'+
+        '<div class="dn"><b>'+esc(en.name)+'</b><small>'+esc(meta)+'</small></div>'+
+        '<span class="fav'+(en.fav?' on':'')+'" title="Favorite">&#9733;</span>';
+      r.querySelector('.fav').addEventListener('click', function(ev){ ev.stopPropagation(); en.fav=!en.fav; renderDocsList(); if(bridge) send({cmd:'toggleFav', path:en.path}); });
+      r.addEventListener('click', function(){ if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); renderDocsList(); } });
+      r.addEventListener('dblclick', function(){ if(!bridge) return; if(en.dir) send({cmd:'listFolder', path:en.path}); else send({cmd:'openFile', path:en.path}); });
       list.appendChild(r);
     });
   }
@@ -1122,6 +1176,40 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function closeDocs(){ var p=byId('docsPanel'); if(p) p.classList.remove('on'); }
   var navDocs=byId('navDocs'); if(navDocs) navDocs.addEventListener('click', function(e){ e.stopPropagation(); openDocs(); });
   var docsClose=byId('docsClose'); if(docsClose) docsClose.addEventListener('click', function(e){ e.stopPropagation(); closeDocs(); });
+  // search
+  var docsSearch=byId('docsSearch'); if(docsSearch) docsSearch.addEventListener('input', function(){ docsQuery=docsSearch.value; renderDocsList(); });
+  // filter chips
+  document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.addEventListener('click', function(){
+    document.querySelectorAll('.dp-chips .dp-chip').forEach(function(x){ x.classList.remove('on'); }); c.classList.add('on');
+    docsFilter=c.getAttribute('data-f'); renderDocsList();
+  }); });
+  // sort tabs (click again to flip direction)
+  document.querySelectorAll('.dp-sort .dp-sortbtn').forEach(function(b){ b.addEventListener('click', function(){
+    var s=b.getAttribute('data-s');
+    if(docsSort===s){ docsDir=-docsDir; } else { docsSort=s; docsDir=(s==='name')?1:-1; }
+    document.querySelectorAll('.dp-sort .dp-sortbtn').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on');
+    var arrow=docsDir<0?' ↓':' ↑';
+    b.textContent=(s==='name'?'Name':s==='size'?'Size':'Date')+arrow;
+    ['name','size','date'].forEach(function(k){ if(k!==s){ var el=document.querySelector('.dp-sort .dp-sortbtn[data-s="'+k+'"]'); if(el) el.textContent=(k==='name'?'Name':k==='size'?'Size':'Date'); } });
+    renderDocsList();
+  }); });
+  // bottom actions
+  var docsNew=byId('docsNew'); if(docsNew) docsNew.addEventListener('click', function(){
+    var list=byId('docsList'); if(!list || !docsData.path) return;
+    if(byId('newFolderInput')) { byId('newFolderInput').focus(); return; }
+    var row=document.createElement('div'); row.className='docs-row dir';
+    row.innerHTML='<svg class="ic"><use href="#i-folder"/></svg><input id="newFolderInput" placeholder="New folder name" style="flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;padding:5px 7px;font:inherit"><span class="fav on" id="newFolderOk" title="Create">&#10003;</span>';
+    list.insertBefore(row, list.firstChild);
+    var inp=byId('newFolderInput'); if(inp) inp.focus();
+    function done(){ var v=inp?inp.value.trim():''; if(v && bridge) send({cmd:'makeFolder', path:docsData.path, name:v}); }
+    byId('newFolderOk').addEventListener('click', done);
+    if(inp) inp.addEventListener('keydown', function(ev){ if(ev.key==='Enter') done(); if(ev.key==='Escape'){ ev.stopPropagation(); renderDocsList(); } });
+  });
+  var docsImport=byId('docsImport'); if(docsImport) docsImport.addEventListener('click', function(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); });
+  var docsSaveHere=byId('docsSaveHere'); if(docsSaveHere) docsSaveHere.addEventListener('click', function(){
+    var target=docsSelected||docsData.path;
+    setStatus('Saving…'); if(bridge) send({cmd:'savePdfHere', path:target});
+  });
 
   // Shortcuts dialog
   var navShortcuts=byId('navShortcuts'); if(navShortcuts) navShortcuts.addEventListener('click', function(){ overlay('scOverlay', true); });
