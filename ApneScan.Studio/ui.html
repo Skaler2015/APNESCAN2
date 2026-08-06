@@ -743,8 +743,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       Remember this name (suggestions + auto-naming)
     </label>
     <label id="rnNumberRow" style="display:none;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;cursor:pointer">
-      <input type="checkbox" id="rnNumber" checked style="width:18px;height:18px;accent-color:var(--accent)">
-      Auto-number pages (Name_001, Name_002…)
+      <input type="checkbox" id="rnNumber" style="width:18px;height:18px;accent-color:var(--accent)">
+      Auto-number pages (Name_001, Name_002…) — off = same name for all
     </label>
     <div style="font-size:10.5px;color:var(--muted-2);margin-top:8px">Tip: use tokens {date}, {page}, {n} in the name.</div>
     <div class="cam-actions">
@@ -1632,6 +1632,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       if(no) no.textContent='these pages';
       if(thumb) thumb.style.display='none';
       if(numRow) numRow.style.display='flex';
+      var numChk=byId('rnNumber'); if(numChk) numChk.checked=false; // default: same name for all
       var inp0=byId('rnInput'); if(inp0) inp0.value='';
     } else {
       if(mb) mb.style.display='none';
