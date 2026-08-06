@@ -173,6 +173,7 @@ public class MainForm : Form
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
         string data = "";
         string ctx = "";
+        var indices = new List<int>();
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -200,6 +201,13 @@ public class MainForm : Form
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
+            if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var el in ixArr.EnumerateArray())
+                {
+                    if (el.ValueKind == JsonValueKind.Number) indices.Add(el.GetInt32());
+                }
+            }
             if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
         }
         catch
@@ -219,7 +227,7 @@ public class MainForm : Form
                 await SavePdfAsync();
                 break;
             case "savePdfSelected":
-                await SavePdfSelectedAsync();
+                await SavePdfSelectedAsync(indices);
                 break;
             case "print":
                 PrintPages();
@@ -335,7 +343,8 @@ public class MainForm : Form
                 break;
             case "deletePage":
                 PushUndo();
-                await DeletePageAsync();
+                if (indices.Count > 0) await DeletePagesAsync(indices);
+                else await DeletePageAsync();
                 break;
             case "select":
                 _selected = index;
@@ -641,21 +650,27 @@ public class MainForm : Form
         }
     }
 
-    private async Task SavePdfSelectedAsync()
+    private async Task SavePdfSelectedAsync(List<int> indices)
     {
         if (_pages.Count == 0)
         {
             Status("Nothing to save — scan a page first");
             return;
         }
-        int idx = Sel();
-        if (idx < 0)
+        var sel = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+        if (sel.Count == 0)
+        {
+            int s = Sel();
+            if (s >= 0) sel.Add(s);
+        }
+        if (sel.Count == 0)
         {
             Status("No page selected");
             return;
         }
-        var nm = (idx < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[idx]))
-            ? SanitizeFileName(_pageNames[idx]) : "scan";
+        var first = sel[0];
+        var nm = (first < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[first]))
+            ? SanitizeFileName(_pageNames[first]) : "scan";
         using var sfd = new SaveFileDialog
         {
             Filter = "PDF document (*.pdf)|*.pdf",
@@ -667,19 +682,47 @@ public class MainForm : Form
         }
         try
         {
-            Status(_ocr ? "Saving selected page (OCR)…" : "Saving selected page…");
+            Status(_ocr ? "Saving selected page(s) (OCR)…" : "Saving selected page(s)…");
+            var pages = sel.Select(i => _pages[i]).ToList();
             var exporter = new PdfExporter(_ctx);
             var ocrParams = _ocr ? new OcrParams("eng") : null;
-            await exporter.Export(sfd.FileName, new[] { _pages[idx] }, ocrParams: ocrParams);
-            AddHistory(sfd.FileName, 1);
+            await exporter.Export(sfd.FileName, pages, ocrParams: ocrParams);
+            AddHistory(sfd.FileName, pages.Count);
             Bump("pdf", 1);
             Post(new { type = "done", path = sfd.FileName });
-            Status("Saved selected page: " + sfd.FileName);
+            Status($"Saved {pages.Count} page(s): " + sfd.FileName);
             if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
             Status("Save error: " + ex.Message);
+        }
+    }
+
+    private async Task DeletePagesAsync(List<int> indices)
+    {
+        var uniq = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderByDescending(i => i).ToList();
+        if (uniq.Count == 0)
+        {
+            Status("No pages selected");
+            return;
+        }
+        foreach (var i in uniq)
+        {
+            _pages[i].Dispose();
+            _pages.RemoveAt(i);
+            if (i < _pageNames.Count) _pageNames.RemoveAt(i);
+        }
+        if (_selected >= _pages.Count) _selected = _pages.Count - 1;
+        if (_pages.Count == 0)
+        {
+            Post(new { type = "cleared" });
+            Status("All pages removed");
+        }
+        else
+        {
+            await RefreshAsync(false);
+            Status($"Deleted {uniq.Count} page(s) — {_pages.Count} left");
         }
     }
 

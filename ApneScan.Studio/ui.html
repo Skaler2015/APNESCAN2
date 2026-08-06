@@ -591,7 +591,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
     <div class="set-sec">Scanning</div>
     <div class="set-row"><label>Resolution</label>
-      <select id="setResSel"><option value="100">100 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option></select></div>
+      <select id="setResSel"><option value="100">100 dpi</option><option value="150">150 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="custom">Custom…</option></select></div>
+    <div class="set-row" id="setResCustomRow" style="display:none"><label>Custom dpi</label><input type="number" id="setResCustom" min="50" max="1200" step="10" placeholder="e.g. 250" style="width:150px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text)"></div>
     <div class="set-row"><label>Color</label>
       <select id="setColorSel"><option value="color">Color</option><option value="gray">Grayscale</option><option value="bw">Black &amp; White</option></select></div>
     <div class="set-row"><label>Paper source</label>
@@ -749,7 +750,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var selectedDevice = 0;   // which scanner to use
   var savedScanner = '';    // remembered scanner name (from settings)
   var settings = { dpi:200, color:'color', source:'auto' };
-  var dpiOpts = [100,200,300,600];
+  var dpiOpts = [100,150,200,300,600];
   var colorOpts = [['color','Color'],['gray','Grayscale'],['bw','Black & White']];
   var srcOpts = [['auto','Auto'],['flatbed','Flatbed'],['feeder','Feeder'],['duplex','Duplex (both sides)']];
   function cycle(arr, cur){ var i=arr.indexOf(cur); return arr[(i+1)%arr.length]; }
@@ -920,11 +921,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
   }
   // Center gallery of scanned pages (fills the main area after a scan)
-  var scannedNames=[], scannedSel=-1, nameSuggestions=[];
+  var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0;
+  function isSel(i){ return selSet.length ? (selSet.indexOf(i)>=0) : (i===scannedSel); }
+  function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; }
+  function selectAllPages(){ if(!scannedTotal){ setStatus('Nothing to select'); return; } selSet=[]; for(var i=0;i<scannedTotal;i++) selSet.push(i); applyMultiHighlight(); setStatus(scannedTotal+' page(s) selected'); }
+  function clearMultiSel(){ selSet=[]; applyMultiHighlight(); }
   function renderScanned(thumbs, selected, names){
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
     scannedNames=(names||[]).slice();
+    scannedTotal=thumbs?thumbs.length:0; selSet=[];
     if(typeof selected==='number') scannedSel=selected;
     // When scanned pages are shown, show ONLY them — hide the Scan card, hint,
     // Quick Actions and Recent Files. They return after Clear.
@@ -951,11 +957,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else { nm.className='pg-name reading'; nm.textContent='Reading name…'; nm.title='Double-click or F2 to rename'; }
       nm.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openRename(i); });
       c.appendChild(nm);
-      c.addEventListener('click', function(){ scannedSel=i; if(bridge) send({cmd:'select', index:i}); });
+      c.addEventListener('click', function(ev){
+        if(ev.ctrlKey||ev.metaKey){ var p=selSet.indexOf(i); if(p>=0) selSet.splice(p,1); else selSet.push(i); scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); return; }
+        if(ev.shiftKey && scannedSel>=0){ selSet=[]; var a=Math.min(scannedSel,i), b=Math.max(scannedSel,i); for(var j=a;j<=b;j++) selSet.push(j); applyMultiHighlight(); return; }
+        selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i});
+      });
       grid.appendChild(c);
     });
   }
   function highlightScanned(index){
+    if(selSet.length) return; // keep multi-selection highlight
     var g=byId('scannedGrid'); if(!g) return;
     var k=g.children;
     for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', i===index); }
@@ -1062,7 +1073,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var brt=byId('btnRotate'); if(brt) brt.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brl=byId('btnRotL'); if(brl) brl.addEventListener('click', function(){ if(bridge) send({cmd:'rotateLeft'}); });
-  var bde=byId('btnDelete'); if(bde) bde.addEventListener('click', function(){ if(bridge) send({cmd:'deletePage'}); });
+  var bde=byId('btnDelete'); if(bde) bde.addEventListener('click', function(){ if(bridge) send({cmd:'deletePage', indices:selSet.slice()}); });
   // import existing images / PDFs
   function doImport(){ setStatus('Importing…'); if(bridge) send({cmd:'import'}); }
   var bim=byId('btnImport'); if(bim) bim.addEventListener('click', doImport);
@@ -1147,8 +1158,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     applyShowNums(s.showNums!==false);
     applyShowProfiles(s.showProfiles!==false);
   }
+  var STD_DPI=['100','150','200','300','600'];
+  function updateResCustomRow(){ var r=byId('setResSel'), row=byId('setResCustomRow'); if(row) row.style.display=(r&&r.value==='custom')?'':'none'; }
   function openSettings(){
-    var r=byId('setResSel'); if(r) r.value=String(settings.dpi);
+    var r=byId('setResSel'); if(r){ if(STD_DPI.indexOf(String(settings.dpi))>=0){ r.value=String(settings.dpi); } else { r.value='custom'; var cu=byId('setResCustom'); if(cu) cu.value=settings.dpi; } }
+    updateResCustomRow();
     var c=byId('setColorSel'); if(c) c.value=settings.color;
     var s=byId('setSrcSel'); if(s) s.value=settings.source;
     var o=byId('setOcrChk'); if(o) o.checked=ocrOn;
@@ -1169,9 +1183,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false;
     openSettings(); setStatus('Defaults restored — press OK to apply');
   });
+  var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
   var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){
     var r=byId('setResSel'), c=byId('setColorSel'), s=byId('setSrcSel'), o=byId('setOcrChk');
-    if(r) settings.dpi=parseInt(r.value,10)||settings.dpi;
+    if(r){ if(r.value==='custom'){ var cu=byId('setResCustom'); var cv=cu?parseInt(cu.value,10):0; if(cv>=50 && cv<=1200) settings.dpi=cv; } else { settings.dpi=parseInt(r.value,10)||settings.dpi; } }
     if(c) settings.color=c.value;
     if(s) settings.source=s.value;
     var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
@@ -1528,7 +1543,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'ocr', sec:'Scanning', label:'Toggle OCR', def:'Ctrl+Alt+O', run:function(){ setOcr(!ocrOn,true); setStatus(ocrOn?'OCR ON':'OCR off'); }},
     {id:'import', sec:'Files', label:'Import files', def:'Ctrl+O', run:function(){ doImport(); }},
     {id:'savePdf', sec:'Files', label:'Save all as PDF', def:'Ctrl+S', run:function(){ setStatus('Saving…'); send({cmd:'savePdf'}); }},
-    {id:'savePdfSel', sec:'Files', label:'Save selected page as PDF', def:'Space', run:function(){ setStatus('Saving selected page…'); send({cmd:'savePdfSelected'}); }},
+    {id:'savePdfSel', sec:'Files', label:'Save selected page(s) as PDF', def:'Space', run:function(){ setStatus('Saving selected page(s)…'); send({cmd:'savePdfSelected', indices:selSet.slice()}); }},
     {id:'saveJpg', sec:'Files', label:'Save as JPG', def:'Ctrl+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'jpg'}); }},
     {id:'savePng', sec:'Files', label:'Save as PNG', def:'Ctrl+Shift+I', run:function(){ setStatus('Saving image(s)…'); send({cmd:'saveImages',format:'png'}); }},
     {id:'print', sec:'Files', label:'Print', def:'Ctrl+P', run:function(){ setStatus('Printing…'); send({cmd:'print'}); }},
@@ -1536,7 +1551,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'camera', sec:'Capture', label:'Camera', def:'Ctrl+M', run:function(){ openCamera(); }},
     {id:'phone', sec:'Capture', label:'Phone to PC', def:'Ctrl+G', run:function(){ openPhone(); }},
     {id:'undo', sec:'Edit page', label:'Undo', def:'Ctrl+Z', run:function(){ send({cmd:'undo'}); }},
-    {id:'del', sec:'Edit page', label:'Delete page', def:'Delete', run:function(){ send({cmd:'deletePage'}); }},
+    {id:'selectAll', sec:'Edit page', label:'Select all pages', def:'Ctrl+A', run:function(){ selectAllPages(); }},
+    {id:'del', sec:'Edit page', label:'Delete selected page(s)', def:'Delete', run:function(){ send({cmd:'deletePage', indices:selSet.slice()}); }},
     {id:'rotR', sec:'Edit page', label:'Rotate right', def:'Ctrl+R', run:function(){ send({cmd:'rotateRight'}); }},
     {id:'rotL', sec:'Edit page', label:'Rotate left', def:'Ctrl+Shift+R', run:function(){ send({cmd:'rotateLeft'}); }},
     {id:'crop', sec:'Edit page', label:'Crop page', def:'Ctrl+Shift+C', run:function(){ startCrop(); }},
