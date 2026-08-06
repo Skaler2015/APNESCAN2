@@ -70,7 +70,11 @@ public class PrintDocumentPrinter : IScannedImagePrinter
                 var image = imagesToPrint[i].Render();
                 try
                 {
-                    var pb = e.PageBounds;
+                    // Use MarginBounds (the printable area inside the printer's
+                    // hardware margins) rather than PageBounds (the full physical
+                    // page). Printing to the full page gets clipped at the edges
+                    // by the printer, which cut off the sides of the scan.
+                    var pb = e.MarginBounds;
                     if (Math.Sign(image.Width - image.Height) != Math.Sign(pb.Width - pb.Height))
                     {
                         // Flip portrait/landscape to match output

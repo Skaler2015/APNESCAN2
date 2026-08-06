@@ -316,6 +316,12 @@ internal class ScanPerformer : IScanPerformer
         options.PageSize =
             new PageSize(pageDimensions.Width, pageDimensions.Height, (PageSizeUnit) pageDimensions.Unit);
 
+        // Scan the scanner's full available area so a page of any size is captured
+        // completely instead of being cropped to the profile's page size. The
+        // driver clamps this to the device's real maximum scan area, so this just
+        // means "scan everything". Oversized output can be cropped afterwards.
+        options.PageSize = new PageSize(14m, 22m, PageSizeUnit.Inch);
+
         return options;
     }
 

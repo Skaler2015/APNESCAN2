@@ -4,7 +4,7 @@
 ; one-click updater can install a new version over a running instance.
 
 #define AppName "ApneScan"
-#define AppExe "ApneScan.exe"
+#define AppExe "NAPS2.exe"
 #ifndef AppVersion
   #define AppVersion GetEnv("APNESCAN_VERSION")
 #endif
