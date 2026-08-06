@@ -160,6 +160,7 @@ public class MainForm : Form
         string filePath = "";
         string name = "";
         string format = "";
+        string deviceName = "";
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -168,6 +169,7 @@ public class MainForm : Form
             if (root.TryGetProperty("path", out var fp) && fp.ValueKind == JsonValueKind.String) filePath = fp.GetString() ?? "";
             if (root.TryGetProperty("name", out var nm) && nm.ValueKind == JsonValueKind.String) name = nm.GetString() ?? "";
             if (root.TryGetProperty("format", out var ft) && ft.ValueKind == JsonValueKind.String) format = ft.GetString() ?? "";
+            if (root.TryGetProperty("deviceName", out var dn) && dn.ValueKind == JsonValueKind.String) deviceName = dn.GetString() ?? "";
             if (root.TryGetProperty("device", out var d) && d.ValueKind == JsonValueKind.Number) deviceIndex = d.GetInt32();
             if (root.TryGetProperty("index", out var ix) && ix.ValueKind == JsonValueKind.Number) index = ix.GetInt32();
             if (root.TryGetProperty("x0", out var vx0) && vx0.ValueKind == JsonValueKind.Number) x0 = vx0.GetDouble();
@@ -242,7 +244,7 @@ public class MainForm : Form
                 SendSettings();
                 break;
             case "saveSettings":
-                SaveSettings(dpi, color, source, on);
+                SaveSettings(dpi, color, source, on, deviceName);
                 break;
             case "getHistory":
                 SendHistory();
@@ -1141,6 +1143,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string Color { get; set; } = "color";
         public string Source { get; set; } = "auto";
         public bool Ocr { get; set; }
+        // Preferred scanner (by name) — remembered across sessions.
+        public string Device { get; set; } = "";
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -1164,14 +1168,14 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     {
         var s = LoadSettings();
         _ocr = s.Ocr;
-        Post(new { type = "settings", dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr });
+        Post(new { type = "settings", dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device });
     }
 
-    private void SaveSettings(int dpi, string color, string source, bool ocr)
+    private void SaveSettings(int dpi, string color, string source, bool ocr, string device)
     {
         try
         {
-            var s = new AppSettings { Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr };
+            var s = new AppSettings { Dpi = dpi > 0 ? dpi : 200, Color = color, Source = source, Ocr = ocr, Device = device ?? "" };
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsFile)!);
             File.WriteAllText(SettingsFile, JsonSerializer.Serialize(s));
             _ocr = ocr;
