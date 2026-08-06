@@ -603,6 +603,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="set-row"><label>Auto-detect document names</label><input type="checkbox" id="setAutoNameChk"></div>
 
     <div class="set-sec">Application</div>
+    <div class="set-row"><label>Trim blank borders (auto-crop)</label><input type="checkbox" id="setAutoCropChk"></div>
+    <div class="set-row"><label>Skip blank pages</label><input type="checkbox" id="setSkipBlankChk"></div>
     <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
 
     <div class="cam-actions">
@@ -1136,7 +1138,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false };
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false };
   function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
   function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
@@ -1144,7 +1146,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn,
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
-    saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter }); }
+    saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -1158,6 +1161,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(s.saveDefault) ui.saveDefault=s.saveDefault;
     ui.autoName=(s.autoName!==false);
     ui.clearAfter=!!s.clearAfter;
+    ui.autoCrop=(s.autoCrop!==false);
+    ui.skipBlank=!!s.skipBlank;
     applyTheme(s.theme||'default');
     applyShowNums(s.showNums!==false);
     applyShowProfiles(s.showProfiles!==false);
@@ -1176,6 +1181,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var sv=byId('setSaveSel'); if(sv) sv.value=ui.saveDefault;
     var an=byId('setAutoNameChk'); if(an) an.checked=ui.autoName;
     var cl=byId('setClearChk'); if(cl) cl.checked=ui.clearAfter;
+    var acp=byId('setAutoCropChk'); if(acp) acp.checked=ui.autoCrop;
+    var skb=byId('setSkipBlankChk'); if(skb) skb.checked=ui.skipBlank;
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
@@ -1184,7 +1191,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
-    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false;
+    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false;
     openSettings(); setStatus('Defaults restored — press OK to apply');
   });
   var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
@@ -1203,6 +1210,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var sv=byId('setSaveSel'); if(sv) ui.saveDefault=sv.value;
     var an=byId('setAutoNameChk'); if(an) ui.autoName=an.checked;
     var cl=byId('setClearChk'); if(cl) ui.clearAfter=cl.checked;
+    var acp=byId('setAutoCropChk'); if(acp) ui.autoCrop=acp.checked;
+    var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });

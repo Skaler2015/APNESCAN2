@@ -44,6 +44,8 @@ public class MainForm : Form
     private bool _naming;
     private bool _autoName = true;
     private bool _clearAfter;
+    private bool _autoCrop = true;
+    private bool _skipBlank;
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
 
@@ -171,6 +173,7 @@ public class MainForm : Form
         string theme = "default";
         string saveDefault = "ask";
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
+        bool autoCrop = true, skipBlank = false;
         string data = "";
         string ctx = "";
         var indices = new List<int>();
@@ -199,6 +202,8 @@ public class MainForm : Form
             if (root.TryGetProperty("showProfiles", out var spEl) && (spEl.ValueKind == JsonValueKind.True || spEl.ValueKind == JsonValueKind.False)) showProfiles = spEl.GetBoolean();
             if (root.TryGetProperty("autoName", out var anEl) && (anEl.ValueKind == JsonValueKind.True || anEl.ValueKind == JsonValueKind.False)) autoName = anEl.GetBoolean();
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
+            if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
+            if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
@@ -279,7 +284,8 @@ public class MainForm : Form
                 {
                     Dpi = dpi, Color = color, Source = source, Ocr = on, Device = deviceName,
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
-                    SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter
+                    SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
+                    AutoCrop = autoCrop, SkipBlank = skipBlank
                 });
                 break;
             case "getHistory":
@@ -587,17 +593,28 @@ public class MainForm : Form
                 Dpi = dpi > 0 ? dpi : 200
             };
 
-            int added = 0;
+            int added = 0, skipped = 0;
             await foreach (var image in controller.Scan(options))
             {
-                _pages.Add(image);
+                var (proc, blank) = await PostProcessScanAsync(image);
+                if (blank && _skipBlank)
+                {
+                    proc.Dispose();
+                    skipped++;
+                    continue;
+                }
+                _pages.Add(proc);
                 added++;
             }
 
             if (added == 0)
             {
-                Status("Nothing was scanned");
+                Status(skipped > 0 ? $"Only blank page(s) found — skipped {skipped}" : "Nothing was scanned");
                 return;
+            }
+            if (skipped > 0)
+            {
+                Status($"Skipped {skipped} blank page(s)");
             }
 
             await RefreshAsync(true);
@@ -613,6 +630,108 @@ public class MainForm : Form
         {
             _busy = false;
         }
+    }
+
+    // Auto-crop blank borders and detect blank pages by analysing a small
+    // rendering of the scanned page.
+    private async Task<(ProcessedImage img, bool blank)> PostProcessScanAsync(ProcessedImage p)
+    {
+        double l = 0, t = 0, r = 1, b = 1, coverage = 1;
+        try
+        {
+            var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+            using var thumb = await renderer.Render(p, 500);
+            using var bmp = ToBitmap24(thumb);
+            (l, t, r, b, coverage) = ContentBounds(bmp);
+        }
+        catch
+        {
+            return (p, false);
+        }
+
+        // Almost nothing on the page → blank.
+        if (coverage < 0.0035)
+        {
+            return (p, true);
+        }
+
+        if (_autoCrop)
+        {
+            // Keep a small margin around the detected content.
+            const double m = 0.012;
+            l = Math.Max(0, l - m); t = Math.Max(0, t - m);
+            r = Math.Min(1, r + m); b = Math.Min(1, b + m);
+            // Only crop if it actually removes a meaningful border.
+            if ((r - l) < 0.985 || (b - t) < 0.985)
+            {
+                int w, h;
+                using (var full = p.Render()) { w = full.Width; h = full.Height; }
+                int left = (int) (l * w), right = (int) ((1 - r) * w);
+                int top = (int) (t * h), bottom = (int) ((1 - b) * h);
+                if (left >= 0 && right >= 0 && top >= 0 && bottom >= 0 &&
+                    (w - left - right) > 10 && (h - top - bottom) > 10)
+                {
+                    try { p = p.WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true); }
+                    catch { /* keep original on failure */ }
+                }
+            }
+        }
+        return (p, false);
+    }
+
+    private static System.Drawing.Bitmap ToBitmap24(IMemoryImage img)
+    {
+        var src = img.AsBitmap();
+        var bmp = new System.Drawing.Bitmap(src.Width, src.Height,
+            System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+        using (var g = System.Drawing.Graphics.FromImage(bmp))
+        {
+            g.DrawImage(src, 0, 0, src.Width, src.Height);
+        }
+        return bmp;
+    }
+
+    // Returns the content bounding box as fractions (left, top, right, bottom)
+    // plus the fraction of dark pixels (used for blank-page detection).
+    private static (double l, double t, double r, double b, double coverage) ContentBounds(System.Drawing.Bitmap bmp)
+    {
+        int w = bmp.Width, h = bmp.Height;
+        var data = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h),
+            System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+        int stride = data.Stride;
+        var buf = new byte[stride * h];
+        System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buf, 0, buf.Length);
+        bmp.UnlockBits(data);
+
+        var rowCount = new int[h];
+        var colCount = new int[w];
+        long dark = 0;
+        for (int y = 0; y < h; y++)
+        {
+            int row = y * stride;
+            for (int x = 0; x < w; x++)
+            {
+                int o = row + x * 3;
+                int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
+                if (lum < 215)
+                {
+                    rowCount[y]++;
+                    colCount[x]++;
+                    dark++;
+                }
+            }
+        }
+        int rowThresh = Math.Max(2, (int) (w * 0.004));
+        int colThresh = Math.Max(2, (int) (h * 0.004));
+        int minX = -1, maxX = -1, minY = -1, maxY = -1;
+        for (int y = 0; y < h; y++) { if (rowCount[y] > rowThresh) { if (minY < 0) minY = y; maxY = y; } }
+        for (int x = 0; x < w; x++) { if (colCount[x] > colThresh) { if (minX < 0) minX = x; maxX = x; } }
+        double coverage = (double) dark / ((long) w * h);
+        if (minX < 0 || minY < 0)
+        {
+            return (0, 0, 1, 1, coverage);
+        }
+        return ((double) minX / w, (double) minY / h, (double) (maxX + 1) / w, (double) (maxY + 1) / h, coverage);
     }
 
     private async Task SavePdfAsync()
@@ -1478,6 +1597,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string SaveDefault { get; set; } = "ask";
         public bool AutoName { get; set; } = true;
         public bool ClearAfter { get; set; }
+        public bool AutoCrop { get; set; } = true;
+        public bool SkipBlank { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -1503,12 +1624,15 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _ocr = s.Ocr;
         _autoName = s.AutoName;
         _clearAfter = s.ClearAfter;
+        _autoCrop = s.AutoCrop;
+        _skipBlank = s.SkipBlank;
         Post(new
         {
             type = "settings",
             dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device,
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
-            saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter
+            saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
+            autoCrop = s.AutoCrop, skipBlank = s.SkipBlank
         });
     }
 
@@ -1523,6 +1647,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _ocr = s.Ocr;
             _autoName = s.AutoName;
             _clearAfter = s.ClearAfter;
+            _autoCrop = s.AutoCrop;
+            _skipBlank = s.SkipBlank;
         }
         catch { /* best-effort */ }
     }
