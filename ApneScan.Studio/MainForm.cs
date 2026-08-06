@@ -232,7 +232,7 @@ public class MainForm : Form
             var options = new ScanOptions
             {
                 Device = _devices[deviceIndex],
-                PaperSource = PaperSource.Auto,
+                PaperSource = NAPS2.Scan.PaperSource.Auto,
                 // Scan the scanner's full area (the driver clamps to the device
                 // maximum) so a page of any size is captured completely.
                 PageSize = new PageSize(14m, 22m, PageSizeUnit.Inch),
