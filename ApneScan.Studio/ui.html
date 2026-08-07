@@ -843,6 +843,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 <!-- Scanner picker dropdown (list of detected scanners) -->
 <div class="menu" id="scannerMenu" style="min-width:240px;max-width:420px"></div>
 <div class="menu" id="setMenu" style="min-width:170px"></div>
+<div class="menu" id="printMenu" style="min-width:200px"></div>
 
 <!-- Save-as dropdown menu (PDF / JPG / PNG) -->
 <div class="menu" id="saveMenu">
@@ -1437,7 +1438,36 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   });
   // toolbar actions wired to the real engine
   var bs=byId('btnSave'); if(bs) bs.addEventListener('click', function(){ if(bridge){ setStatus('Saving…'); send({cmd:'savePdf'}); } });
-  var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(){ if(bridge){ setStatus('Printing…'); send({cmd:'print'}); } });
+  // Print menu — 4 modes (all / selected / ID / ID selected)
+  var printMenu=byId('printMenu');
+  function closePrintMenu(){ if(printMenu){ printMenu.classList.remove('on'); printMenu.__anchor=null; } }
+  function openPrintMenu(anchor){
+    if(!printMenu||!anchor) return;
+    if(typeof closeSetMenu==='function') closeSetMenu();
+    var wasOpen = printMenu.classList.contains('on') && printMenu.__anchor===anchor;
+    closePrintMenu();
+    if(wasOpen) return;
+    printMenu.__anchor=anchor;
+    var items=[
+      ['All print', function(){ send({cmd:'print', op:'all'}); }],
+      ['Selected page print', function(){ send({cmd:'print', op:'selected', indices:selSet.slice()}); }],
+      ['ID print', function(){ send({cmd:'print', op:'id'}); }],
+      ['ID print (selected)', function(){ send({cmd:'print', op:'idSelected', indices:selSet.slice()}); }]
+    ];
+    printMenu.innerHTML='';
+    items.forEach(function(it){
+      var el=document.createElement('div'); el.className='opt';
+      el.innerHTML='<svg class="ic"><use href="#i-print"/></svg><span style="flex:1;white-space:nowrap">'+it[0]+'</span>';
+      el.addEventListener('click', function(e){ e.stopPropagation(); closePrintMenu(); if(bridge){ setStatus('Printing…'); it[1](); } });
+      printMenu.appendChild(el);
+    });
+    var rect=anchor.getBoundingClientRect();
+    printMenu.style.left=Math.max(8, Math.min(rect.left, window.innerWidth-215))+'px';
+    printMenu.style.top=(rect.bottom+6)+'px';
+    printMenu.classList.add('on');
+  }
+  document.addEventListener('click', function(e){ if(printMenu && printMenu.classList.contains('on') && !printMenu.contains(e.target) && !(printMenu.__anchor && printMenu.__anchor.contains(e.target))){ closePrintMenu(); } });
+  var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(e){ e.stopPropagation(); openPrintMenu(bp); });
   var bc=byId('btnClear'); if(bc) bc.addEventListener('click', function(){ if(bridge){ send({cmd:'clear'}); } else { resetPreview(); } });
   function doScan(){
     var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
@@ -1752,7 +1782,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   ['btnOpenEditor','btnEditor'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', function(){ openFs(); }); });
 
   // Print (extra buttons)
-  var bpt=byId('btnPrintTr'); if(bpt) bpt.addEventListener('click', function(){ setStatus('Printing…'); if(bridge) send({cmd:'print'}); });
+  var bpt=byId('btnPrintTr'); if(bpt) bpt.addEventListener('click', function(e){ e.stopPropagation(); openPrintMenu(bpt); });
 
   // Top-right icons: mail→share, help→repo, info→About
   var iM=byId('icMail'); if(iM) iM.addEventListener('click', doShare);
@@ -2564,7 +2594,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closePrintMenu==='function') closePrintMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});

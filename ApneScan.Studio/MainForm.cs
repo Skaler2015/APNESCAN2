@@ -558,7 +558,7 @@ public class MainForm : Form
                 await SavePdfSelectedAsync(indices);
                 break;
             case "print":
-                PrintPages();
+                PrintPages(string.IsNullOrEmpty(op) ? "all" : op, indices);
                 break;
             case "clear":
                 ClearPages();
@@ -1453,46 +1453,93 @@ public class MainForm : Form
         }
     }
 
-    private void PrintPages()
+    // mode: "all" | "selected" | "id" | "idSelected".
+    //  - all/selected : one page per sheet (fit to the printable area)
+    //  - id/idSelected: each page printed at real ID-card size (85.6×54 mm),
+    //                   tiled onto the sheet with a light cut border.
+    private void PrintPages(string mode = "all", List<int>? indices = null)
     {
         if (_pages.Count == 0)
         {
             Status("Nothing to print — scan a page first");
             return;
         }
+        bool idMode = mode == "id" || mode == "idSelected";
+        bool selectedOnly = mode == "selected" || mode == "idSelected";
+
+        List<int> pages;
+        if (selectedOnly)
+        {
+            pages = (indices ?? new List<int>()).Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+            if (pages.Count == 0) { int s = Sel(); if (s >= 0) pages.Add(s); }
+            if (pages.Count == 0) { Status("No page selected — select page(s) first"); return; }
+        }
+        else
+        {
+            pages = Enumerable.Range(0, _pages.Count).ToList();
+        }
+
         try
         {
             var doc = new PrintDocument();
-            int i = 0;
-            doc.PrintPage += (_, e) =>
+
+            if (!idMode)
             {
-                var image = _pages[i].Render();
-                try
+                int i = 0;
+                doc.PrintPage += (_, e) =>
                 {
-                    // MarginBounds is the printable area inside the printer's
-                    // hardware margins, so the sides of the scan are not clipped.
-                    var pb = e.MarginBounds;
-                    if (Math.Sign(image.Width - image.Height) != Math.Sign(pb.Width - pb.Height))
+                    var image = _pages[pages[i]].Render();
+                    try
                     {
-                        image = image.PerformTransform(new RotationTransform(90));
+                        var pb = e.MarginBounds;
+                        if (Math.Sign(image.Width - image.Height) != Math.Sign(pb.Width - pb.Height))
+                            image = image.PerformTransform(new RotationTransform(90));
+                        var bmp = image.AsBitmap();
+                        double scale = Math.Min((double)pb.Width / bmp.Width, (double)pb.Height / bmp.Height);
+                        int w = (int)Math.Round(bmp.Width * scale);
+                        int h = (int)Math.Round(bmp.Height * scale);
+                        e.Graphics!.DrawImage(bmp, new Rectangle(pb.Left + (pb.Width - w) / 2, pb.Top + (pb.Height - h) / 2, w, h));
                     }
-                    // AsBitmap() exposes the underlying GDI bitmap; it is freed
-                    // when the rendered image is disposed below, so don't dispose
-                    // it separately here.
-                    var bmp = image.AsBitmap();
-                    double scale = Math.Min((double) pb.Width / bmp.Width, (double) pb.Height / bmp.Height);
-                    int w = (int) Math.Round(bmp.Width * scale);
-                    int h = (int) Math.Round(bmp.Height * scale);
-                    int x = pb.Left + (pb.Width - w) / 2;
-                    int y = pb.Top + (pb.Height - h) / 2;
-                    e.Graphics!.DrawImage(bmp, new Rectangle(x, y, w, h));
-                }
-                finally
+                    finally { image.Dispose(); }
+                    e.HasMorePages = ++i < pages.Count;
+                };
+            }
+            else
+            {
+                // Standard CR80 ID card = 85.6 × 54 mm = 3.37 × 2.125 in.
+                // PrintDocument coordinates are 1/100 inch by default.
+                const int cardW = 337, cardH = 213, gap = 22;
+                int idx = 0;
+                doc.PrintPage += (_, e) =>
                 {
-                    image.Dispose();
-                }
-                e.HasMorePages = ++i < _pages.Count;
-            };
+                    var pb = e.MarginBounds;
+                    int cols = Math.Max(1, (pb.Width + gap) / (cardW + gap));
+                    int rows = Math.Max(1, (pb.Height + gap) / (cardH + gap));
+                    int perPage = cols * rows;
+                    using var pen = new Pen(Color.FromArgb(200, 200, 200));
+                    for (int cell = 0; cell < perPage && idx < pages.Count; cell++, idx++)
+                    {
+                        int r = cell / cols, c = cell % cols;
+                        int cx = pb.Left + c * (cardW + gap);
+                        int cy = pb.Top + r * (cardH + gap);
+                        var image = _pages[pages[idx]].Render();
+                        try
+                        {
+                            // Rotate a portrait scan so it fills the landscape card.
+                            if (image.Height > image.Width)
+                                image = image.PerformTransform(new RotationTransform(90));
+                            var bmp = image.AsBitmap();
+                            double scale = Math.Min((double)cardW / bmp.Width, (double)cardH / bmp.Height);
+                            int w = (int)Math.Round(bmp.Width * scale);
+                            int h = (int)Math.Round(bmp.Height * scale);
+                            e.Graphics!.DrawImage(bmp, new Rectangle(cx + (cardW - w) / 2, cy + (cardH - h) / 2, w, h));
+                            e.Graphics.DrawRectangle(pen, cx, cy, cardW, cardH);
+                        }
+                        finally { image.Dispose(); }
+                    }
+                    e.HasMorePages = idx < pages.Count;
+                };
+            }
 
             using var pd = new PrintDialog { Document = doc, UseEXDialog = true };
             if (pd.ShowDialog(this) == DialogResult.OK)
@@ -1501,7 +1548,7 @@ public class MainForm : Form
                 Status("Printing…");
                 doc.Print();
                 Bump("print", 1);
-                Status($"Printed {_pages.Count} page(s)");
+                Status($"Printed {pages.Count} page(s)" + (idMode ? " as ID card(s)" : ""));
             }
         }
         catch (Exception ex)
