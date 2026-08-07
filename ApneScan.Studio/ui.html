@@ -680,6 +680,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   </div>
 </div>
 
+<div class="cam-overlay" id="phoneShareOverlay">
+  <div class="cam-box" style="max-width:420px;text-align:center">
+    <h3>📲 Send to phone</h3>
+    <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px">Keep your phone on the <b>same WiFi</b>, then scan this QR to download <b id="psName"></b>:</p>
+    <img id="psQr" alt="QR code" style="width:220px;height:220px;margin:6px auto;display:block;background:#fff;border:1px solid var(--border);border-radius:10px">
+    <div id="psUrl" style="font-size:12px;color:var(--accent);font-weight:700;word-break:break-all"></div>
+    <div class="cam-actions" style="justify-content:center">
+      <div class="cam-btn primary" id="psClose">Done</div>
+    </div>
+  </div>
+</div>
+
 <div class="cam-overlay" id="setOverlay">
   <div class="cam-box" style="max-width:460px;text-align:left;max-height:88vh;overflow:auto">
     <h3>⚙️ Settings</h3>
@@ -1250,6 +1262,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
       else if(m.type==='phone'){ var qr=byId('phoneQr'); if(qr&&m.qr) qr.src=m.qr; var pu=byId('phoneUrl'); if(pu) pu.textContent=m.url||''; }
+      else if(m.type==='phoneShare'){ var q2=byId('psQr'); if(q2&&m.qr) q2.src=m.qr; var u2=byId('psUrl'); if(u2) u2.textContent=m.url||''; var nn=byId('psName'); if(nn) nn.textContent=m.name||'file'; overlay('phoneShareOverlay', true); }
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
@@ -1345,6 +1358,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(bridge) send({cmd:'startPhone'});
   }
   function closePhone(){ var ov=byId('phoneOverlay'); if(ov) ov.classList.remove('on'); if(bridge) send({cmd:'stopPhone'}); }
+  var psClose=byId('psClose'); if(psClose) psClose.addEventListener('click', function(){ overlay('phoneShareOverlay', false); });
   var bph=byId('btnPhone'); if(bph) bph.addEventListener('click', openPhone);
   var qph=byId('qcPhone'); if(qph) qph.addEventListener('click', openPhone);
   var nph=byId('navPhone'); if(nph) nph.addEventListener('click', openPhone);
@@ -1728,6 +1742,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         if(hasExt(sel,['jpg','jpeg','png','tif','tiff','bmp'])) item('Combine images → PDF','i-pdf', function(){ setStatus('Making PDF…'); send({cmd:'imagesToPdf', data:JSON.stringify(sel)}); });
       } else {
         item('Open in editor (edit pages)','i-editor', function(){ setStatus('Opening…'); send({cmd:'importPath', path:en.path}); });
+        item('Print','i-print', function(){ setStatus('Preparing to print…'); send({cmd:'printFile', path:en.path}); });
+        item('Send to phone (QR)','i-qr', function(){ setStatus('Making QR…'); send({cmd:'sharePhone', path:en.path}); });
         if(ext==='pdf'){
           item('Split into pages','i-files', function(){ setStatus('Splitting…'); send({cmd:'splitPdf', path:en.path}); });
           item('Export as images','i-image', function(){ setStatus('Exporting…'); send({cmd:'pdfToImages', path:en.path}); });
@@ -2042,7 +2058,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   });
 
   // ---- Customizable keyboard shortcuts ----
-  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
+  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','phoneShareOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
   function modalOverlayOpen(){ for(var i=0;i<MODAL_IDS.length;i++){ var el=byId(MODAL_IDS[i]); if(el && el.classList.contains('on')) return true; } return false; }
   function anyOverlayOpen(){
     if(modalOverlayOpen()) return true;
@@ -2225,7 +2241,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','phoneShareOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});

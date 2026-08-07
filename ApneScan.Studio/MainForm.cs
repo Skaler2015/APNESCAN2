@@ -144,6 +144,8 @@ public class MainForm : Form
     // Phone-to-PC: a tiny HTTP server phones on the same WiFi upload photos to.
     private TcpListener? _phoneServer;
     private const int PhonePort = 8765;
+    // token → file path, for sending a file to the phone via a QR download link.
+    private readonly Dictionary<string, string> _phoneShares = new();
 
     public MainForm()
     {
@@ -410,6 +412,12 @@ public class MainForm : Form
                 break;
             case "addScanned":
                 await AddScannedToPdfAsync(filePath);
+                break;
+            case "printFile":
+                await PrintFileAsync(filePath);
+                break;
+            case "sharePhone":
+                SharePhoneFile(filePath);
                 break;
             case "listFolder":
                 SendFolder(filePath, ctx);
@@ -1149,6 +1157,49 @@ public class MainForm : Form
         }
     }
 
+    // Print a PDF/image file straight from the My Documents sidebar.
+    private async Task PrintFileAsync(string path)
+    {
+        if (!File.Exists(path)) { Status("File not found"); return; }
+        List<ProcessedImage> pages;
+        try { pages = await ImportPagesAsync(path); }
+        catch (Exception ex) { Status("Print error: " + ex.Message); return; }
+        if (pages.Count == 0) { Status("Nothing to print"); return; }
+        try
+        {
+            var doc = new PrintDocument();
+            int i = 0;
+            doc.PrintPage += (_, e) =>
+            {
+                var image = pages[i].Render();
+                try
+                {
+                    var pb = e.MarginBounds;
+                    if (Math.Sign(image.Width - image.Height) != Math.Sign(pb.Width - pb.Height))
+                        image = image.PerformTransform(new RotationTransform(90));
+                    var bmp = image.AsBitmap();
+                    double scale = Math.Min((double) pb.Width / bmp.Width, (double) pb.Height / bmp.Height);
+                    int w = (int) Math.Round(bmp.Width * scale), h = (int) Math.Round(bmp.Height * scale);
+                    int x = pb.Left + (pb.Width - w) / 2, y = pb.Top + (pb.Height - h) / 2;
+                    e.Graphics!.DrawImage(bmp, new Rectangle(x, y, w, h));
+                }
+                finally { image.Dispose(); }
+                e.HasMorePages = ++i < pages.Count;
+            };
+            using var pd = new PrintDialog { Document = doc, UseEXDialog = true };
+            if (pd.ShowDialog(this) == DialogResult.OK)
+            {
+                doc.PrinterSettings = pd.PrinterSettings;
+                Status("Printing…");
+                doc.Print();
+                Bump("print", 1);
+                Status($"Printed {pages.Count} page(s)");
+            }
+        }
+        catch (Exception ex) { Status("Print error: " + ex.Message); }
+        finally { foreach (var p in pages) p.Dispose(); }
+    }
+
     private async Task AddPhotoAsync(string dataUrl)
     {
         if (string.IsNullOrEmpty(dataUrl))
@@ -1344,6 +1395,64 @@ public class MainForm : Form
         }
     }
 
+    // Start the phone listener without showing the upload QR (used for sending).
+    private bool EnsurePhoneServer()
+    {
+        if (_phoneServer != null) return true;
+        try
+        {
+            _phoneServer = new TcpListener(IPAddress.Any, PhonePort);
+            _phoneServer.Start();
+            _ = Task.Run(PhoneServerLoop);
+            return true;
+        }
+        catch { _phoneServer = null; return false; }
+    }
+
+    // Show a QR that a phone (same WiFi) can scan to download this file.
+    private void SharePhoneFile(string path)
+    {
+        if (!File.Exists(path)) { Status("File not found"); return; }
+        if (!EnsurePhoneServer()) { Status("Could not start the phone server"); return; }
+        var token = Guid.NewGuid().ToString("N")[..10];
+        lock (_phoneShares) _phoneShares[token] = path;
+        var url = $"http://{GetLocalIp()}:{PhonePort}/get/{token}";
+        try
+        {
+            var gen = new QRCodeGenerator();
+            var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+            var png = new PngByteQRCode(data).GetGraphic(8);
+            var qr = "data:image/png;base64," + Convert.ToBase64String(png);
+            Post(new { type = "phoneShare", qr, url, name = System.IO.Path.GetFileName(path) });
+            Status("Scan the QR with your phone (same WiFi) to download");
+        }
+        catch (Exception ex) { Status("Phone share error: " + ex.Message); }
+    }
+
+    private static string ContentTypeFor(string name)
+    {
+        var e = System.IO.Path.GetExtension(name).ToLowerInvariant();
+        return e switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".tif" or ".tiff" => "image/tiff",
+            ".bmp" => "image/bmp",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private static async Task WriteFileResponse(NetworkStream stream, byte[] body, string contentType, string fileName)
+    {
+        var head = $"HTTP/1.1 200 OK\r\nContent-Type: {contentType}\r\n" +
+                   $"Content-Disposition: attachment; filename=\"{fileName}\"\r\n" +
+                   $"Content-Length: {body.Length}\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
+        await stream.WriteAsync(body);
+        await stream.FlushAsync();
+    }
+
     private async Task HandlePhoneClient(TcpClient client)
     {
         try
@@ -1391,6 +1500,24 @@ public class MainForm : Form
                         BeginInvoke(new Action(() => { _ = AddPhoneFileAsync(temp); }));
                     }
                     await WriteResponse(stream, "200 OK", "text/plain", Encoding.UTF8.GetBytes("OK"));
+                }
+                else if (method == "GET" && pathReq.StartsWith("/get/"))
+                {
+                    var token = pathReq["/get/".Length..];
+                    int q = token.IndexOf('?');
+                    if (q >= 0) token = token[..q];
+                    string? filePath = null;
+                    lock (_phoneShares) _phoneShares.TryGetValue(token, out filePath);
+                    if (filePath != null && File.Exists(filePath))
+                    {
+                        var bytes = await File.ReadAllBytesAsync(filePath);
+                        var fname = System.IO.Path.GetFileName(filePath);
+                        await WriteFileResponse(stream, bytes, ContentTypeFor(fname), fname);
+                    }
+                    else
+                    {
+                        await WriteResponse(stream, "404 Not Found", "text/plain", Encoding.UTF8.GetBytes("File no longer available"));
+                    }
                 }
                 else
                 {
