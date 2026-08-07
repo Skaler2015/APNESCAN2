@@ -26,6 +26,7 @@ try {
     $groups = [
         ['Scan',        ['scan'], '#16a34a'],
         ['Pages scanned', ['pages_scanned'], '#0ea5e9'],
+        ['Blank skipped', ['blank_skipped'], '#64748b'],
         ['PDF Save',    ['savePdf', 'savePdfSelected', 'savePdfHere'], '#2563eb'],
         ['Rename',      ['renameItem', 'renamePage'], '#dc2626'],
         ['Print',       ['print', 'printFile'], '#d97706'],

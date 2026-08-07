@@ -29,7 +29,7 @@ function delta_pct(int $cur, int $prev): int {
  * count) and their prefixes, so action-count aggregations stay meaningful.
  */
 function meta_filter(): string {
-    return " AND event NOT IN ('scan_ms','ocr_ms','pdf_kb','session_min','pages_scanned') "
+    return " AND event NOT IN ('scan_ms','ocr_ms','pdf_kb','session_min','pages_scanned','blank_skipped') "
          . "AND event NOT LIKE 'dpi\\_%' AND event NOT LIKE 'color\\_%' "
          . "AND event NOT LIKE 'src\\_%' AND event NOT LIKE 'ocr\\_lang\\_%' ";
 }

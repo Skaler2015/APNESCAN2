@@ -1144,6 +1144,7 @@ public class MainForm : Form
             if (added == 0)
             {
                 Status(skipped > 0 ? $"Only blank page(s) found — skipped {skipped}" : "Nothing was scanned");
+                if (skipped > 0) SendTelemetry("blank_skipped", skipped);
                 Post(new { type = "scanDone", added = 0, skipped, ms = (int)scanSw.ElapsedMilliseconds, cancelled = false, empty = true });
                 return;
             }
@@ -1158,6 +1159,7 @@ public class MainForm : Form
             _ = AutoNameAsync();
             Bump("scan", added);
             SendTelemetry("pages_scanned", added);                       // total pages captured
+            if (skipped > 0) SendTelemetry("blank_skipped", skipped);    // blank pages auto-skipped
             SendTelemetry("src_" + (string.IsNullOrEmpty(source) ? "auto" : source)); // flatbed/feeder/auto/duplex
             SendTelemetry("dpi_" + (dpi > 0 ? dpi : 200));               // scan resolution
             SendTelemetry("color_" + (string.IsNullOrEmpty(color) ? "color" : color)); // color/gray/bw
