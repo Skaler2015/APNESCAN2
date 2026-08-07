@@ -425,6 +425,12 @@ public class MainForm : Form
             case "fileInfo":
                 SendFileInfo(filePath);
                 break;
+            case "searchAll":
+                await SearchAllAsync(filePath, name);
+                break;
+            case "getRecent":
+                await GetRecentAsync();
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -3014,6 +3020,136 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         }
         catch { /* thumbnails are best-effort */ }
         finally { first?.Dispose(); }
+    }
+
+    private static readonly HashSet<string> DocExts = new(StringComparer.OrdinalIgnoreCase)
+    { ".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp" };
+
+    // Recursively search filenames under a root folder.
+    private async Task SearchAllAsync(string root, string query)
+    {
+        query = (query ?? "").Trim();
+        if (query.Length < 1) { Status("Type something to search"); return; }
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        Status($"Searching “{query}” in all subfolders…");
+        var favs = LoadFavs();
+        var entries = new List<object>();
+        await Task.Run(() =>
+        {
+            try
+            {
+                var opts = new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
+                };
+                foreach (var f in Directory.EnumerateFiles(root, "*", opts))
+                {
+                    try
+                    {
+                        var fn = System.IO.Path.GetFileName(f);
+                        if (fn.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                        var fi = new FileInfo(f);
+                        entries.Add(new
+                        {
+                            name = fn,
+                            path = f,
+                            dir = false,
+                            date = fi.LastWriteTime.ToString("dd MMM yyyy"),
+                            ms = new DateTimeOffset(fi.LastWriteTime).ToUnixTimeMilliseconds(),
+                            count = 0,
+                            size = fi.Length,
+                            fav = favs.Contains(f),
+                            prev = DocExts.Contains(fi.Extension)
+                        });
+                        if (entries.Count >= 3000) break;
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        });
+        Post(new
+        {
+            type = "folder",
+            path = root,
+            name = $"🔎 “{query}” — {entries.Count} result(s)",
+            parent = root,
+            curFav = false,
+            ctx = "",
+            search = true,
+            entries
+        });
+        Status($"Found {entries.Count} file(s)");
+    }
+
+    // Recent document files across the user's common folders.
+    private async Task GetRecentAsync()
+    {
+        Status("Finding recent files…");
+        var favs = LoadFavs();
+        var roots = new List<string>();
+        foreach (var sf in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.Desktop, Environment.SpecialFolder.MyPictures })
+        {
+            var p = Environment.GetFolderPath(sf);
+            if (Directory.Exists(p)) roots.Add(p);
+        }
+        var downloads = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        if (Directory.Exists(downloads)) roots.Add(downloads);
+
+        var found = new List<FileInfo>();
+        await Task.Run(() =>
+        {
+            var opts = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
+            };
+            foreach (var r in roots)
+            {
+                try
+                {
+                    foreach (var f in Directory.EnumerateFiles(r, "*", opts))
+                    {
+                        try
+                        {
+                            var fi = new FileInfo(f);
+                            if (DocExts.Contains(fi.Extension)) found.Add(fi);
+                            if (found.Count >= 20000) break;
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+            }
+        });
+        var entries = found.OrderByDescending(f => f.LastWriteTime).Take(80).Select(fi => (object)new
+        {
+            name = fi.Name,
+            path = fi.FullName,
+            dir = false,
+            date = fi.LastWriteTime.ToString("dd MMM yyyy"),
+            ms = new DateTimeOffset(fi.LastWriteTime).ToUnixTimeMilliseconds(),
+            count = 0,
+            size = fi.Length,
+            fav = favs.Contains(fi.FullName),
+            prev = DocExts.Contains(fi.Extension)
+        }).ToList();
+        Post(new
+        {
+            type = "folder",
+            path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            name = "🕘 Recent files",
+            parent = (string?) null,
+            curFav = false,
+            ctx = "",
+            search = true,
+            entries
+        });
+        Status($"{entries.Count} recent file(s)");
     }
 
     private void SendFileInfo(string path)

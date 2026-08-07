@@ -130,6 +130,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .dp-view .dv.on{background:var(--accent);color:#fff}
 .dp-pinned{display:flex;gap:6px;padding:0 12px 6px;overflow-x:auto;white-space:nowrap}
 .dp-pinned:empty{display:none}
+.dp-more{display:flex;gap:12px;flex-wrap:wrap;padding:6px 12px 0}
+.dp-morebtn{font-size:10.5px;font-weight:700;color:var(--accent);cursor:pointer}
+.dp-morebtn:hover{text-decoration:underline}
 .dp-pin{display:inline-flex;align-items:center;gap:5px;flex:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--amber-soft,#fff6e0);color:#9a6a00;cursor:pointer;border:1px solid #f0dca0}
 .dp-pin:hover{background:#ffefc4}
 .dp-pin svg{width:12px;height:12px}
@@ -546,6 +549,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
           </div>
           <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
+          <div class="dp-more">
+            <span id="dpSearchAll" class="dp-morebtn" style="display:none">&#128269; Search all subfolders</span>
+            <span id="dpRecentAll" class="dp-morebtn">&#128336; Recent (all folders)</span>
+          </div>
           <div class="dp-chips">
             <div class="dp-chip" data-f="fav">&#9733; Fav</div>
             <div class="dp-chip" data-f="recent">Recent</div>
@@ -1759,7 +1766,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var navDocs=byId('navDocs'); if(navDocs) navDocs.addEventListener('click', function(e){ e.stopPropagation(); openDocs(); });
   var docsClose=byId('docsClose'); if(docsClose) docsClose.addEventListener('click', function(e){ e.stopPropagation(); closeDocs(); });
   // search
-  var docsSearch=byId('docsSearch'); if(docsSearch) docsSearch.addEventListener('input', function(){ docsQuery=docsSearch.value; renderDocsList(); });
+  var docsSearch=byId('docsSearch'); if(docsSearch) docsSearch.addEventListener('input', function(){ docsQuery=docsSearch.value; var sa=byId('dpSearchAll'); if(sa) sa.style.display=docsQuery.trim()?'inline':'none'; renderDocsList(); });
+  if(docsSearch) docsSearch.addEventListener('keydown', function(e){ if(e.key==='Enter' && docsQuery.trim() && bridge){ setStatus('Searching all subfolders…'); send({cmd:'searchAll', path:(docsData.path||''), name:docsQuery.trim()}); } });
+  var dpSearchAll=byId('dpSearchAll'); if(dpSearchAll) dpSearchAll.addEventListener('click', function(){ if(docsQuery.trim() && bridge){ setStatus('Searching all subfolders…'); send({cmd:'searchAll', path:(docsData.path||''), name:docsQuery.trim()}); } });
+  var dpRecentAll=byId('dpRecentAll'); if(dpRecentAll) dpRecentAll.addEventListener('click', function(){ if(!bridge) return; var s=byId('docsSearch'); if(s) s.value=''; docsQuery=''; var sa=byId('dpSearchAll'); if(sa) sa.style.display='none'; setStatus('Finding recent files…'); send({cmd:'getRecent'}); });
   // filter chips
   document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.addEventListener('click', function(){
     document.querySelectorAll('.dp-chips .dp-chip').forEach(function(x){ x.classList.remove('on'); }); c.classList.add('on');
