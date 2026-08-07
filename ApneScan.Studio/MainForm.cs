@@ -1014,12 +1014,30 @@ public class MainForm : Form
             var controller = new ScanController(_ctx);
             _devices = await controller.GetDeviceList();
             Post(new { type = "devices", devices = _devices.Select(d => d.Name).ToArray() });
-            Status(_devices.Count == 0 ? "No scanner found" : $"{_devices[0].Name} · Ready");
+            if (_devices.Count == 0) { Status("No scanner found"); ScanStatus("offline", "No scanner"); }
+            else { Status($"{_devices[0].Name} · Ready"); ScanStatus("ready", "Free · Ready"); }
         }
         catch (Exception ex)
         {
             Status("Error: " + ex.Message);
+            ScanStatus("error", "Error: " + FriendlyScanError(ex));
         }
+    }
+
+    // Turn a driver exception into a short, human message for the status badge.
+    private static string FriendlyScanError(Exception ex)
+    {
+        var m = (ex.Message ?? "").ToLowerInvariant();
+        var type = ex.GetType().Name.ToLowerInvariant();
+        if (m.Contains("in use") || m.Contains("busy") || m.Contains("locked")) return "Busy — in use by another app";
+        if (m.Contains("paper") && (m.Contains("jam"))) return "Paper jam";
+        if (m.Contains("no paper") || m.Contains("empty") || type.Contains("paperempty")) return "No paper in feeder";
+        if (m.Contains("cover") || m.Contains("lid")) return "Cover is open";
+        if (m.Contains("offline") || m.Contains("not available") || m.Contains("disconnect") || type.Contains("offline")) return "Scanner offline";
+        if (m.Contains("no device") || type.Contains("nodevices")) return "No scanner found";
+        if (m.Contains("cancel")) return "Scan cancelled";
+        var one = (ex.Message ?? "Scanner error").Split('\n')[0];
+        return one.Length > 60 ? one[..60] + "…" : one;
     }
 
     private async Task ScanAsync(int deviceIndex, int dpi, string color, string source, string pageSize = "auto")
@@ -1031,6 +1049,7 @@ public class MainForm : Form
         if (_devices.Count == 0)
         {
             Status("No scanner found");
+            ScanStatus("offline", "No scanner");
             return;
         }
         if (deviceIndex < 0 || deviceIndex >= _devices.Count)
@@ -1039,6 +1058,7 @@ public class MainForm : Form
         }
 
         _busy = true;
+        ScanStatus("busy", "Busy · Scanning…");
         try
         {
             Status("Scanning…");
@@ -1093,10 +1113,12 @@ public class MainForm : Form
             _lastScanner = _devices[deviceIndex].Name;                   // remember scanner model
             SendDeviceProfile();
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
+            ScanStatus("ready", "Free · Ready");
         }
         catch (Exception ex)
         {
             Status("Scan error: " + ex.Message);
+            ScanStatus("error", "Error: " + FriendlyScanError(ex));
         }
         finally
         {
@@ -4584,6 +4606,9 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });
+
+    // Scanner state for the top bar: "ready" (free) | "busy" | "error" | "offline".
+    private void ScanStatus(string state, string text) => Post(new { type = "scanStatus", state, text });
 
     private void Post(object payload)
     {

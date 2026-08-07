@@ -218,7 +218,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .field:first-child{padding-left:2px}
 .field .k{font-size:9.5px;letter-spacing:.6px;color:var(--muted-2);font-weight:700}
 .field .v{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
-.field .v .dev{width:9px;height:9px;border-radius:50%;background:var(--good)}
+.field .v .dev{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none}
+.field .v .dev.busy{background:#d97706;animation:sdpulse 1.1s infinite}
+.field .v .dev.error{background:#dc2626}
+.field .v .dev.offline{background:#9aa0ac}
+@keyframes sdpulse{0%{box-shadow:0 0 0 0 rgba(217,119,6,.5)}70%{box-shadow:0 0 0 6px rgba(217,119,6,0)}100%{box-shadow:0 0 0 0 rgba(217,119,6,0)}}
+.sstat{font-size:10px;font-weight:800;letter-spacing:.02em;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.sstat.ready{color:#16a34a;background:rgba(22,163,74,.12)}
+.sstat.busy{color:#b45309;background:rgba(217,119,6,.14)}
+.sstat.error{color:#dc2626;background:rgba(220,38,38,.13)}
+.sstat.offline{color:#6b7280;background:rgba(107,114,128,.14)}
 .field .v .cv{color:var(--muted-2)}
 .field .rf{width:22px;height:22px;border-radius:6px;background:#efeafe;color:var(--accent);display:grid;place-items:center;margin-left:2px;cursor:pointer}
 .scan-sm{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:9px 20px;border-radius:10px;cursor:pointer;box-shadow:0 5px 14px rgba(109,40,217,.3);white-space:nowrap}
@@ -535,7 +544,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       <div class="subbar">
         <div class="field" id="setScanner" style="cursor:pointer">
           <span class="k">CONNECTED SCANNER</span>
-          <span class="v"><span class="dev"></span><span id="deviceName">Detecting…</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg> <span class="rf" id="refreshBtn" title="Search for scanners again"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg></span></span>
+          <span class="v"><span class="dev" id="scanDot"></span><span id="deviceName">Detecting…</span> <span class="sstat" id="scanStat"></span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg> <span class="rf" id="refreshBtn" title="Search for scanners again"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg></span></span>
         </div>
         <div class="field" id="setDpi" style="cursor:pointer"><span class="k">RESOLUTION</span><span class="v"><span id="valDpi">200 dpi</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="field" id="setColor" style="cursor:pointer"><span class="k">COLOR</span><span class="v"><span id="valColor">Color</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
@@ -1030,6 +1039,12 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function byId(id){ return document.getElementById(id); }
   function setStatus(t){ var e=byId('statusText'); if(e) e.textContent=t; var c=byId('connText'); if(c) c.textContent=t; }
   function setDevice(n){ var e=byId('deviceName'); if(e) e.textContent=n; }
+  function setScanStatus(state, text){
+    state=state||'ready';
+    var labels={ready:'Free · Ready',busy:'Busy · Scanning…',error:'Error',offline:'No scanner'};
+    var dot=byId('scanDot'); if(dot) dot.className='dev '+state;
+    var st=byId('scanStat'); if(st){ st.className='sstat '+state; st.textContent=text||labels[state]||''; st.title=text||labels[state]||''; }
+  }
   function renderDevice(){
     var e=byId('deviceName'); if(!e) return;
     e.textContent = devices.length ? devices[selectedDevice] : 'No scanner found';
@@ -1398,6 +1413,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
       if(!m || !m.type) return;
       if(m.type==='devices'){ applyDeviceList(m.devices); }
+      else if(m.type==='scanStatus'){ setScanStatus(m.state, m.text); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
       else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); }
