@@ -83,9 +83,9 @@ function i18n_map(): array {
         'tab_event_log' => 'Event log', 'tab_feedback' => 'Feedback',
         // activity widget (mirrors the in-app one)
         'act_title' => 'Activity', 'col_total' => 'Total', 'col_today' => 'Today',
-        'act_scan' => 'Scan', 'act_pdf' => 'PDF Save', 'act_image' => 'Image Save',
-        'act_print' => 'Print', 'act_import' => 'Import', 'act_camera' => 'Camera',
-        'act_sub' => 'Combined across all installs',
+        'act_scan' => 'Scan', 'act_pdf' => 'PDF Save', 'act_rename' => 'Rename',
+        'act_print' => 'Print', 'act_import' => 'Import', 'act_share' => 'Share',
+        'act_sub' => 'Combined across all installs · click a column to sort',
     ];
     $hi = [
         'admin_console' => 'एडमिन कंसोल', 'usage_analytics' => 'उपयोग विश्लेषण और नियंत्रण',
@@ -139,9 +139,9 @@ function i18n_map(): array {
         'ev_all_os' => 'सभी OS', 'ev_no_match' => 'कोई मेल खाता इवेंट नहीं।', 'ev_total_match' => 'कुल इवेंट मेल खाते हैं।',
         'tab_event_log' => 'इवेंट लॉग', 'tab_feedback' => 'फ़ीडबैक',
         'act_title' => 'गतिविधि', 'col_total' => 'कुल', 'col_today' => 'आज',
-        'act_scan' => 'स्कैन', 'act_pdf' => 'PDF सेव', 'act_image' => 'इमेज सेव',
-        'act_print' => 'प्रिंट', 'act_import' => 'इम्पोर्ट', 'act_camera' => 'कैमरा',
-        'act_sub' => 'सभी इंस्टॉल का संयुक्त',
+        'act_scan' => 'स्कैन', 'act_pdf' => 'PDF सेव', 'act_rename' => 'रीनेम',
+        'act_print' => 'प्रिंट', 'act_import' => 'इम्पोर्ट', 'act_share' => 'शेयर',
+        'act_sub' => 'सभी इंस्टॉल का संयुक्त · सॉर्ट के लिए कॉलम पर क्लिक करें',
     ];
     return ['en' => $en, 'hi' => $hi];
 }

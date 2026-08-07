@@ -137,6 +137,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
 .tbl tbody tr:last-child td{border-bottom:0}.tbl tbody tr:hover{background:var(--surface2)}
 .tbl td.num,.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl th.sort{user-select:none}.tbl th.sort:hover{color:var(--brand)}
+.tbl th.sorted-desc,.tbl th.sorted-asc{color:var(--brand)}.sarrow{font-size:10px;opacity:.9}
 .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--brand)}
 .pill.g{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good)}
 .pill.r{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}

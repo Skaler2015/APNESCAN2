@@ -176,10 +176,10 @@ function activity_breakdown(): array {
     $groups = [
         ['act_scan',   ['scan'], '#16a34a'],
         ['act_pdf',    ['savePdf', 'savePdfSelected', 'savePdfHere'], '#2563eb'],
-        ['act_image',  ['saveImages', 'savePagesToFolder', 'imagesToPdf'], '#dc2626'],
+        ['act_rename', ['renameItem', 'renamePage'], '#dc2626'],
         ['act_print',  ['print', 'printFile'], '#d97706'],
         ['act_import', ['import', 'importPath', 'importDropped'], '#7c3aed'],
-        ['act_camera', ['addPhoto', 'camera'], '#0891b2'],
+        ['act_share',  ['share', 'shareWhatsapp', 'shareWindows', 'sharePhone'], '#0891b2'],
     ];
     $out = [];
     foreach ($groups as $g) {
@@ -187,6 +187,8 @@ function activity_breakdown(): array {
         foreach ($g[1] as $e) { $tt += $all[$e] ?? 0; $td += $tod[$e] ?? 0; }
         $out[] = ['key' => $g[0], 'total' => $tt, 'today' => $td, 'color' => $g[2]];
     }
+    // Default: sort by Today (highest first).
+    usort($out, fn($a, $b) => $b['today'] <=> $a['today']);
     return $out;
 }
 

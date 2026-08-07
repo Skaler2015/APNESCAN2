@@ -49,18 +49,49 @@ echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('db', human_bytes($m['db_bytes']), t('k_db_size'))
    . '</div>';
 
-// Activity breakdown (mirrors the in-app widget)
+// Activity breakdown (mirrors the in-app widget) — default sorted by Today,
+// with click-to-sort column headers.
 $act = activity_breakdown();
 $arows = '';
 foreach ($act as $a) {
-    $arows .= '<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' . $a['color'] . ';margin-right:9px;vertical-align:middle"></span>' . h(t($a['key'])) . '</td>'
-            . '<td class="num">' . nf($a['total']) . '</td>'
-            . '<td class="num" style="color:var(--good);font-weight:700">' . nf($a['today']) . '</td></tr>';
+    $arows .= '<tr>'
+            . '<td data-sort="' . h(t($a['key'])) . '"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' . $a['color'] . ';margin-right:9px;vertical-align:middle"></span>' . h(t($a['key'])) . '</td>'
+            . '<td class="num" data-sort="' . (int)$a['total'] . '">' . nf($a['total']) . '</td>'
+            . '<td class="num" data-sort="' . (int)$a['today'] . '" style="color:var(--good);font-weight:700">' . nf($a['today']) . '</td></tr>';
 }
 echo '<div class="sec">' . icon('activity') . h(t('act_title')) . '</div>'
    . '<div class="card" style="max-width:560px"><div class="pad" style="padding-bottom:4px"><div class="csub" style="margin:0">' . h(t('act_sub')) . '</div></div>'
-   . '<table class="tbl"><thead><tr><th>' . h(t('act_title')) . '</th><th class="num">' . h(t('col_total')) . '</th><th class="num">' . h(t('col_today')) . '</th></tr></thead><tbody>'
+   . '<table class="tbl sortable" id="actTable"><thead><tr>'
+   . '<th class="sort" data-type="text">' . h(t('act_title')) . ' <span class="sarrow"></span></th>'
+   . '<th class="num sort" data-type="num">' . h(t('col_total')) . ' <span class="sarrow"></span></th>'
+   . '<th class="num sort sorted-desc" data-type="num">' . h(t('col_today')) . ' <span class="sarrow">↓</span></th></tr></thead><tbody>'
    . $arows . '</tbody></table></div>';
+?>
+<script>
+(function(){
+  var tbl=document.getElementById('actTable'); if(!tbl) return;
+  var ths=tbl.querySelectorAll('th.sort');
+  ths.forEach(function(th,idx){
+    th.style.cursor='pointer';
+    th.onclick=function(){
+      var desc=!th.classList.contains('sorted-desc');
+      ths.forEach(function(x){ x.classList.remove('sorted-desc','sorted-asc'); var a=x.querySelector('.sarrow'); if(a)a.textContent=''; });
+      th.classList.add(desc?'sorted-desc':'sorted-asc');
+      var ar=th.querySelector('.sarrow'); if(ar)ar.textContent=desc?'↓':'↑';
+      var num=th.getAttribute('data-type')==='num';
+      var tb=tbl.querySelector('tbody');
+      var rows=Array.prototype.slice.call(tb.querySelectorAll('tr'));
+      rows.sort(function(a,b){
+        var av=a.children[idx].getAttribute('data-sort'), bv=b.children[idx].getAttribute('data-sort');
+        if(num){ av=parseFloat(av)||0; bv=parseFloat(bv)||0; return desc?bv-av:av-bv; }
+        return desc? bv.localeCompare(av) : av.localeCompare(bv);
+      });
+      rows.forEach(function(r){ tb.appendChild(r); });
+    };
+  });
+})();
+</script>
+<?php
 
 // Charts row
 echo '<div class="sec">' . icon('chart') . h(t('activity_growth')) . '</div>';
