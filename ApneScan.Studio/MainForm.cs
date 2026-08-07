@@ -20,8 +20,21 @@ using NAPS2.ImportExport;
 using NAPS2.Ocr;
 using NAPS2.Pdf;
 using NAPS2.Scan;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
+using WinRT;
 
 namespace ApneScan.Studio;
+
+// Interop to show the WinRT Share sheet from a Win32/WinForms window.
+[System.Runtime.InteropServices.ComImport]
+[System.Runtime.InteropServices.Guid("3A3DCD6C-3EAB-43DC-BCDE-45671CE800C8")]
+[System.Runtime.InteropServices.InterfaceType(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IDataTransferManagerInterop
+{
+    IntPtr GetForWindow([System.Runtime.InteropServices.In] IntPtr appWindow, [System.Runtime.InteropServices.In] ref Guid riid);
+    void ShowShareUIForWindow(IntPtr appWindow);
+}
 
 /// <summary>
 /// Hosts the ApneScan web UI inside a WebView2 control and bridges it to the
@@ -321,6 +334,9 @@ public class MainForm : Form
                 break;
             case "shareWhatsapp":
                 await ShareWhatsAppAsync(filePath, indices);
+                break;
+            case "shareWindows":
+                await ShareWindowsAsync(filePath, indices);
                 break;
             case "getText":
                 await GetTextAsync();
@@ -1115,6 +1131,53 @@ public class MainForm : Form
         catch (Exception ex)
         {
             Status("WhatsApp share error: " + ex.Message);
+        }
+    }
+
+    private static readonly Guid DataTransferManagerIid =
+        new(0xA5CAEE9B, 0x8708, 0x49D1, 0x8D, 0x36, 0x67, 0xD2, 0x5A, 0x8D, 0xA0, 0x0C);
+
+    // Open the native Windows Share sheet with the file pre-attached — every
+    // installed share target (WhatsApp, Mail, Bluetooth…) appears; pick one.
+    private async Task ShareWindowsAsync(string path, List<int> indices)
+    {
+        string file = path ?? "";
+        try
+        {
+            // From the Scanned Pages area, export the selected page(s) to a PDF.
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                if (_pages.Count == 0) { Status("Nothing to share — scan a page first"); return; }
+                var idx = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+                if (idx.Count == 0) { int s = Sel(); if (s >= 0) idx.Add(s); }
+                if (idx.Count == 0) { Status("No pages to share"); return; }
+                SyncNames();
+                var nm = (idx[0] < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[idx[0]]))
+                    ? SanitizeFileName(_pageNames[idx[0]]) : "scan";
+                file = System.IO.Path.Combine(System.IO.Path.GetTempPath(), nm + "_" + Guid.NewGuid().ToString("N")[..6] + ".pdf");
+                Status("Preparing file to share…");
+                await ExportPdf(file, idx.Select(i => _pages[i]).ToList(), _ocr ? new OcrParams("eng") : null);
+            }
+            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) { Status("File not found to share"); return; }
+
+            var storageFile = await StorageFile.GetFileFromPathAsync(file);
+            var interop = DataTransferManager.As<IDataTransferManagerInterop>();
+            IntPtr hwnd = Handle;
+            var iid = DataTransferManagerIid;
+            IntPtr abi = interop.GetForWindow(hwnd, ref iid);
+            var dtm = MarshalInterface<DataTransferManager>.FromAbi(abi);
+            dtm.DataRequested += (_, args) =>
+            {
+                var req = args.Request;
+                req.Data.Properties.Title = System.IO.Path.GetFileName(file);
+                req.Data.SetStorageItems(new List<IStorageItem> { storageFile });
+            };
+            interop.ShowShareUIForWindow(hwnd);
+            Status("Windows Share — pick where to send it");
+        }
+        catch (Exception ex)
+        {
+            Status("Windows Share error: " + ex.Message);
         }
     }
 

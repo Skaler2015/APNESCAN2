@@ -1873,6 +1873,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     item('Rename (F2)','i-editor', function(){ openFileRename(en.path, en.name); });
     if(ext==='pdf') item('Compress PDF','i-save', function(){ setStatus('Compressing PDF…'); if(bridge) send({cmd:'compressPdf', path:en.path}); });
     if(!en.dir) item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); if(bridge) send({cmd:'shareWhatsapp', path:en.path}); });
+    if(!en.dir) item('Share… (Windows)','i-share', function(){ setStatus('Opening Share…'); if(bridge) send({cmd:'shareWindows', path:en.path}); });
     // PDF / image tools
     var isImg2=['jpg','jpeg','png','tif','tiff','bmp'].indexOf(ext)>=0;
     function hasExt(ps,exts){ return ps.some(function(p){ return exts.indexOf(p.split('.').pop().toLowerCase())>=0; }); }
@@ -1932,6 +1933,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     sep();
     item('Export as image','i-image', function(){ send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); });
     item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); send({cmd:'shareWhatsapp', indices:selCurrent()}); });
+    item('Share… (Windows)','i-share', function(){ setStatus('Opening Share…'); send({cmd:'shareWindows', indices:selCurrent()}); });
     sep();
     item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); });
     m.style.left=Math.min(x, window.innerWidth-210)+'px';
