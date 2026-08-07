@@ -102,6 +102,59 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .dp-sort{display:flex;gap:6px;padding:9px 12px 8px;border-bottom:1px solid var(--border)}
 .dp-sortbtn{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:5px;border-radius:8px;background:#f4f5f9;color:#5b6376;cursor:pointer;user-select:none}
 .dp-sortbtn.on{background:var(--accent-soft);color:var(--accent-ink)}
+/* Sort & view button + Fluent popup */
+.dp-sortbtn2{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#f0f1f6;color:#5b6376;border:1px solid transparent;cursor:pointer}
+.dp-sortbtn2:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.dp-sortbtn2 svg{width:13px;height:13px;stroke:currentColor}
+#sortPop{position:fixed;z-index:120;display:none;width:340px;max-width:94vw;border-radius:16px;background:var(--panel);
+  border:1px solid var(--border);box-shadow:0 18px 50px rgba(20,20,50,.22),0 2px 8px rgba(20,20,50,.08);overflow:hidden;
+  animation:spPop .16s ease}
+#sortPop.on{display:block}
+@keyframes spPop{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.sp-h{font-size:14px;font-weight:800;padding:14px 16px 10px;color:var(--text)}
+.sp-scroll{max-height:52vh;overflow:auto;padding:0 8px}
+.sp-sec{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);padding:8px 8px 4px}
+#sortFields{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.sp-f{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer}
+.sp-f:hover{background:var(--accent-soft)}
+.sp-f .rk{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);flex:none;display:grid;place-items:center}
+.sp-f.on{background:var(--accent-soft);color:var(--accent-ink)}
+.sp-f.on .rk{border-color:var(--accent)}
+.sp-f.on .rk::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.sp-dir{display:flex;flex-direction:column;gap:3px;padding:0 4px}
+.sp-radio{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer}
+.sp-radio:hover{background:var(--accent-soft)}
+.sp-radio small{color:var(--muted);font-weight:500;font-size:11px}
+.sp-radio svg{width:14px;height:14px;stroke:currentColor}
+.sp-radio .rk{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);flex:none;display:grid;place-items:center}
+.sp-radio.on{background:var(--accent-soft);color:var(--accent-ink)}
+.sp-radio.on .rk{border-color:var(--accent)}
+.sp-radio.on .rk::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.sp-view{display:flex;gap:6px;padding:2px 6px 4px}
+.spv{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;padding:7px;border-radius:9px;background:var(--panel-2,#f4f5f9);color:var(--muted);border:1px solid var(--border);cursor:pointer}
+.spv svg{width:14px;height:14px;stroke:currentColor}
+.spv.on{background:var(--accent);color:#fff;border-color:transparent}
+.sp-toggle{display:flex;align-items:flex-start;gap:10px;padding:10px;margin:6px 6px 0;border-radius:11px;background:var(--accent-soft);cursor:pointer}
+.sp-toggle.sub{background:transparent;border:1px dashed var(--border);opacity:.65;pointer-events:none}
+.sp-toggle.sub.en{opacity:1;pointer-events:auto}
+.sp-toggle input{display:none}
+.sp-toggle .sw{width:38px;height:22px;border-radius:99px;background:var(--border);position:relative;flex:none;transition:background .15s;margin-top:1px}
+.sp-toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.sp-toggle input:checked+.sw{background:var(--accent)}
+.sp-toggle input:checked+.sw::after{transform:translateX(16px)}
+.sp-toggle b{font-size:12.5px;font-weight:700;display:block}
+.sp-toggle small{font-size:11px;color:var(--muted)}
+.sp-foot{display:flex;gap:8px;padding:10px 14px 14px;border-top:1px solid var(--border-2);margin-top:8px}
+.sp-link{flex:1;font-size:12px;font-weight:700;padding:8px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
+.sp-link:hover{background:var(--accent-soft);color:var(--accent-ink)}
+/* folder-view status bar */
+.dp-fvbar{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:0;border-top:1px solid var(--border-2);background:var(--accent-soft)}
+.dp-fvbar .fv-ic{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:900;flex:none}
+.dp-fvbar .fv-txt{flex:1;min-width:0}
+.dp-fvbar .fv-txt b{font-size:11.5px;font-weight:800;display:block;color:var(--accent-ink)}
+.dp-fvbar .fv-txt small{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.dp-fvbar .fv-change{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent-ink);cursor:pointer;flex:none}
+.dp-fvbar .fv-change:hover{background:var(--accent);color:#fff}
 .dp-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border-2);flex:none}
 .dp-navb{width:27px;height:27px;border-radius:7px;border:1px solid var(--border);display:grid;place-items:center;color:var(--accent);cursor:pointer;flex:none;font-weight:700}
 .dp-navb:hover{background:#f4f5f9}
@@ -630,6 +683,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></symbol>
 <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+<symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16M7 20l-3-3M7 4l3 3M13 7h7M13 12h5M13 17h3"/></symbol>
 <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M15 6a4 4 0 0 0-5 5l-6 6 3 3 6-6a4 4 0 0 0 5-5l-2.5 2.5L13 9l1.5-3z"/></symbol>
 <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -749,17 +803,20 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
             <div class="dp-chip" data-f="pdf">PDF</div>
             <div class="dp-chip" data-f="img">Images</div>
             <div class="dp-chip on" data-f="all">All</div>
-          </div>
-          <div class="dp-sort">
-            <div class="dp-sortbtn" data-s="name">Name</div>
-            <div class="dp-sortbtn on" data-s="date">Date &#8595;</div>
-            <div class="dp-sortbtn" data-s="size">Size</div>
+            <button type="button" class="dp-sortbtn2" id="dpSortBtn" title="Sort &amp; view options">
+              <svg class="ic"><use href="#i-sort"/></svg><span id="dpSortLabel">Date ↓</span>
+            </button>
           </div>
           <div class="dp-bar" id="docsBar"></div>
           <div class="dp-view">
             <span id="dpStorage" style="margin-left:auto;font-size:10.5px;color:var(--muted)"></span>
           </div>
           <div class="docs-list" id="docsList"></div>
+          <div class="dp-fvbar" id="dpFvBar" style="display:none">
+            <span class="fv-ic">✓</span>
+            <div class="fv-txt"><b>Folder view saved</b><small id="dpFvSummary">Date ↓ · List</small></div>
+            <button type="button" class="fv-change" id="dpFvChange">Change</button>
+          </div>
           <div class="dp-actions">
             <div class="dp-act" id="docsOpen">Open</div>
             <div class="dp-act" id="docsNew">&#43; New</div>
@@ -1163,6 +1220,38 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 <div class="menu" id="setMenu" style="min-width:170px"></div>
 <div class="menu" id="printMenu" style="min-width:200px"></div>
 <div class="menu" id="editMenu" style="min-width:210px;max-height:70vh;overflow:auto"></div>
+
+<!-- ===== Fluent Sort & View popup (My Files) ===== -->
+<div id="sortPop">
+  <div class="sp-h">Sort &amp; view</div>
+  <div class="sp-scroll">
+    <div class="sp-sec">Sort by</div>
+    <div id="sortFields"></div>
+    <div class="sp-sec">Direction</div>
+    <div class="sp-dir">
+      <label class="sp-radio" data-dir="asc"><span class="rk"></span><svg class="ic"><use href="#i-sort"/></svg>Ascending <small>A→Z · old→new · small→big</small></label>
+      <label class="sp-radio" data-dir="desc"><span class="rk"></span><svg class="ic" style="transform:scaleY(-1)"><use href="#i-sort"/></svg>Descending <small>Z→A · new→old · big→small</small></label>
+    </div>
+    <div class="sp-sec">View</div>
+    <div class="sp-view">
+      <button type="button" data-v="list" class="spv"><svg class="ic"><use href="#i-list"/></svg>List</button>
+      <button type="button" data-v="grid" class="spv"><svg class="ic"><use href="#i-grid"/></svg>Grid</button>
+      <button type="button" data-v="tree" class="spv"><svg class="ic"><use href="#i-folder"/></svg>Tree</button>
+    </div>
+    <label class="sp-toggle" id="spRemember">
+      <input type="checkbox"><span class="sw"></span>
+      <div><b>Remember this folder</b><small>Always use this sorting &amp; view whenever this folder is opened.</small></div>
+    </label>
+    <label class="sp-toggle sub" id="spSubfolders">
+      <input type="checkbox"><span class="sw"></span>
+      <div><b>Apply to subfolders</b><small>Use these settings for every folder inside this one too.</small></div>
+    </label>
+  </div>
+  <div class="sp-foot">
+    <button type="button" class="sp-link" id="spForget">Forget folder</button>
+    <button type="button" class="sp-link" id="spReset">Restore default</button>
+  </div>
+</div>
 
 <!-- Save-as dropdown menu (PDF / JPG / PNG) -->
 <div class="menu" id="saveMenu">
@@ -1623,6 +1712,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var ov=byId('scanOverlay'); if(ov) ov.classList.remove('on');
     var mi=byId('scanMini'); if(mi) mi.classList.remove('on');
     SX.on=false; SX.min=false; if(SX.timer){ clearInterval(SX.timer); SX.timer=null; }
+    if(SX.autoT){ clearTimeout(SX.autoT); SX.autoT=null; }
   }
   function sxMinimize(){ var ov=byId('scanOverlay'); if(ov) ov.classList.remove('on'); var mi=byId('scanMini'); if(mi) mi.classList.add('on'); SX.min=true; }
   function sxRestore(){ if(SX.done){ sxHideAll(); return; } var ov=byId('scanOverlay'); if(ov) ov.classList.add('on'); var mi=byId('scanMini'); if(mi) mi.classList.remove('on'); SX.min=false; }
@@ -1690,7 +1780,15 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var title=byId('soSucTitle'), sub=byId('soSucSub');
     if(m.cancelled){ if(title) title.textContent='Scan cancelled'; if(sub) sub.textContent=(m.added||SX.count)+' page(s) kept.'; }
     else { if(title) title.textContent='Scan complete'; if(sub) sub.textContent='Your '+(m.added||SX.count)+' page(s) are ready.'; }
-    var suc=byId('soSuccess'); if(suc) suc.classList.add('on');
+    var suc=byId('soSuccess'); if(suc){
+      suc.classList.add('on');
+      // Auto-close a few seconds after completion. Hovering the success card
+      // (to read the summary or click an action) cancels the auto-close.
+      if(SX.autoT){ clearTimeout(SX.autoT); SX.autoT=null; }
+      var secsLeft=(m.cancelled?4:5);
+      SX.autoT=setTimeout(function(){ sxHideAll(); }, secsLeft*1000);
+      if(!suc.__hoverWired){ suc.__hoverWired=true; suc.addEventListener('mouseenter', function(){ if(SX.autoT){ clearTimeout(SX.autoT); SX.autoT=null; } }); }
+    }
   }
   function sxFail(m){
     SX.done=true; if(SX.timer){ clearInterval(SX.timer); SX.timer=null; }
@@ -2491,6 +2589,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       docsQuery=''; var s=byId('docsSearch'); if(s) s.value='';
       var sa=byId('dpSearchAll'); if(sa) sa.style.display='none';
       var cs=byId('dpContentSearch'); if(cs) cs.style.display='none';
+      // Restore this folder's saved sort / view / filter (or the sticky default).
+      if(typeof fvApply==='function' && m && m.path) fvApply(m.path);
     }
     renderDocsBar(); renderDocsList();
   }
@@ -2526,7 +2626,10 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       var r=0;
       if(docsSort==='name') r=natCmp(a.name, b.name);
       else if(docsSort==='size') r=(a.size||0)-(b.size||0);
-      else r=(a.ms||0)-(b.ms||0);
+      else if(docsSort==='created') r=((a.cms||a.ms||0)-(b.cms||b.ms||0));
+      else if(docsSort==='type') r=natCmp(a.ext||'', b.ext||'')||natCmp(a.name,b.name);
+      else if(docsSort==='fav') r=((a.fav?1:0)-(b.fav?1:0))||natCmp(a.name,b.name);
+      else r=(a.ms||0)-(b.ms||0);   // date modified
       return r*docsDir;
     });
     docsVisible=arr;   // remember order for keyboard navigation
@@ -2679,18 +2782,108 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   // filter chips
   document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.addEventListener('click', function(){
     document.querySelectorAll('.dp-chips .dp-chip').forEach(function(x){ x.classList.remove('on'); }); c.classList.add('on');
-    docsFilter=c.getAttribute('data-f'); renderDocsList();
+    docsFilter=c.getAttribute('data-f'); renderDocsList(); fvOnChange();
   }); });
-  // sort tabs (click again to flip direction)
-  document.querySelectorAll('.dp-sort .dp-sortbtn').forEach(function(b){ b.addEventListener('click', function(){
-    var s=b.getAttribute('data-s');
-    if(docsSort===s){ docsDir=-docsDir; } else { docsSort=s; docsDir=(s==='name')?1:-1; }
-    document.querySelectorAll('.dp-sort .dp-sortbtn').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on');
-    var arrow=docsDir<0?' ↓':' ↑';
-    b.textContent=(s==='name'?'Name':s==='size'?'Size':'Date')+arrow;
-    ['name','size','date'].forEach(function(k){ if(k!==s){ var el=document.querySelector('.dp-sort .dp-sortbtn[data-s="'+k+'"]'); if(el) el.textContent=(k==='name'?'Name':k==='size'?'Size':'Date'); } });
-    renderDocsList();
-  }); });
+
+  /* ========= ADVANCED PER-FOLDER SORT & VIEW ========= */
+  var SORT_FIELDS=[['name','Name'],['date','Date modified'],['created','Date created'],['type','File type'],['size','File size'],['fav','Favorite']];
+  var SORT_SHORT={name:'Name',date:'Date',created:'Created',type:'Type',size:'Size',fav:'Favorite'};
+  var FV_DEFAULT={sort:'date',dir:-1,view:'list',filter:'all',sub:false};
+  function fvStore(){ try{ return JSON.parse(localStorage.getItem('as_folderview')||'{}'); }catch(e){ return {}; } }
+  function fvWrite(o){ try{ localStorage.setItem('as_folderview', JSON.stringify(o)); }catch(e){} }
+  function fvGlobal(){ try{ return Object.assign({}, FV_DEFAULT, JSON.parse(localStorage.getItem('as_folderview_def')||'{}')); }catch(e){ return Object.assign({},FV_DEFAULT); } }
+  function fvSetGlobal(s){ try{ localStorage.setItem('as_folderview_def', JSON.stringify(s)); }catch(e){} }
+  function fvNorm(p){ return (p||'').replace(/[\\/]+$/,'').toLowerCase(); }
+  function fvCur(sub){ return {sort:docsSort,dir:docsDir,view:docsView,filter:docsFilter,sub:!!sub}; }
+  function fvFor(path){
+    var store=fvStore(), key=fvNorm(path);
+    if(store[key]) return {s:store[key], self:true};
+    var best=null,bestLen=-1;
+    for(var k in store){ var v=store[k]; if(v&&v.sub&&(key.indexOf(k+'\\')===0||key.indexOf(k+'/')===0)){ if(k.length>bestLen){best=v;bestLen=k.length;} } }
+    if(best) return {s:best, self:false, inherited:true};
+    return {s:fvGlobal(), self:false, global:true};
+  }
+  function fvApply(path){
+    var r=fvFor(path), s=r.s||FV_DEFAULT;
+    docsSort=s.sort||'date'; docsDir=s.dir||-1; docsFilter=s.filter||'all';
+    docsView=(s.view==='grid'||s.view==='tree')?s.view:'list';
+    ['dvList','dvGrid','dvTree'].forEach(function(id){ var el=byId(id); if(el) el.classList.toggle('on',(id==='dvList'&&docsView==='list')||(id==='dvGrid'&&docsView==='grid')||(id==='dvTree'&&docsView==='tree')); });
+    document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-f')===docsFilter); });
+    fvUpdateLabel(); fvUpdateBar(r);
+  }
+  function fvUpdateLabel(){ var l=byId('dpSortLabel'); if(l) l.textContent=(SORT_SHORT[docsSort]||'Sort')+' '+(docsDir<0?'↓':'↑'); }
+  function fvUpdateBar(r){
+    var bar=byId('dpFvBar'); if(!bar) return;
+    if(r&&r.self){ bar.style.display='flex'; var sm=byId('dpFvSummary'); if(sm) sm.textContent=(SORT_SHORT[docsSort]||'Sort')+' '+(docsDir<0?'↓':'↑')+' · '+({list:'List',grid:'Grid',tree:'Tree'}[docsView]||'List')+(docsFilter!=='all'?(' · '+docsFilter.toUpperCase()):''); }
+    else bar.style.display='none';
+  }
+  // Called whenever the user changes sort/dir/view/filter — persists + toast.
+  function fvOnChange(){
+    fvUpdateLabel();
+    var path=docsData.path||''; if(!path) return;
+    var store=fvStore();
+    if(store[fvNorm(path)]){ store[fvNorm(path)]=fvCur(store[fvNorm(path)].sub); fvWrite(store); fvUpdateBar(fvFor(path)); }
+    else { fvSetGlobal(fvCur(false)); fvFirstToast(); }
+  }
+  function fvFirstToast(){
+    try{ if(localStorage.getItem('as_fv_dontask')==='1') return; }catch(e){}
+    if(byId('fvToast')) return;
+    var t=document.createElement('div'); t.id='fvToast';
+    t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:215;background:var(--panel);border:1px solid var(--border);box-shadow:0 14px 40px rgba(20,20,50,.22);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--text);animation:spPop .2s ease';
+    t.innerHTML='<b style="font-weight:700">Sorting updated.</b>';
+    var a=document.createElement('button'); a.textContent='✓ Remember this folder'; a.style.cssText='border:0;background:var(--accent);color:#fff;font-weight:700;font-size:12px;padding:7px 12px;border-radius:9px;cursor:pointer';
+    a.onclick=function(){ var p=docsData.path||''; if(p){ fvSave(p); fvUpdateBar(fvFor(p)); } t.remove(); };
+    var d=document.createElement('button'); d.textContent="Don't ask again"; d.style.cssText='border:0;background:transparent;color:var(--muted);font-weight:600;font-size:12px;padding:7px 8px;cursor:pointer';
+    d.onclick=function(){ try{ localStorage.setItem('as_fv_dontask','1'); }catch(e){} t.remove(); };
+    t.appendChild(a); t.appendChild(d); document.body.appendChild(t);
+    setTimeout(function(){ if(t.parentNode) t.remove(); }, 7000);
+  }
+  function fvSave(path){ var store=fvStore(); var prev=store[fvNorm(path)]; store[fvNorm(path)]=fvCur(prev&&prev.sub); fvWrite(store); }
+  function fvForget(path){ var store=fvStore(); delete store[fvNorm(path)]; fvWrite(store); }
+
+  // ---- Fluent sort popup ----
+  function openSortPop(){
+    var pop=byId('sortPop'), btn=byId('dpSortBtn'); if(!pop||!btn) return;
+    if(pop.classList.contains('on')){ pop.classList.remove('on'); return; }
+    renderSortPop();
+    var r=btn.getBoundingClientRect();
+    pop.style.left=Math.max(8, Math.min(r.left, window.innerWidth-352))+'px';
+    pop.style.top=Math.min(r.bottom+6, window.innerHeight-60)+'px';
+    pop.classList.add('on');
+  }
+  function closeSortPop(){ var p=byId('sortPop'); if(p) p.classList.remove('on'); }
+  function renderSortPop(){
+    var host=byId('sortFields'); if(!host) return; host.innerHTML='';
+    SORT_FIELDS.forEach(function(f){
+      var el=document.createElement('div'); el.className='sp-f'+(docsSort===f[0]?' on':'');
+      el.innerHTML='<span class="rk"></span>'+f[1];
+      el.addEventListener('click', function(){ if(docsSort!==f[0]){ docsSort=f[0]; if(f[0]==='name'||f[0]==='type') docsDir=1; else docsDir=-1; } renderDocsList(); renderSortPop(); fvOnChange(); });
+      host.appendChild(el);
+    });
+    document.querySelectorAll('#sortPop .sp-radio').forEach(function(el){
+      var d=el.getAttribute('data-dir'); el.classList.toggle('on',(d==='asc'&&docsDir>0)||(d==='desc'&&docsDir<0));
+      el.onclick=function(){ docsDir=(d==='asc')?1:-1; renderDocsList(); renderSortPop(); fvOnChange(); };
+    });
+    document.querySelectorAll('#sortPop .spv').forEach(function(el){
+      var v=el.getAttribute('data-v'); el.classList.toggle('on', docsView===v);
+      el.onclick=function(){ setDocsView(v); renderSortPop(); fvOnChange(); };
+    });
+    var path=docsData.path||'', store=fvStore(), remembered=!!store[fvNorm(path)];
+    var remWrap=byId('spRemember'), remChk=remWrap.querySelector('input');
+    remChk.checked=remembered;
+    remChk.onchange=function(){ if(!path) return; if(remChk.checked) fvSave(path); else fvForget(path); renderSortPop(); fvUpdateBar(fvFor(path)); };
+    var subWrap=byId('spSubfolders'), subChk=subWrap.querySelector('input');
+    subWrap.classList.toggle('en', remembered);
+    subChk.checked=remembered && !!store[fvNorm(path)].sub;
+    subChk.onchange=function(){ var s2=fvStore(); if(s2[fvNorm(path)]){ s2[fvNorm(path)].sub=subChk.checked; fvWrite(s2); } };
+  }
+  (function(){
+    var sb=byId('dpSortBtn'); if(sb) sb.addEventListener('click', function(e){ e.stopPropagation(); openSortPop(); });
+    var ch=byId('dpFvChange'); if(ch) ch.addEventListener('click', function(e){ e.stopPropagation(); openSortPop(); });
+    var fg=byId('spForget'); if(fg) fg.addEventListener('click', function(){ var p=docsData.path||''; if(p && confirm('Forget the saved view for this folder? It will use the default sorting next time.')){ fvForget(p); fvApply(p); renderDocsList(); renderSortPop(); } });
+    var rs=byId('spReset'); if(rs) rs.addEventListener('click', function(){ if(confirm('Restore default sorting and view for this folder?')){ docsSort=FV_DEFAULT.sort; docsDir=FV_DEFAULT.dir; docsFilter=FV_DEFAULT.filter; setDocsView(FV_DEFAULT.view); document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-f')===docsFilter); }); renderDocsList(); renderSortPop(); fvOnChange(); } });
+    document.addEventListener('click', function(e){ var p=byId('sortPop'); if(p&&p.classList.contains('on')&&!p.contains(e.target)&&e.target.id!=='dpSortBtn'&&!(byId('dpSortBtn')&&byId('dpSortBtn').contains(e.target))){ closeSortPop(); } });
+  })();
   // bottom actions
   function openNewFolder(){
     var w=byId('nfWhere'); if(w) w.textContent=(docsData.name||'Documents');
