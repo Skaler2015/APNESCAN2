@@ -1,0 +1,10 @@
+# Block direct web access to config and any data files.
+<FilesMatch "(config\.php|.*\.sqlite|.*\.hash)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

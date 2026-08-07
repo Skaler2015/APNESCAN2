@@ -6,3 +6,6 @@ packages/
 .vs/
 .idea/
 .nuget/
+# ApneScan analytics server config (holds DB password — never commit)
+website/api/config.php
+website/api/data/
