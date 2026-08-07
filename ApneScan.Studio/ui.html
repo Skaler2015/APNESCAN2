@@ -370,6 +370,26 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .rp-view.cropping{cursor:crosshair;user-select:none}
 .rp-view.cropping img{pointer-events:none;-webkit-user-drag:none;user-select:none}
 #previewImg{-webkit-user-drag:none;user-drag:none}
+/* Fullscreen "Open in Editor" */
+#fsEditor{width:100vw;height:100vh;display:flex;flex-direction:column}
+#fsBar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:#171a22;flex-wrap:wrap}
+#fsBar .fsb{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;color:#e7e9f2;background:#252a36;cursor:pointer;user-select:none;white-space:nowrap}
+#fsBar .fsb:hover{background:#333a4a}
+#fsBar .fsb svg{width:15px;height:15px;stroke:currentColor}
+#fsBar .fsb.primary{background:var(--accent);color:#fff}
+#fsBar .fsb.danger{background:#3a2530;color:#ff9aa5}
+#fsBar .fsb.danger:hover{background:#7f1d1d;color:#fff}
+#fsBar .fsb.on{background:var(--accent);color:#fff}
+#fsBar .fssep{width:1px;height:22px;background:#3a4152;margin:0 4px}
+#fsStage{position:relative;flex:1;display:grid;place-items:center;overflow:hidden;min-height:0}
+#fsStage.cropping{cursor:crosshair;user-select:none}
+#fsImg{max-width:96vw;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#fsStage.cropping #fsImg{pointer-events:none;-webkit-user-drag:none}
+#fsCropBox{position:absolute;border:2px dashed #fff;background:rgba(124,58,237,.22);display:none;pointer-events:none;z-index:5}
+#fsCropBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:none;gap:8px;z-index:6}
+#fsCropBar .cb{padding:7px 16px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;border:0}
+#fsCropBar .cb.ok{background:var(--accent);color:#fff}
+#fsCropBar .cb.no{background:#fff;color:#222}
 .cam-overlay{position:fixed;inset:0;background:rgba(15,18,28,.72);display:none;place-items:center;z-index:60}
 .cam-overlay.on{display:grid}
 .cam-box{background:var(--panel);border-radius:16px;padding:16px;width:min(700px,92vw);box-shadow:0 24px 70px rgba(0,0,0,.45)}
@@ -504,7 +524,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       <nav class="nav">
         <div class="sec">WORKSPACE</div>
         <div class="item active"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Dashboard</span></div>
-        <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Documents</span></div>
+        <div class="item" id="navDocs"><svg class="ic"><use href="#i-doc"/></svg><span class="lbl">My Files</span></div>
         <div class="item"><svg class="ic"><use href="#i-files"/></svg><span class="lbl">Recent Files</span></div>
         <div id="favList"></div>
         <div class="item" id="navHistory"><svg class="ic"><use href="#i-history"/></svg><span class="lbl">Scan History</span></div>
@@ -591,7 +611,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <div class="docs-panel" id="docsPanel">
           <div class="dp-head">
             <svg class="ic" style="color:var(--accent)"><use href="#i-doc"/></svg>
-            <span class="dp-title">My Documents</span>
+            <span class="dp-title">My Files</span>
             <div class="dp-x" id="docsClose" title="Close (Esc)"><svg class="ic"><use href="#i-clear"/></svg></div>
           </div>
           <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
@@ -872,7 +892,32 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 </div>
 
 <div class="cam-overlay" id="fsOverlay" style="background:rgba(8,10,16,.93)">
-  <img id="fsImg" alt="Preview" style="max-width:94vw;max-height:92vh;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.5)">
+  <div id="fsEditor">
+    <div id="fsBar">
+      <div class="fsb" data-fs="crop" title="Crop (drag on the page)"><svg class="ic"><use href="#i-crop"/></svg>Crop</div>
+      <div class="fsb" data-fs="rotL" title="Rotate left"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
+      <div class="fsb" data-fs="rotR" title="Rotate right"><svg class="ic"><use href="#i-rotate"/></svg></div>
+      <div class="fsb" data-fs="deskew" title="Deskew">Deskew</div>
+      <div class="fssep"></div>
+      <div class="fsb" data-fs="auto" title="Auto-enhance">Auto</div>
+      <div class="fsb" data-fs="bw" title="Black &amp; white">B&amp;W</div>
+      <div class="fsb" data-fs="gray" title="Grayscale">Gray</div>
+      <div class="fsb" data-fs="sharpen" title="Sharpen">Sharpen</div>
+      <div class="fsb" data-fs="brUp" title="Brighter">☀+</div>
+      <div class="fsb" data-fs="brDn" title="Darker">☀−</div>
+      <div class="fssep"></div>
+      <div class="fsb" data-fs="prev" title="Previous page">◀</div>
+      <div class="fsb" data-fs="next" title="Next page">▶</div>
+      <div class="fsb danger" data-fs="del" title="Delete this page"><svg class="ic"><use href="#i-delete"/></svg></div>
+      <div style="flex:1"></div>
+      <div class="fsb primary" data-fs="done" title="Close editor">Done</div>
+    </div>
+    <div id="fsStage">
+      <img id="fsImg" alt="Preview" draggable="false">
+      <div id="fsCropBox"></div>
+      <div id="fsCropBar"><div class="cb ok" id="fsCropApply">Apply crop</div><div class="cb no" id="fsCropCancel">Cancel</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- Scanner picker dropdown (list of detected scanners) -->
@@ -1101,6 +1146,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     applyZoom();
     if(ph){ ph.style.display='none'; }
     setPages(pages);
+    var fo=byId('fsOverlay'); if(fo&&fo.classList.contains('on')) fsSync(url);   // keep the editor in sync after an edit
     var t=byId('scanTitle'); if(t) t.textContent='Scan complete';
     var s=byId('scanSub'); if(s) s.textContent='Save as PDF or Print — or Scan again to add pages';
   }
@@ -1239,9 +1285,46 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var zi=byId('zoomIn'); if(zi) zi.addEventListener('click', function(){ fitMode=false; zoom=Math.min(zoom*1.25,5); applyZoom(); });
   var zo=byId('zoomOut'); if(zo) zo.addEventListener('click', function(){ fitMode=false; zoom=Math.max(zoom/1.25,0.2); applyZoom(); });
   var zf=byId('zoomFit'); if(zf) zf.addEventListener('click', function(){ fitMode=true; zoom=1; applyZoom(); });
-  function openFs(){ var im=byId('previewImg'); if(!im||!im.getAttribute('src')) return; var fi=byId('fsImg'); if(fi) fi.src=im.src; var ov=byId('fsOverlay'); if(ov) ov.classList.add('on'); }
+  function openFs(){ var im=byId('previewImg'); if(!im||!im.getAttribute('src')){ setStatus('Scan or open a page first'); return; } var fi=byId('fsImg'); if(fi) fi.src=im.src; var ov=byId('fsOverlay'); if(ov) ov.classList.add('on'); fsEndCrop(); }
+  function fsClose(){ fsEndCrop(); var ov=byId('fsOverlay'); if(ov) ov.classList.remove('on'); }
+  function fsSync(url){ var fi=byId('fsImg'); if(fi){ if(url) fi.src=url; else { var im=byId('previewImg'); if(im&&im.getAttribute('src')) fi.src=im.src; } } }
+  // Fullscreen editor toolbar → reuse the existing page commands.
+  var fsBar=byId('fsBar');
+  if(fsBar){ fsBar.addEventListener('click', function(ev){
+    var b=ev.target.closest('.fsb'); if(!b) return; var op=b.getAttribute('data-fs');
+    if(op==='done'){ fsClose(); return; }
+    if(op==='crop'){ fsStartCrop(); return; }
+    if(op==='rotL'){ if(bridge) send({cmd:'rotateLeft'}); return; }
+    if(op==='rotR'){ if(bridge) send({cmd:'rotateRight'}); return; }
+    if(op==='prev'||op==='next'){
+      if(!scannedTotal) return; var cur=(scannedSel>=0?scannedSel:0);
+      var nx=Math.max(0, Math.min(scannedTotal-1, cur+(op==='next'?1:-1)));
+      selSet=[]; scannedSel=nx; applyMultiHighlight(); if(bridge) send({cmd:'select', index:nx}); return;
+    }
+    if(op==='del'){ if(bridge) send({cmd:'deletePage', indices:selCurrent()}); if(scannedTotal<=1) fsClose(); return; }
+    var map={ deskew:'deskew', auto:'auto', bw:'bw', gray:'gray', sharpen:'sharpen' };
+    if(map[op]){ pageOp(map[op]); return; }
+    if(op==='brUp'){ pageOp('brightness',150); return; }
+    if(op==='brDn'){ pageOp('brightness',-150); return; }
+  }); }
+  // Crop inside the fullscreen editor (drag a rectangle over the page).
+  var fsCropping=false, fsStart=null, fsRect=null;
+  function fsImgRect(){ var im=byId('fsImg'); return (im&&im.getAttribute('src'))?im.getBoundingClientRect():null; }
+  function fsStageRect(){ var s=byId('fsStage'); return s?s.getBoundingClientRect():null; }
+  function fsStartCrop(){ if(!fsImgRect()){ setStatus('Nothing to crop'); return; } fsCropping=true; var s=byId('fsStage'); if(s) s.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
+  function fsEndCrop(){ fsCropping=false; fsStart=null; fsRect=null; var s=byId('fsStage'); if(s) s.classList.remove('cropping'); var box=byId('fsCropBox'); if(box) box.style.display='none'; var bar=byId('fsCropBar'); if(bar) bar.style.display='none'; }
+  var fsStage=byId('fsStage');
+  if(fsStage){
+    fsStage.addEventListener('dragstart', function(e){ if(fsCropping) e.preventDefault(); });
+    fsStage.addEventListener('mousedown', function(e){ if(!fsCropping) return; var rr=fsStageRect(); if(!rr) return; e.preventDefault(); fsStart={x:e.clientX,y:e.clientY}; fsRect=null; var box=byId('fsCropBox'); if(box){ box.style.display='block'; box.style.left=(e.clientX-rr.left)+'px'; box.style.top=(e.clientY-rr.top)+'px'; box.style.width='0px'; box.style.height='0px'; } var bar=byId('fsCropBar'); if(bar) bar.style.display='none'; });
+    window.addEventListener('mousemove', function(e){ if(!fsCropping||!fsStart) return; var rr=fsStageRect(); if(!rr) return; var x=Math.min(e.clientX,fsStart.x), y=Math.min(e.clientY,fsStart.y); var w=Math.abs(e.clientX-fsStart.x), h=Math.abs(e.clientY-fsStart.y); var box=byId('fsCropBox'); if(box){ box.style.left=(x-rr.left)+'px'; box.style.top=(y-rr.top)+'px'; box.style.width=w+'px'; box.style.height=h+'px'; } fsRect={x:x,y:y,w:w,h:h}; });
+    window.addEventListener('mouseup', function(){ if(!fsCropping||!fsStart) return; fsStart=null; if(fsRect&&fsRect.w>6&&fsRect.h>6){ var bar=byId('fsCropBar'); if(bar) bar.style.display='flex'; } });
+  }
+  var fsCropApply=byId('fsCropApply'); if(fsCropApply) fsCropApply.addEventListener('click', function(){ var ir=fsImgRect(); if(!ir||!fsRect){ fsEndCrop(); return; } var x0=(fsRect.x-ir.left)/ir.width, y0=(fsRect.y-ir.top)/ir.height; var x1=(fsRect.x+fsRect.w-ir.left)/ir.width, y1=(fsRect.y+fsRect.h-ir.top)/ir.height; if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1}); fsEndCrop(); });
+  var fsCropCancel=byId('fsCropCancel'); if(fsCropCancel) fsCropCancel.addEventListener('click', fsEndCrop);
   var zfull=byId('zoomFull'); if(zfull) zfull.addEventListener('click', openFs);
-  var fsov=byId('fsOverlay'); if(fsov) fsov.addEventListener('click', function(){ fsov.classList.remove('on'); });
+  // Close only when the dark backdrop itself is clicked (not the editor/toolbar).
+  var fsov=byId('fsOverlay'); if(fsov) fsov.addEventListener('click', function(e){ if(e.target===fsov) fsClose(); });
   // Make the side panels drag-resizable (widths persisted).
   (function(){
     function makeResizable(el, side, key, min, max){
@@ -2636,7 +2719,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     {id:'moveL', sec:'Edit page', label:'Move page left', def:'Ctrl+Left', run:function(){ send({cmd:'moveLeft'}); }},
     {id:'moveR', sec:'Edit page', label:'Move page right', def:'Ctrl+Right', run:function(){ send({cmd:'moveRight'}); }},
     {id:'clear', sec:'Edit page', label:'Clear all pages', def:'Ctrl+Shift+Delete', run:function(){ send({cmd:'clear'}); }},
-    {id:'myDocs', sec:'Navigate', label:'My Documents', def:'Ctrl+D', run:function(){ openDocs(); }},
+    {id:'myDocs', sec:'Navigate', label:'My Files', def:'Ctrl+D', run:function(){ openDocs(); }},
     {id:'newFolder', sec:'Navigate', label:'New folder', def:'Ctrl+Shift+N', run:function(){ var p=byId('docsPanel'); if(p) p.classList.add('on'); openNewFolder(); }},
     {id:'history', sec:'Navigate', label:'Scan History', def:'Ctrl+H', run:function(){ openHist(); }},
     {id:'profiles', sec:'Navigate', label:'Profiles', def:'Ctrl+L', run:function(){ openProfiles(); }},

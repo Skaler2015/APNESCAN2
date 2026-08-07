@@ -1231,8 +1231,12 @@ public class MainForm : Form
 
         var rowCount = new int[h];   // pixels lum<215 per row (light-ish content)
         var colCount = new int[w];
-        var rowVeryDark = new int[h]; // pixels lum<95 per row (for dark-band detection)
-        var colVeryDark = new int[w];
+        // Per-row / per-col luminance min, max and sum — used to detect flat,
+        // uniform scanner "bands" (a solid strip of one colour) at the edges.
+        var rowMin = new int[h]; var rowMax = new int[h]; var rowSum = new long[h];
+        var colMin = new int[w]; var colMax = new int[w]; var colSum = new long[w];
+        for (int y = 0; y < h; y++) { rowMin[y] = 255; }
+        for (int x = 0; x < w; x++) { colMin[x] = 255; }
         long dark = 0;
         for (int y = 0; y < h; y++)
         {
@@ -1242,19 +1246,23 @@ public class MainForm : Form
                 int o = row + x * 3;
                 int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
                 if (lum < 215) { rowCount[y]++; colCount[x]++; dark++; }
-                if (lum < 95) { rowVeryDark[y]++; colVeryDark[x]++; }
+                if (lum < rowMin[y]) rowMin[y] = lum; if (lum > rowMax[y]) rowMax[y] = lum; rowSum[y] += lum;
+                if (lum < colMin[x]) colMin[x] = lum; if (lum > colMax[x]) colMax[x] = lum; colSum[x] += lum;
             }
         }
 
-        // Detect solid dark "bands" at each edge — the black strips a duplex ADF
-        // leaves when the sheet is shorter than the scan window, or edge shadows.
-        // A band row/col is ≥75% near-black and contiguous from the very edge.
-        int maxBandY = (int)(h * 0.30), maxBandX = (int)(w * 0.30);
-        int rowBandMin = (int)(w * 0.75), colBandMin = (int)(h * 0.75);
-        int topB = 0;    for (int y = 0; y < maxBandY; y++) { if (rowVeryDark[y] >= rowBandMin) topB = y + 1; else break; }
-        int botB = 0;    for (int y = h - 1; y >= h - maxBandY && y >= 0; y--) { if (rowVeryDark[y] >= rowBandMin) botB = h - y; else break; }
-        int leftB = 0;   for (int x = 0; x < maxBandX; x++) { if (colVeryDark[x] >= colBandMin) leftB = x + 1; else break; }
-        int rightB = 0;  for (int x = w - 1; x >= w - maxBandX && x >= 0; x--) { if (colVeryDark[x] >= colBandMin) rightB = w - x; else break; }
+        // A "band" row/col is a flat, uniform strip whose colour differs from the
+        // white paper — i.e. the scanner's grey/black backing showing past a short
+        // sheet, or an edge shadow. It is uniform (small max−min) and clearly not
+        // paper-white (mean < 205). Structured content (text, X-ray anatomy) has a
+        // wide max−min, so it is never mistaken for a band. Contiguous from the edge.
+        bool RowBand(int y) { return (rowMax[y] - rowMin[y]) <= 55 && (rowSum[y] / (double)w) < 205; }
+        bool ColBand(int x) { return (colMax[x] - colMin[x]) <= 55 && (colSum[x] / (double)h) < 205; }
+        int maxBandY = (int)(h * 0.35), maxBandX = (int)(w * 0.35);
+        int topB = 0;    for (int y = 0; y < maxBandY; y++) { if (RowBand(y)) topB = y + 1; else break; }
+        int botB = 0;    for (int y = h - 1; y >= h - maxBandY && y >= 0; y--) { if (RowBand(y)) botB = h - y; else break; }
+        int leftB = 0;   for (int x = 0; x < maxBandX; x++) { if (ColBand(x)) leftB = x + 1; else break; }
+        int rightB = 0;  for (int x = w - 1; x >= w - maxBandX && x >= 0; x--) { if (ColBand(x)) rightB = w - x; else break; }
 
         // Analysis region excludes the detected bands.
         int y0 = topB, y1 = h - botB, x0 = leftB, x1 = w - rightB;
@@ -3414,6 +3422,21 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     }
 
     // Rename a file or folder on disk (from the My Documents panel).
+    // Given a desired name that is already taken in dir, returns the first free
+    // "Name (2)", "Name (3)"… variant (keeping the extension for files).
+    private static string NextFreeName(string dir, string desired, bool isDir)
+    {
+        string ext = isDir ? "" : System.IO.Path.GetExtension(desired);
+        string baseName = isDir ? desired : System.IO.Path.GetFileNameWithoutExtension(desired);
+        for (int n = 2; n < 100000; n++)
+        {
+            var candidate = System.IO.Path.Combine(dir, $"{baseName} ({n}){ext}");
+            bool taken = isDir ? Directory.Exists(candidate) : File.Exists(candidate);
+            if (!taken) return candidate;
+        }
+        return System.IO.Path.Combine(dir, $"{baseName} ({Guid.NewGuid().ToString("N")[..6]}){ext}");
+    }
+
     private void RenameItem(string path, string newName)
     {
         try
@@ -3435,12 +3458,22 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             if (string.Equals(target, path, StringComparison.OrdinalIgnoreCase)) { SendFolder(dir); return; }
             if (isDir)
             {
-                if (Directory.Exists(target)) { Banner("A folder named “" + safe + "” already exists", "warn"); return; }
+                if (Directory.Exists(target))
+                {
+                    // Auto-number a duplicate folder name: "Name (2)", "Name (3)"…
+                    target = NextFreeName(dir, safe, true);
+                    safe = System.IO.Path.GetFileName(target);
+                }
                 Directory.Move(path, target);
             }
             else
             {
-                if (File.Exists(target)) { Banner("A file named “" + safe + "” already exists", "warn"); return; }
+                if (File.Exists(target))
+                {
+                    // Name taken → auto-append a number: "Bills (2).pdf", "Bills (3).pdf"…
+                    target = NextFreeName(dir, safe, false);
+                    safe = System.IO.Path.GetFileName(target);
+                }
                 // The file may be momentarily locked (e.g. it is the page shown in
                 // the preview). Retry briefly, then fall back to copy + delete.
                 Exception? last = null;
@@ -4571,6 +4604,9 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Bump("pdf", made);
             SendFolder(folder);
             Status($"Saved {made} PDF(s) to “{System.IO.Path.GetFileName(folder)}”");
+            Banner($"Saved {made} PDF(s) to “{System.IO.Path.GetFileName(folder)}”", "ok");
+            // Drag-drop save clears the thumbnail area too when the setting is on.
+            if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
