@@ -39,6 +39,7 @@ public class MainForm : Form
     private bool _ocr;
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
+    private readonly List<List<ProcessedImage>> _redo = new();
     // Auto-detected document name per page (from OCR of the page's top area).
     private readonly List<string> _pageNames = new();
     private bool _naming;
@@ -60,8 +61,25 @@ public class MainForm : Form
                 foreach (var p in _undo[0]) p.Dispose();
                 _undo.RemoveAt(0);
             }
+            // Any new edit invalidates the redo stack.
+            ClearRedo();
         }
         catch { /* undo is best-effort */ }
+    }
+
+    private void ClearRedo()
+    {
+        foreach (var snap in _redo)
+            foreach (var p in snap) p.Dispose();
+        _redo.Clear();
+    }
+
+    // Discard the most recent undo snapshot (used when an edit turned out to be a no-op).
+    private void PopUndo()
+    {
+        if (_undo.Count == 0) return;
+        foreach (var p in _undo[^1]) p.Dispose();
+        _undo.RemoveAt(_undo.Count - 1);
     }
 
     private async Task UndoAsync()
@@ -70,6 +88,13 @@ public class MainForm : Form
         {
             Status("Nothing to undo");
             return;
+        }
+        // Remember the current state so Redo can bring it back.
+        _redo.Add(_pages.Select(p => p.Clone()).ToList());
+        while (_redo.Count > 8)
+        {
+            foreach (var p in _redo[0]) p.Dispose();
+            _redo.RemoveAt(0);
         }
         var snap = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
@@ -81,6 +106,31 @@ public class MainForm : Form
         await RefreshAsync(false);
         _ = AutoNameAsync();
         Status("Undone");
+    }
+
+    private async Task RedoAsync()
+    {
+        if (_redo.Count == 0)
+        {
+            Status("Nothing to redo");
+            return;
+        }
+        _undo.Add(_pages.Select(p => p.Clone()).ToList());
+        while (_undo.Count > 8)
+        {
+            foreach (var p in _undo[0]) p.Dispose();
+            _undo.RemoveAt(0);
+        }
+        var snap = _redo[^1];
+        _redo.RemoveAt(_redo.Count - 1);
+        foreach (var p in _pages) p.Dispose();
+        _pages.Clear();
+        _pages.AddRange(snap);
+        _pageNames.Clear();
+        _selected = _pages.Count - 1;
+        await RefreshAsync(false);
+        _ = AutoNameAsync();
+        Status("Redone");
     }
 
     // One-click update: manifest published to the "latest" GitHub release.
@@ -178,6 +228,8 @@ public class MainForm : Form
         int compressPercent = 0;
         string data = "";
         string ctx = "";
+        string op = "";
+        int amount = 0;
         var indices = new List<int>();
         try
         {
@@ -207,6 +259,8 @@ public class MainForm : Form
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
+            if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
+            if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
@@ -266,6 +320,9 @@ public class MainForm : Form
                 break;
             case "undo":
                 await UndoAsync();
+                break;
+            case "redo":
+                await RedoAsync();
                 break;
             case "saveImages":
                 await SaveImagesAsync(format);
@@ -409,6 +466,12 @@ public class MainForm : Form
             case "crop":
                 PushUndo();
                 await CropPageAsync(x0, y0, x1, y1);
+                break;
+            case "pageOp":
+                await PageOpAsync(op, amount, indices);
+                break;
+            case "exportPageImage":
+                await ExportPagesImageAsync(indices, format);
                 break;
             case "setOcr":
                 _ocr = on;
@@ -1717,6 +1780,206 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    // Resolve which pages an op should act on: the explicit selection if any,
+    // otherwise the currently-previewed page.
+    private List<int> Targets(List<int> indices)
+    {
+        var t = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+        if (t.Count == 0)
+        {
+            int s = Sel();
+            if (s >= 0) t.Add(s);
+        }
+        return t;
+    }
+
+    // Unified page operation dispatcher for the Scanned-Pages toolbar and
+    // right-click menu: rotate/deskew/enhance selected pages, or reorder them.
+    private async Task PageOpAsync(string op, int amount, List<int> indices)
+    {
+        if (_pages.Count == 0)
+        {
+            Status("Scan or import a page first");
+            return;
+        }
+
+        switch (op)
+        {
+            case "reverse":
+            {
+                PushUndo();
+                SyncNames();
+                _pages.Reverse();
+                _pageNames.Reverse();
+                _selected = _pages.Count - 1;
+                await RefreshAsync(false);
+                Status("Page order reversed");
+                return;
+            }
+            case "duplicate":
+            {
+                var t = Targets(indices);
+                if (t.Count == 0) { Status("No page selected"); return; }
+                PushUndo();
+                SyncNames();
+                // Insert from the end so earlier indices stay valid.
+                foreach (var i in t.OrderByDescending(x => x))
+                {
+                    _pages.Insert(i + 1, _pages[i].Clone());
+                    _pageNames.Insert(i + 1, i < _pageNames.Count ? _pageNames[i] : "");
+                }
+                await RefreshAsync(false);
+                Status($"Duplicated {t.Count} page(s)");
+                return;
+            }
+            case "top":
+            case "bottom":
+            {
+                var t = Targets(indices);
+                if (t.Count == 0) { Status("No page selected"); return; }
+                PushUndo();
+                SyncNames();
+                var ordered = t.OrderBy(x => x).ToList();
+                var movedPages = ordered.Select(i => _pages[i]).ToList();
+                var movedNames = ordered.Select(i => i < _pageNames.Count ? _pageNames[i] : "").ToList();
+                foreach (var i in ordered.OrderByDescending(x => x))
+                {
+                    _pages.RemoveAt(i);
+                    if (i < _pageNames.Count) _pageNames.RemoveAt(i);
+                }
+                if (op == "top")
+                {
+                    _pages.InsertRange(0, movedPages);
+                    _pageNames.InsertRange(0, movedNames);
+                    _selected = 0;
+                }
+                else
+                {
+                    _pages.AddRange(movedPages);
+                    _pageNames.AddRange(movedNames);
+                    _selected = _pages.Count - 1;
+                }
+                await RefreshAsync(false);
+                Status(op == "top" ? "Moved to top" : "Moved to bottom");
+                return;
+            }
+            case "reorder":
+            {
+                // amount holds the destination index; indices[0] the source.
+                int from = indices.Count > 0 ? indices[0] : -1;
+                int to = amount;
+                if (from < 0 || from >= _pages.Count) return;
+                to = Math.Clamp(to, 0, _pages.Count - 1);
+                if (from == to) return;
+                PushUndo();
+                SyncNames();
+                var pg = _pages[from];
+                var nm = from < _pageNames.Count ? _pageNames[from] : "";
+                _pages.RemoveAt(from);
+                if (from < _pageNames.Count) _pageNames.RemoveAt(from);
+                _pages.Insert(to, pg);
+                _pageNames.Insert(Math.Min(to, _pageNames.Count), nm);
+                _selected = to;
+                await RefreshAsync(false);
+                Status($"Moved page to position {to + 1}");
+                return;
+            }
+        }
+
+        // Image-transform ops applied to each target page.
+        var targets = Targets(indices);
+        if (targets.Count == 0) { Status("No page selected"); return; }
+        PushUndo();
+        int changed = 0;
+        foreach (var i in targets)
+        {
+            Transform? tr = op switch
+            {
+                "rotate" => new RotationTransform(amount),
+                "bw" => new BlackWhiteTransform(),
+                "gray" => new GrayscaleTransform(),
+                "auto" => new CorrectionTransform(CorrectionMode.Document),
+                "brightness" => new BrightnessTransform(amount),
+                "contrast" => new TrueContrastTransform(amount),
+                "sharpen" => new SharpenTransform(amount == 0 ? 400 : amount),
+                _ => null
+            };
+            if (op == "deskew")
+            {
+                try { using var rendered = _pages[i].Render(); tr = Deskewer.GetDeskewTransform(rendered); }
+                catch { tr = null; }
+            }
+            if (tr == null || tr.IsNull) continue;
+            _pages[i] = _pages[i].WithTransform(tr, disposeSelf: true);
+            changed++;
+        }
+        if (changed == 0)
+        {
+            PopUndo();
+            Status(op == "deskew" ? "Pages already straight" : "No change");
+            return;
+        }
+        await RefreshAsync(false);
+        Status($"{OpLabel(op)} — {changed} page(s)");
+    }
+
+    private static string OpLabel(string op) => op switch
+    {
+        "rotate" => "Rotated",
+        "bw" => "Black & white",
+        "gray" => "Grayscale",
+        "auto" => "Auto-enhanced",
+        "brightness" => "Brightness",
+        "contrast" => "Contrast",
+        "sharpen" => "Sharpened",
+        "deskew" => "Deskewed",
+        _ => "Done"
+    };
+
+    // Export selected pages as image files (drag-out / "save to Desktop").
+    private async Task ExportPagesImageAsync(List<int> indices, string format)
+    {
+        if (_pages.Count == 0) { Status("Nothing to export — scan a page first"); return; }
+        var targets = Targets(indices);
+        if (targets.Count == 0) { Status("No page selected"); return; }
+        bool png = !string.Equals(format, "jpg", StringComparison.OrdinalIgnoreCase)
+                   && !string.Equals(format, "jpeg", StringComparison.OrdinalIgnoreCase);
+        var ext = png ? "png" : "jpg";
+        var fmt = png ? ImageFileFormat.Png : ImageFileFormat.Jpeg;
+        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        if (string.IsNullOrWhiteSpace(desktop) || !Directory.Exists(desktop))
+            desktop = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        try
+        {
+            SyncNames();
+            string? lastFile = null;
+            int n = 0;
+            foreach (var i in targets)
+            {
+                var nm = (i < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[i]))
+                    ? SanitizeFileName(_pageNames[i]) : $"page {i + 1}";
+                var file = System.IO.Path.Combine(desktop, $"{nm}.{ext}");
+                int k = 1;
+                while (File.Exists(file)) file = System.IO.Path.Combine(desktop, $"{nm} ({++k}).{ext}");
+                await Task.Run(() => _pages[i].Save(file, fmt));
+                lastFile = file;
+                n++;
+            }
+            Bump("image", n);
+            if (lastFile != null)
+            {
+                // Reveal the exported file in Explorer.
+                try { Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{lastFile}\"", UseShellExecute = true }); }
+                catch { }
+            }
+            Status($"Exported {n} page(s) to Desktop");
+        }
+        catch (Exception ex)
+        {
+            Status("Export error: " + ex.Message);
+        }
     }
 
     private sealed class AnalyticsData

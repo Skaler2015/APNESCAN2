@@ -227,6 +227,25 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .pg-card .pn{position:absolute;top:13px;left:13px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;box-shadow:0 2px 5px rgba(109,40,217,.3)}
 .pg-card .pg-name{margin-top:7px;font-size:11px;font-weight:600;color:#3b4254;text-align:center;line-height:1.25;min-height:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .pg-card .pg-name.reading{color:var(--muted-2);font-weight:500;font-style:italic}
+.pg-card.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
+.pg-card.drop-after{box-shadow:3px 0 0 0 var(--accent)}
+.pg-card.dragging{opacity:.4}
+/* Scanned-pages toolbar */
+.scan-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 12px}
+.st-group{display:flex;gap:3px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px}
+.st-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:7px;font-size:11.5px;font-weight:600;color:#3b4254;cursor:pointer;user-select:none;white-space:nowrap;transition:background .12s,color .12s}
+.st-btn:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.st-btn.on{background:var(--accent);color:#fff}
+.st-btn svg{width:14px;height:14px;stroke:currentColor}
+.st-sep{width:1px;align-self:stretch;background:var(--border);margin:2px 1px}
+.st-sz{display:flex;align-items:center;gap:6px;padding:0 6px;font-size:11px;color:var(--muted)}
+.st-sz input[type=range]{width:74px;accent-color:var(--accent)}
+/* List (row) view for scanned pages */
+.grid-pages.listview{display:flex;flex-direction:column;gap:8px}
+.grid-pages.listview .pg-card{display:flex;align-items:center;gap:12px;padding:8px 12px}
+.grid-pages.listview .pg-card img{width:52px;height:66px;flex:none}
+.grid-pages.listview .pg-card .pn{position:static;box-shadow:none}
+.grid-pages.listview .pg-card .pg-name{margin-top:0;text-align:left;flex:1;-webkit-line-clamp:1;min-height:0}
 .rightpanel{width:326px;flex:none;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
 .rp-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
 .rp-head b{font-size:13.5px}
@@ -529,6 +548,45 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <span><kbd>Ctrl</kbd>+<kbd>P</kbd> print</span>
           </div>
           <div class="h3" id="scannedHead" style="display:none;align-items:center;gap:8px">Scanned Pages <span class="badge num" id="scannedCount">0</span></div>
+          <div class="scan-tools" id="scanTools" style="display:none">
+            <div class="st-group">
+              <div class="st-btn" data-op="selall" title="Select all pages (Ctrl+A)"><svg><use href="#i-check"/></svg>All</div>
+              <div class="st-btn" data-op="invert" title="Invert selection">Invert</div>
+              <div class="st-btn" data-op="none" title="Deselect all">None</div>
+            </div>
+            <div class="st-group">
+              <div class="st-btn" data-op="rotL" title="Rotate selected left"><svg><use href="#i-rotate"/></svg>↺</div>
+              <div class="st-btn" data-op="rotR" title="Rotate selected right"><svg><use href="#i-rotate"/></svg>↻</div>
+              <div class="st-btn" data-op="rot180" title="Rotate selected 180°">180°</div>
+              <div class="st-btn" data-op="deskew" title="Auto-straighten (deskew)">Deskew</div>
+            </div>
+            <div class="st-group">
+              <div class="st-btn" data-op="auto" title="Auto-enhance">Auto</div>
+              <div class="st-btn" data-op="bw" title="Black &amp; white">B&amp;W</div>
+              <div class="st-btn" data-op="gray" title="Grayscale">Gray</div>
+              <div class="st-btn" data-op="sharpen" title="Sharpen">Sharpen</div>
+              <div class="st-btn" data-op="brUp" title="Brighter">☀+</div>
+              <div class="st-btn" data-op="brDn" title="Darker">☀−</div>
+              <div class="st-btn" data-op="coUp" title="More contrast">◑+</div>
+              <div class="st-btn" data-op="coDn" title="Less contrast">◑−</div>
+            </div>
+            <div class="st-group">
+              <div class="st-btn" data-op="dup" title="Duplicate selected page">Duplicate</div>
+              <div class="st-btn" data-op="top" title="Move selected to top">⤒ Top</div>
+              <div class="st-btn" data-op="bottom" title="Move selected to bottom">⤓ Bottom</div>
+              <div class="st-btn" data-op="reverse" title="Reverse page order"><svg><use href="#i-swap"/></svg>Reverse</div>
+            </div>
+            <div class="st-group">
+              <div class="st-btn" data-op="redo" title="Redo (Ctrl+Y)"><svg><use href="#i-refresh"/></svg>Redo</div>
+              <div class="st-btn" data-op="export" title="Export selected page(s) as image to Desktop"><svg><use href="#i-image"/></svg>Export</div>
+              <div class="st-btn" data-op="del" title="Delete selected page(s)"><svg><use href="#i-delete"/></svg>Delete</div>
+            </div>
+            <div class="st-group">
+              <div class="st-btn" id="viewGrid" data-op="vgrid" title="Grid view"><svg><use href="#i-grid"/></svg></div>
+              <div class="st-btn" id="viewList" data-op="vlist" title="List view"><svg><use href="#i-list"/></svg></div>
+              <div class="st-sz"><svg style="width:13px;height:13px;stroke:currentColor"><use href="#i-image"/></svg><input type="range" id="thumbSize" min="90" max="200" step="10" value="122"></div>
+            </div>
+          </div>
           <div class="grid-pages" id="scannedGrid" style="display:none"></div>
           <div class="h3" id="qaHead">Quick Actions</div>
           <div class="grid-q" id="qaGrid">
@@ -1022,7 +1080,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   // Center gallery of scanned pages (fills the main area after a scan)
   var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0, scannedThumbs=[], nameEntries=[];
+  var scanView='grid', thumbPx=122;
   function isSel(i){ return selSet.length ? (selSet.indexOf(i)>=0) : (i===scannedSel); }
+  function selCurrent(){ return (selSet.length ? selSet.slice() : (scannedSel>=0 ? [scannedSel] : [])); }
+  function invertSel(){ if(!scannedTotal) return; var ns=[]; for(var i=0;i<scannedTotal;i++){ if(!isSel(i)) ns.push(i); } selSet=ns; if(selSet.length) scannedSel=selSet[selSet.length-1]; applyMultiHighlight(); setStatus(selSet.length+' page(s) selected'); }
+  function selectNone(){ selSet=[]; applyMultiHighlight(); setStatus('Selection cleared'); }
+  // Send a page operation for the current selection to the host.
+  function pageOp(op, amount){ if(!scannedTotal){ setStatus('Scan or import a page first'); return; } send({cmd:'pageOp', op:op, amount:(amount||0), indices:selCurrent()}); }
+  function applyScanView(){ var g=byId('scannedGrid'); if(!g) return; g.classList.toggle('listview', scanView==='list'); g.style.gridTemplateColumns = scanView==='list' ? '' : ('repeat(auto-fill,minmax('+thumbPx+'px,1fr))'); var vg=byId('viewGrid'), vl=byId('viewList'); if(vg) vg.classList.toggle('on', scanView==='grid'); if(vl) vl.classList.toggle('on', scanView==='list'); }
   function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; }
   function selectAllPages(){ if(!scannedTotal){ setStatus('Nothing to select'); return; } selSet=[]; for(var i=0;i<scannedTotal;i++) selSet.push(i); applyMultiHighlight(); setStatus(scannedTotal+' page(s) selected'); }
   function clearMultiSel(){ selSet=[]; applyMultiHighlight(); }
@@ -1039,6 +1104,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     ['scanCard','scanHint','qaHead','qaGrid','rfHead','recentFiles'].forEach(function(id){
       var el=byId(id); if(el) el.style.display=has?'none':'';
     });
+    var stools=byId('scanTools'); if(stools) stools.style.display=has?'flex':'none';
     grid.innerHTML='';
     if(!has){
       if(head) head.style.display='none';
@@ -1046,7 +1112,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       return;
     }
     if(head) head.style.display='flex';
-    grid.style.display='grid';
+    grid.style.display=(scanView==='list')?'flex':'grid';
     if(cnt) cnt.textContent=thumbs.length;
     thumbs.forEach(function(src,i){
       var c=document.createElement('div'); c.className='pg-card'+(i===selected?' sel':'');
@@ -1054,7 +1120,23 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       c.draggable=true;
       c.addEventListener('dragstart', function(ev){
         var idxs=(selSet.length && selSet.indexOf(i)>=0) ? selSet.slice() : [i];
-        try{ ev.dataTransfer.setData('text/apnescan-pages', JSON.stringify(idxs)); ev.dataTransfer.effectAllowed='copy'; }catch(_){}
+        dragSrc=i;
+        c.classList.add('dragging');
+        try{ ev.dataTransfer.setData('text/apnescan-pages', JSON.stringify(idxs)); ev.dataTransfer.effectAllowed='copyMove'; }catch(_){}
+      });
+      c.addEventListener('dragend', function(){ dragSrc=-1; c.classList.remove('dragging'); clearDropMarks(); });
+      c.addEventListener('dragover', function(ev){
+        if(dragSrc<0) return; ev.preventDefault();
+        var r=c.getBoundingClientRect(), after=(ev.clientX-r.left)>r.width/2;
+        clearDropMarks(); c.classList.add(after?'drop-after':'drop-before');
+      });
+      c.addEventListener('drop', function(ev){
+        if(dragSrc<0) return; ev.preventDefault(); ev.stopPropagation();
+        var r=c.getBoundingClientRect(), after=(ev.clientX-r.left)>r.width/2;
+        var to=i+(after?1:0); if(dragSrc<to) to--;
+        clearDropMarks();
+        if(to!==dragSrc && dragSrc>=0){ send({cmd:'pageOp', op:'reorder', indices:[dragSrc], amount:to}); }
+        dragSrc=-1;
       });
       var pn=document.createElement('div'); pn.className='pn'; pn.textContent=(i+1); c.appendChild(pn);
       var nm=document.createElement('div'); nm.id='pgname-'+i;
@@ -1068,9 +1150,30 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         if(ev.shiftKey && scannedSel>=0){ selSet=[]; var a=Math.min(scannedSel,i), b=Math.max(scannedSel,i); for(var j=a;j<=b;j++) selSet.push(j); applyMultiHighlight(); return; }
         selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i});
       });
+      c.addEventListener('contextmenu', function(ev){ ev.preventDefault(); ev.stopPropagation();
+        if(selSet.indexOf(i)<0){ selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); }
+        showPageMenu(ev.clientX, ev.clientY);
+      });
       grid.appendChild(c);
     });
+    applyScanView();
   }
+  var dragSrc=-1;
+  function clearDropMarks(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.remove('drop-before','drop-after'); } }
+  // Scanned-pages toolbar
+  var scanToolsMap={
+    selall:function(){ selectAllPages(); }, invert:invertSel, none:selectNone,
+    rotL:function(){ pageOp('rotate',-90); }, rotR:function(){ pageOp('rotate',90); }, rot180:function(){ pageOp('rotate',180); },
+    deskew:function(){ pageOp('deskew'); }, auto:function(){ pageOp('auto'); }, bw:function(){ pageOp('bw'); }, gray:function(){ pageOp('gray'); }, sharpen:function(){ pageOp('sharpen'); },
+    brUp:function(){ pageOp('brightness',150); }, brDn:function(){ pageOp('brightness',-150); }, coUp:function(){ pageOp('contrast',150); }, coDn:function(){ pageOp('contrast',-150); },
+    dup:function(){ pageOp('duplicate'); }, top:function(){ pageOp('top'); }, bottom:function(){ pageOp('bottom'); }, reverse:function(){ pageOp('reverse'); },
+    redo:function(){ send({cmd:'redo'}); }, export:function(){ if(!scannedTotal){ setStatus('Nothing to export'); return; } send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); },
+    del:function(){ if(!scannedTotal){ setStatus('No pages'); return; } send({cmd:'deletePage', indices:selCurrent()}); },
+    vgrid:function(){ scanView='grid'; applyScanView(); }, vlist:function(){ scanView='list'; applyScanView(); }
+  };
+  var scanToolsEl=byId('scanTools');
+  if(scanToolsEl){ scanToolsEl.addEventListener('click', function(ev){ var b=ev.target.closest('.st-btn'); if(!b) return; var op=b.getAttribute('data-op'); if(scanToolsMap[op]) scanToolsMap[op](); }); }
+  var thumbSize=byId('thumbSize'); if(thumbSize) thumbSize.addEventListener('input', function(){ thumbPx=parseInt(thumbSize.value,10)||122; if(scanView==='list'){ scanView='grid'; } applyScanView(); });
   function highlightScanned(index){
     if(selSet.length) return; // keep multi-selection highlight
     var g=byId('scannedGrid'); if(!g) return;
@@ -1551,6 +1654,34 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     m.style.top=Math.min(y, window.innerHeight-170)+'px';
     m.classList.add('on');
   }
+  // Right-click menu for scanned pages.
+  function showPageMenu(x,y){
+    var m=byId('ctxMenu'); if(!m) return; m.innerHTML='';
+    var n=selCurrent().length;
+    function item(label, sym, fn){ var o=document.createElement('div'); o.className='opt'; o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
+    function sep(){ var s=document.createElement('div'); s.style.cssText='height:1px;background:var(--border);margin:4px 0'; m.appendChild(s); }
+    item((n>1?'Rename '+n+' pages':'Rename')+' (F2)','i-editor', function(){ openRename(scannedSel); });
+    sep();
+    item('Rotate left','i-rotate', function(){ pageOp('rotate',-90); });
+    item('Rotate right','i-rotate', function(){ pageOp('rotate',90); });
+    item('Rotate 180°','i-rotate', function(){ pageOp('rotate',180); });
+    item('Deskew (auto-straighten)','i-crop', function(){ pageOp('deskew'); });
+    sep();
+    item('Auto-enhance','i-check', function(){ pageOp('auto'); });
+    item('Black & white','i-image', function(){ pageOp('bw'); });
+    item('Grayscale','i-image', function(){ pageOp('gray'); });
+    item('Sharpen','i-image', function(){ pageOp('sharpen'); });
+    sep();
+    item('Duplicate','i-files', function(){ pageOp('duplicate'); });
+    item('Move to top','i-chevron', function(){ pageOp('top'); });
+    item('Move to bottom','i-chevron', function(){ pageOp('bottom'); });
+    sep();
+    item('Export as image','i-image', function(){ send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); });
+    item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); });
+    m.style.left=Math.min(x, window.innerWidth-210)+'px';
+    m.style.top=Math.min(y, window.innerHeight-430)+'px';
+    m.classList.add('on');
+  }
   document.addEventListener('click', function(){ var m=byId('ctxMenu'); if(m) m.classList.remove('on'); });
 
   // Rename a file/folder from the panel (F2)
@@ -1845,10 +1976,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'camera', sec:'Capture', label:'Camera', def:'Ctrl+M', run:function(){ openCamera(); }},
     {id:'phone', sec:'Capture', label:'Phone to PC', def:'Ctrl+G', run:function(){ openPhone(); }},
     {id:'undo', sec:'Edit page', label:'Undo', def:'Ctrl+Z', run:function(){ send({cmd:'undo'}); }},
+    {id:'redo', sec:'Edit page', label:'Redo', def:'Ctrl+Y', run:function(){ send({cmd:'redo'}); }},
     {id:'selectAll', sec:'Edit page', label:'Select all pages', def:'Ctrl+A', run:function(){ selectAllPages(); }},
     {id:'del', sec:'Edit page', label:'Delete selected page(s)', def:'Delete', run:function(){ send({cmd:'deletePage', indices:selSet.slice()}); }},
-    {id:'rotR', sec:'Edit page', label:'Rotate right', def:'Ctrl+R', run:function(){ send({cmd:'rotateRight'}); }},
-    {id:'rotL', sec:'Edit page', label:'Rotate left', def:'Ctrl+Shift+R', run:function(){ send({cmd:'rotateLeft'}); }},
+    {id:'rotR', sec:'Edit page', label:'Rotate right', def:'Ctrl+R', run:function(){ pageOp('rotate',90); }},
+    {id:'rotL', sec:'Edit page', label:'Rotate left', def:'Ctrl+Shift+R', run:function(){ pageOp('rotate',-90); }},
+    {id:'deskew', sec:'Edit page', label:'Deskew (auto-straighten)', def:'Ctrl+Shift+D', run:function(){ pageOp('deskew'); }},
+    {id:'duplicate', sec:'Edit page', label:'Duplicate page', def:'Ctrl+Shift+U', run:function(){ pageOp('duplicate'); }},
+    {id:'autoEnhance', sec:'Edit page', label:'Auto-enhance', def:'Ctrl+Shift+E', run:function(){ pageOp('auto'); }},
     {id:'crop', sec:'Edit page', label:'Crop page', def:'Ctrl+Shift+C', run:function(){ startCrop(); }},
     {id:'moveL', sec:'Edit page', label:'Move page left', def:'Ctrl+Left', run:function(){ send({cmd:'moveLeft'}); }},
     {id:'moveR', sec:'Edit page', label:'Move page right', def:'Ctrl+Right', run:function(){ send({cmd:'moveRight'}); }},
@@ -1931,6 +2066,19 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(!bridge || typingTarget(e.target)) return;
     // don't run shortcuts while the editor is open
     if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) return;
+    // Bare arrow keys move the selection between scanned pages.
+    if(scannedTotal>0 && !modalOverlayOpen() && !(e.ctrlKey||e.metaKey||e.altKey||e.shiftKey)){
+      var nav=0;
+      if(e.key==='ArrowRight'||e.key==='ArrowDown') nav=1;
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp') nav=-1;
+      if(nav!==0){
+        e.preventDefault();
+        var cur=(scannedSel>=0?scannedSel:(nav>0?-1:scannedTotal));
+        var nx=Math.max(0, Math.min(scannedTotal-1, cur+nav));
+        selSet=[]; scannedSel=nx; applyMultiHighlight(); send({cmd:'select', index:nx});
+        return;
+      }
+    }
     var combo=comboFromEvent(e); if(!combo) return;
     var actId=scReverse[combo]; if(!actId) return;
     var bare=!(e.ctrlKey||e.metaKey||e.altKey);
