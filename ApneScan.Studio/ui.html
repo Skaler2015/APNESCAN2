@@ -1431,11 +1431,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='scanStatus'){ setScanStatus(m.state, m.text); }
       else if(m.type==='scanProgress'){
         if(m.done){ scanUI(false); }
-        else {
-          scanUI(true, m.count||0);
-          var c=byId('scanProgCount');
-          if(c){ var txt=(m.count>0? (m.count+' page(s) scanned') : 'Preparing scanner…'); if(m.skipped>0) txt+=' · '+m.skipped+' blank skipped'; c.textContent=txt; }
-        }
+        else { scanUI(true, m.count||0, m.skipped||0); }
       }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
@@ -1522,15 +1518,18 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(e){ e.stopPropagation(); openPrintMenu(bp); });
   var bc=byId('btnClear'); if(bc) bc.addEventListener('click', function(){ if(bridge){ send({cmd:'clear'}); } else { resetPreview(); } });
   var scanRunning=false;
-  function scanUI(on, count){
+  // on=true starts/updates the scan UI; count = pages already captured, skipped = blanks skipped.
+  function scanUI(on, count, skipped){
     scanRunning=on;
     var t=byId('scanTitle'), s=byId('scanSub'), btn=byId('scanBtn'), prog=byId('scanProg'), c=byId('scanProgCount');
     if(on){
-      if(t) t.textContent='Scanning…';
-      if(s) s.textContent='Feeding pages from your scanner';
+      count=count||0; skipped=skipped||0;
+      // Page currently on the glass/feeder is the next one after those captured.
+      if(t) t.textContent='Scanning page '+(count+1)+'…';
+      if(s) s.textContent = count>0 ? (count+' page(s) captured — keep scanning') : 'Feeding page from your scanner';
       if(btn) btn.style.display='none';
       if(prog) prog.style.display='block';
-      if(c) c.textContent = (count>0? (count+' page(s) scanned') : 'Preparing scanner…');
+      if(c){ var sub = count>0 ? (count+' page(s) done') : 'Warming up…'; if(skipped>0) sub+=' · '+skipped+' blank skipped'; c.textContent=sub; }
     } else {
       if(t) t.textContent='Ready to Scan';
       if(s) s.textContent='Place your document in the feeder and press Scan';
@@ -1539,7 +1538,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     }
   }
   function cancelScan(){
-    var c=byId('scanProgCount'); if(c) c.textContent='Cancelling…';
+    var t=byId('scanTitle'); if(t) t.textContent='Cancelling…';
+    var c=byId('scanProgCount'); if(c) c.textContent='Stopping scanner…';
     if(bridge) send({cmd:'cancelScan'});
   }
   function doScan(){
