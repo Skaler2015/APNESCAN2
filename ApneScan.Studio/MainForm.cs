@@ -232,6 +232,7 @@ public class MainForm : Form
         string data = "";
         string ctx = "";
         string op = "";
+        string footerText = "";
         int amount = 0;
         var indices = new List<int>();
         try
@@ -262,6 +263,7 @@ public class MainForm : Form
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
+            if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
@@ -357,7 +359,8 @@ public class MainForm : Form
                     Dpi = dpi, Color = color, Source = source, Ocr = on, Device = deviceName,
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
-                    AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent
+                    AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
+                    FooterText = footerText
                 });
                 break;
             case "getHistory":
@@ -2273,6 +2276,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public bool AutoCrop { get; set; } = true;
         public bool SkipBlank { get; set; }
         public int CompressPercent { get; set; }
+        // Free-text shown in the footer bar (name, phone, address, etc.).
+        public string FooterText { get; set; } = "";
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -2307,7 +2312,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device,
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
-            autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent
+            autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
+            footerText = s.FooterText
         });
     }
 

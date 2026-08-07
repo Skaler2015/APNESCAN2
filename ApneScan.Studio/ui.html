@@ -281,6 +281,16 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .statusbar .d{width:7px;height:7px;border-radius:50%;background:var(--good)}
 .statusbar .r{margin-left:auto;display:flex;align-items:center;gap:14px;white-space:nowrap}
 .statusbar .r .free{color:#15803d;font-weight:600}
+/* Custom footer bar — user-editable details (name, phone, address…) */
+.footerbar{flex:none;min-height:30px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 14px}
+.footerbar .fb-text{white-space:pre-wrap;text-align:center;max-width:88%;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;color:#3b4254;cursor:text}
+.footerbar .fb-text.empty{color:var(--muted-2);font-style:italic}
+.footerbar .fb-input{width:min(620px,82%);border:1px solid var(--accent);border-radius:7px;padding:5px 9px;font:inherit;font-size:12.5px;color:#3b4254;background:var(--panel);outline:none}
+.footerbar .fb-edit{flex:none;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.footerbar .fb-edit:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.footerbar .fb-edit svg{width:14px;height:14px;stroke:currentColor}
+:root[data-theme="dark"] .footerbar .fb-text,
+:root[data-theme="dark"] .footerbar .fb-input{color:#d7d9e6}
 .thumb-head{display:flex;align-items:center;gap:6px;padding:8px 14px 0;font-size:11px;color:var(--muted)}
 .thumb-head .lbl2{flex:1;font-weight:700;letter-spacing:.3px}
 .thumb-head .mv{width:26px;height:22px;display:grid;place-items:center;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);font-size:11px;font-weight:700}
@@ -625,6 +635,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         </aside>
       </div>
     </main>
+  </div>
+
+  <div class="footerbar" id="footerBar">
+    <span class="fb-text empty" id="fbText" title="Click to edit — show your name, phone, address, etc.">＋ Add your details (name, phone, address…)</span>
+    <input class="fb-input" id="fbInput" style="display:none" maxlength="240" placeholder="Type details to show in the footer…">
+    <span class="fb-edit" id="fbEdit" title="Edit footer details"><svg><use href="#i-editor"/></svg></span>
   </div>
 
   <div class="statusbar">
@@ -1344,7 +1360,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0 };
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'' };
   function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
   function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
@@ -1353,7 +1369,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent }); }
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -1370,10 +1386,45 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     ui.autoCrop=(s.autoCrop!==false);
     ui.skipBlank=!!s.skipBlank;
     ui.compressPercent=s.compressPercent||0;
+    ui.footerText=s.footerText||'';
+    renderFooter();
     applyTheme(s.theme||'default');
     applyShowNums(s.showNums!==false);
     applyShowProfiles(s.showProfiles!==false);
   }
+  // ---- Custom footer bar ----
+  function renderFooter(){
+    var t=byId('fbText'); if(!t) return;
+    var v=(ui.footerText||'').trim();
+    if(v){ t.textContent=v; t.classList.remove('empty'); t.title='Click to edit these details'; }
+    else { t.textContent='＋ Add your details (name, phone, address…)'; t.classList.add('empty'); t.title='Click to edit — show your name, phone, address, etc.'; }
+  }
+  function startFooterEdit(){
+    var t=byId('fbText'), inp=byId('fbInput'); if(!t||!inp) return;
+    inp.value=ui.footerText||'';
+    t.style.display='none'; inp.style.display='';
+    inp.focus(); inp.select();
+  }
+  function saveFooterEdit(){
+    var t=byId('fbText'), inp=byId('fbInput'); if(!t||!inp) return;
+    if(inp.style.display==='none') return;
+    ui.footerText=inp.value.replace(/\s+$/,'');
+    inp.style.display='none'; t.style.display='';
+    renderFooter(); persistSettings(); setStatus('Footer updated');
+  }
+  (function(){
+    var t=byId('fbText'), inp=byId('fbInput'), ed=byId('fbEdit');
+    if(t) t.addEventListener('click', startFooterEdit);
+    if(ed) ed.addEventListener('click', startFooterEdit);
+    if(inp){
+      inp.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); saveFooterEdit(); }
+        else if(e.key==='Escape'){ e.preventDefault(); inp.style.display='none'; if(t) t.style.display=''; }
+      });
+      inp.addEventListener('blur', saveFooterEdit);
+    }
+    renderFooter();
+  })();
   var STD_DPI=['100','150','200','300','600'];
   function updateResCustomRow(){ var r=byId('setResSel'), row=byId('setResCustomRow'); if(row) row.style.display=(r&&r.value==='custom')?'':'none'; }
   function openSettings(){
