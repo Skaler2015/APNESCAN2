@@ -1134,12 +1134,23 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   // analytics table (real counts)
   function renderAnalytics(rows){
     var b=byId('analyticsBody'); if(!b) return; b.innerHTML='';
-    var colors=['#6d28d9','#16a34a','#ef4444','#f59e0b','#0ea5e9'];
+    var colors=['#6d28d9','#16a34a','#ef4444','#f59e0b','#0ea5e9','#0891b2'];
     (rows||[]).forEach(function(r,i){
       var tr=document.createElement('tr');
-      tr.innerHTML='<td><span class="d" style="background:'+colors[i%colors.length]+'"></span>'+esc(r.label)+'</td><td>'+(r.world||0)+'</td><td class="t">'+(r.today||0)+'</td>';
+      tr.innerHTML='<td><span class="d" style="background:'+(r.color||colors[i%colors.length])+'"></span>'+esc(r.label)+'</td><td>'+(r.world||0)+'</td><td class="t">'+(r.today||0)+'</td>';
       b.appendChild(tr);
     });
+  }
+  // Show the SAME world-wide Activity as the admin dashboard (all installs).
+  function fetchWorldActivity(){
+    try{
+      fetch('https://apnescan.subhashkaler.com/api/activity.php',{cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if(d && d.ok && d.items && d.items.length){
+          renderAnalytics(d.items.map(function(x){ return {label:x.label, world:x.total, today:x.today, color:x.color}; }));
+        } })
+        .catch(function(){});
+    }catch(e){}
   }
 
   // search saved files (from history)
@@ -1405,7 +1416,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
       else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
-      else if(m.type==='analytics'){ renderAnalytics(m.rows); }
+      else if(m.type==='analytics'){ setTimeout(fetchWorldActivity, 2500); /* widget mirrors admin world data; re-pull after own action */ }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
       else if(m.type==='openDocsPanel'){ var dpn=byId('docsPanel'); if(dpn) dpn.classList.add('on'); }
@@ -1426,8 +1437,10 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     send({cmd:'getNames'});
     send({cmd:'getFavs'});
     send({cmd:'getShortcuts'});
+    fetchWorldActivity();                              // same Activity as the admin panel
+    setInterval(fetchWorldActivity, 60000);            // keep it fresh
   } else {
-    renderAnalytics([{label:'Scan',world:0,today:0},{label:'PDF Save',world:0,today:0},{label:'Print',world:0,today:0},{label:'Import',world:0,today:0},{label:'Camera',world:0,today:0}]);
+    fetchWorldActivity();
     renderRecent([]);
     setStatus('Ready (design preview)');
     var ul=byId('updateLine'); if(ul){ ul.textContent='Updates check runs in the app'; }
