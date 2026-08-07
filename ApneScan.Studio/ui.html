@@ -138,6 +138,15 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .dp-pin svg{width:12px;height:12px}
 :root[data-theme="dark"] .dp-pin{background:#3a3320;color:#e7c977;border-color:#5a4d28}
 .docs-list.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;align-content:start}
+.docs-list.tree{display:block}
+.tree-node{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:7px;color:#3b4254;font-size:12px}
+.tree-node:hover{background:var(--accent-soft)}
+.tree-node.drop{background:var(--good-soft);box-shadow:0 0 0 2px var(--good-soft)}
+.tree-node .tw{width:14px;text-align:center;color:var(--muted);cursor:pointer;font-size:10px;flex:none}
+.tree-node .ic{width:18px;height:18px;color:#f0b400;flex:none}
+.tree-node .tn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tree-load{font-size:11px;color:var(--muted);padding:4px 6px}
+:root[data-theme="dark"] .tree-node,:root[data-theme="dark"] .tree-node .tn{color:#d7d9e6}
 .dg-card{position:relative;border:1px solid var(--border-2);border-radius:10px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(20,20,50,.05)}
 .dg-card:hover{border-color:#dcd6f5}
 .dg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
@@ -571,6 +580,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="dp-view">
             <span id="dvList" class="dv on" title="List view">&#9776;</span>
             <span id="dvGrid" class="dv" title="Grid / thumbnail view">&#9638;</span>
+            <span id="dvTree" class="dv" title="Folder tree">&#128193;</span>
             <span id="dpStorage" style="margin-left:auto;font-size:10.5px;color:var(--muted)"></span>
           </div>
           <div class="docs-list" id="docsList"></div>
@@ -1314,6 +1324,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='phoneShare'){ var q2=byId('psQr'); if(q2&&m.qr) q2.src=m.qr; var u2=byId('psUrl'); if(u2) u2.textContent=m.url||''; var nn=byId('psName'); if(nn) nn.textContent=m.name||'file'; overlay('phoneShareOverlay', true); }
       else if(m.type==='thumb'){ if(m.path && m.dataUrl){ docThumbs[m.path]=m.dataUrl; var el=docCardEls[m.path]; if(el){ var th=el.querySelector('.th'); if(th) th.innerHTML='<img src="'+m.dataUrl+'" alt="">'; } } }
       else if(m.type==='fileInfo'){ showFileInfo(m); }
+      else if(m.type==='subfolders'){ treeState[m.path]=m.folders||[]; treeReq[m.path]=0; if(docsView==='tree') renderTree(); }
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
@@ -1652,6 +1663,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var docsFilter='all', docsSort='date', docsDir=-1, docsQuery='', docsSelected='', docsSelectedFile='';
   var docsMultiSel=[];
   var docsView='list', docThumbs={}, docThumbReq={}, docCardEls={};
+  var treeState={}, treeExpanded={}, treeReq={};
   function docsSelPaths(){ return docsMultiSel.slice(); }
   function fmtBytes(b){ b=b||0; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return Math.round(b/1024)+' KB'; return b+' B'; }
   // Natural (numeric-aware) name compare so 10 comes before 100.
@@ -1665,6 +1677,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   function renderFolder(m){
     docsData=m||{entries:[]}; docsSelected=''; docsMultiSel=[];
+    treeState={}; treeExpanded={}; treeReq={};
     renderDocsBar(); renderDocsList();
   }
   function renderDocsBar(){
@@ -1681,7 +1694,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     bar.appendChild(star);
   }
   function renderDocsList(){
-    var list=byId('docsList'); if(!list) return; list.innerHTML='';
+    var list=byId('docsList'); if(!list) return;
+    if(docsView==='tree'){ renderTree(); return; }
+    list.innerHTML='';
     var arr=(docsData.entries||[]).slice();
     var q=docsQuery.trim().toLowerCase();
     if(q) arr=arr.filter(function(e){ return (e.name||'').toLowerCase().indexOf(q)>=0; });
@@ -1758,7 +1773,45 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     overlay('fiOverlay', true);
   }
   var fiClose=byId('fiClose'); if(fiClose) fiClose.addEventListener('click', function(){ overlay('fiOverlay', false); });
-  function setDocsView(v){ docsView=v; var l=byId('dvList'), g=byId('dvGrid'); if(l) l.classList.toggle('on', v==='list'); if(g) g.classList.toggle('on', v==='grid'); renderDocsList(); }
+  // ---- Folder tree view ----
+  function renderTree(){
+    var list=byId('docsList'); if(!list) return;
+    list.className='docs-list tree'; list.innerHTML='';
+    var root=docsData.path;
+    if(!root){ list.innerHTML='<div class="docs-empty">Open a folder first</div>'; return; }
+    if(treeExpanded[root]===undefined){ treeExpanded[root]=true; if(treeState[root]===undefined && !treeReq[root]){ treeReq[root]=1; if(bridge) send({cmd:'getSubfolders', path:root}); } }
+    renderTreeNode(list, {name:(docsData.name||root), path:root, hasChildren:true}, 0);
+  }
+  function renderTreeNode(list, node, depth){
+    var row=document.createElement('div'); row.className='tree-node'; row.style.paddingLeft=(6+depth*14)+'px';
+    var exp=!!treeExpanded[node.path];
+    var arrow=node.hasChildren?('<span class="tw">'+(exp?'▾':'▸')+'</span>'):'<span class="tw" style="visibility:hidden">▸</span>';
+    row.innerHTML=arrow+'<svg class="ic"><use href="#i-folder"/></svg><span class="tn">'+esc(node.name)+'</span>';
+    row.querySelector('.tw').addEventListener('click', function(ev){ ev.stopPropagation(); toggleTree(node); });
+    row.querySelector('.tn').addEventListener('click', function(){ if(bridge) send({cmd:'listFolder', path:node.path}); setDocsView('list'); });
+    row.addEventListener('dragover', function(ev){ if(dtHasPages(ev)){ ev.preventDefault(); ev.dataTransfer.dropEffect='copy'; row.classList.add('drop'); } });
+    row.addEventListener('dragleave', function(){ row.classList.remove('drop'); });
+    row.addEventListener('drop', function(ev){ if(!dtHasPages(ev)) return; ev.preventDefault(); ev.stopPropagation(); row.classList.remove('drop'); var idxs=parsePages(ev); if(idxs&&idxs.length&&bridge){ setStatus('Saving to '+node.name+'…'); send({cmd:'savePagesToFolder', path:node.path, indices:idxs}); } });
+    list.appendChild(row);
+    if(exp){
+      var kids=treeState[node.path];
+      if(kids===undefined){
+        if(!treeReq[node.path]){ treeReq[node.path]=1; if(bridge) send({cmd:'getSubfolders', path:node.path}); }
+        var ld=document.createElement('div'); ld.className='tree-load'; ld.style.paddingLeft=(6+(depth+1)*14)+'px'; ld.textContent='Loading…'; list.appendChild(ld);
+      } else if(!kids.length){
+        var em=document.createElement('div'); em.className='tree-load'; em.style.paddingLeft=(6+(depth+1)*14)+'px'; em.textContent='(no subfolders)'; list.appendChild(em);
+      } else {
+        kids.forEach(function(k){ renderTreeNode(list, k, depth+1); });
+      }
+    }
+  }
+  function toggleTree(node){
+    treeExpanded[node.path]=!treeExpanded[node.path];
+    if(treeExpanded[node.path] && treeState[node.path]===undefined && !treeReq[node.path]){ treeReq[node.path]=1; if(bridge) send({cmd:'getSubfolders', path:node.path}); }
+    renderTree();
+  }
+  function setDocsView(v){ docsView=v; ['dvList','dvGrid','dvTree'].forEach(function(id){ var el=byId(id); if(el) el.classList.toggle('on', (id==='dvList'&&v==='list')||(id==='dvGrid'&&v==='grid')||(id==='dvTree'&&v==='tree')); }); renderDocsList(); }
+  var dvTree=byId('dvTree'); if(dvTree) dvTree.addEventListener('click', function(){ setDocsView('tree'); });
   var dvList=byId('dvList'); if(dvList) dvList.addEventListener('click', function(){ setDocsView('list'); });
   var dvGrid=byId('dvGrid'); if(dvGrid) dvGrid.addEventListener('click', function(){ setDocsView('grid'); });
   function openDocs(){ var p=byId('docsPanel'); if(!p) return; p.classList.add('on'); renderPinned(); if(bridge){ send({cmd:'listFolder'}); send({cmd:'getFavs'}); } }

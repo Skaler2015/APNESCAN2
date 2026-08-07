@@ -431,6 +431,9 @@ public class MainForm : Form
             case "getRecent":
                 await GetRecentAsync();
                 break;
+            case "getSubfolders":
+                SendSubfolders(filePath);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -3150,6 +3153,29 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             entries
         });
         Status($"{entries.Count} recent file(s)");
+    }
+
+    // Immediate subfolders of a folder, for the tree view.
+    private void SendSubfolders(string path)
+    {
+        var folders = new List<object>();
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+            {
+                foreach (var d in new DirectoryInfo(path).GetDirectories())
+                {
+                    if ((d.Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue;
+                    bool hasChildren = false;
+                    try { hasChildren = d.EnumerateDirectories().Any(sd => (sd.Attributes & (FileAttributes.Hidden | FileAttributes.System)) == 0); }
+                    catch { }
+                    folders.Add(new { name = d.Name, path = d.FullName, hasChildren });
+                    if (folders.Count >= 2000) break;
+                }
+            }
+        }
+        catch { }
+        Post(new { type = "subfolders", path, folders });
     }
 
     private void SendFileInfo(string path)
