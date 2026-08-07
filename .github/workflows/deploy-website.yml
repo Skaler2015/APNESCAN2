@@ -65,5 +65,8 @@ jobs:
           protocol: ftp
           local-dir: ./website/
           server-dir: ${{ vars.FTP_DIR || 'apnescan/' }}
+          # Hostinger's FTP can be slow to answer; give the control socket
+          # more headroom than the 30s default so a brief stall doesn't fail.
+          timeout: 120000
           # Keep FTP state so only changed files upload next time.
           state-name: .ftp-deploy-sync-state.json
