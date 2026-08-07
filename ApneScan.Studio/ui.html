@@ -794,6 +794,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="set-row"><label>PDF compression (smaller size)</label>
       <select id="setCompressSel"><option value="0">Off (best quality)</option><option value="20">Light — 20%</option><option value="40">Medium — 40%</option><option value="60">High — 60%</option><option value="75">Max — 75%</option></select></div>
     <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
+    <div class="set-row"><label>Send anonymous usage stats <span style="color:var(--muted-2);font-weight:400;font-size:11px">(no documents or personal data)</span></label><input type="checkbox" id="setTelemetryChk"></div>
 
     <div class="cam-actions">
       <div class="cam-btn" id="setRestore" style="margin-right:auto">Restore Defaults</div>
@@ -1450,7 +1451,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'' };
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'', telemetry:true };
   function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
   function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
@@ -1459,7 +1460,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText }); }
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -1475,6 +1476,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     ui.clearAfter=!!s.clearAfter;
     ui.autoCrop=(s.autoCrop!==false);
     ui.skipBlank=!!s.skipBlank;
+    ui.telemetry=(s.telemetry!==false);
     ui.compressPercent=s.compressPercent||0;
     ui.footerText=s.footerText||'';
     renderFooter();
@@ -1531,6 +1533,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var cl=byId('setClearChk'); if(cl) cl.checked=ui.clearAfter;
     var acp=byId('setAutoCropChk'); if(acp) acp.checked=ui.autoCrop;
     var skb=byId('setSkipBlankChk'); if(skb) skb.checked=ui.skipBlank;
+    var tmc=byId('setTelemetryChk'); if(tmc) tmc.checked=ui.telemetry;
     var cps=byId('setCompressSel'); if(cps) cps.value=String(ui.compressPercent);
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
@@ -1540,7 +1543,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
-    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0;
+    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
     openSettings(); setStatus('Defaults restored — press OK to apply');
   });
   var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
@@ -1561,6 +1564,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var cl=byId('setClearChk'); if(cl) ui.clearAfter=cl.checked;
     var acp=byId('setAutoCropChk'); if(acp) ui.autoCrop=acp.checked;
     var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
+    var tmc=byId('setTelemetryChk'); if(tmc) ui.telemetry=tmc.checked;
     var cps=byId('setCompressSel'); if(cps) ui.compressPercent=parseInt(cps.value,10)||0;
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });

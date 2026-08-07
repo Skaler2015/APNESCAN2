@@ -225,6 +225,53 @@ public class MainForm : Form
         core.SetVirtualHostNameToFolderMapping(
             "apnescan.app", AppContext.BaseDirectory, CoreWebView2HostResourceAccessKind.Allow);
         core.Navigate("https://apnescan.app/ui.html");
+
+        _telemetry = LoadSettings().Telemetry;
+        SendTelemetry("app_open");
+    }
+
+    // ---- Anonymous usage telemetry (opt-out) ----
+    // Sends only which feature was used + app version + OS. No document
+    // content, filenames or personal data ever leaves the device.
+    private static readonly HttpClient _tele = new() { Timeout = TimeSpan.FromSeconds(8) };
+    private string? _installId;
+    private bool _telemetry = true;
+    private const string TelemetryUrl = "https://apnescan.subhashkaler.com/api/track.php";
+
+    private string InstallId()
+    {
+        if (_installId != null) return _installId;
+        try
+        {
+            var f = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ApneScan", "install.id");
+            if (File.Exists(f)) _installId = File.ReadAllText(f).Trim();
+            if (string.IsNullOrWhiteSpace(_installId))
+            {
+                _installId = Guid.NewGuid().ToString("N");
+                Directory.CreateDirectory(Path.GetDirectoryName(f)!);
+                File.WriteAllText(f, _installId);
+            }
+        }
+        catch { _installId = "anon"; }
+        return _installId!;
+    }
+
+    private void SendTelemetry(string ev, int count = 1)
+    {
+        if (!_telemetry) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var ver = (Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)).ToString(3);
+                var os = "Win " + Environment.OSVersion.Version.Major + "." + Environment.OSVersion.Version.Build;
+                var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), @event = ev, count, version = ver, os };
+                using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                await _tele.PostAsync(TelemetryUrl, content);
+            }
+            catch { /* telemetry is best-effort; never disturb the user */ }
+        });
     }
 
     private async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -245,6 +292,7 @@ public class MainForm : Form
         string theme = "default";
         string saveDefault = "ask";
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
+        bool telemetry = true;
         bool autoCrop = true, skipBlank = false;
         int compressPercent = 0;
         string data = "";
@@ -281,6 +329,7 @@ public class MainForm : Form
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
+            if (root.TryGetProperty("telemetry", out var tmEl) && (tmEl.ValueKind == JsonValueKind.True || tmEl.ValueKind == JsonValueKind.False)) telemetry = tmEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
@@ -383,7 +432,7 @@ public class MainForm : Form
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
-                    FooterText = footerText
+                    FooterText = footerText, Telemetry = telemetry
                 });
                 break;
             case "getHistory":
@@ -2570,6 +2619,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AnalyticsFile)!);
             File.WriteAllText(AnalyticsFile, JsonSerializer.Serialize(a));
             SendAnalytics(a);
+            SendTelemetry(key, n);
         }
         catch { /* best-effort */ }
     }
@@ -2643,6 +2693,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public int CompressPercent { get; set; }
         // Free-text shown in the footer bar (name, phone, address, etc.).
         public string FooterText { get; set; } = "";
+        // Anonymous usage telemetry (opt-out). Default on.
+        public bool Telemetry { get; set; } = true;
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -2671,6 +2723,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _autoCrop = s.AutoCrop;
         _skipBlank = s.SkipBlank;
         _compressPercent = s.CompressPercent;
+        _telemetry = s.Telemetry;
         Post(new
         {
             type = "settings",
@@ -2678,7 +2731,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
-            footerText = s.FooterText
+            footerText = s.FooterText, telemetry = s.Telemetry
         });
     }
 
@@ -2696,6 +2749,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _autoCrop = s.AutoCrop;
             _skipBlank = s.SkipBlank;
             _compressPercent = s.CompressPercent;
+            _telemetry = s.Telemetry;
         }
         catch { /* best-effort */ }
     }
