@@ -378,6 +378,24 @@ public class MainForm : Form
             case "renameItem":
                 RenameItem(filePath, name);
                 break;
+            case "deleteFile":
+                DeleteItems(PathsFrom(data, filePath));
+                break;
+            case "moveFile":
+                MoveOrCopyItems(PathsFrom(data, filePath), move: true);
+                break;
+            case "copyFile":
+                MoveOrCopyItems(PathsFrom(data, filePath), move: false);
+                break;
+            case "duplicateFile":
+                DuplicateItem(filePath);
+                break;
+            case "revealFile":
+                RevealItem(filePath);
+                break;
+            case "copyPath":
+                CopyPathToClipboard(filePath);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -2660,6 +2678,170 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             Status("Rename error: " + ex.Message);
         }
+    }
+
+    // Parse a JSON array of paths (bulk selection); fall back to a single path.
+    private static List<string> PathsFrom(string data, string single)
+    {
+        var list = new List<string>();
+        if (!string.IsNullOrWhiteSpace(data))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(data);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                        if (el.ValueKind == JsonValueKind.String)
+                        {
+                            var s = el.GetString();
+                            if (!string.IsNullOrWhiteSpace(s)) list.Add(s!);
+                        }
+            }
+            catch { /* fall through to single */ }
+        }
+        if (list.Count == 0 && !string.IsNullOrWhiteSpace(single)) list.Add(single);
+        return list;
+    }
+
+    // Delete file(s)/folder(s) to the Recycle Bin.
+    private void DeleteItems(List<string> paths)
+    {
+        if (paths.Count == 0) { Status("Nothing to delete"); return; }
+        string? parent = null;
+        int done = 0;
+        foreach (var p in paths)
+        {
+            try
+            {
+                if (Directory.Exists(p))
+                {
+                    parent ??= System.IO.Path.GetDirectoryName(p.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(p,
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    done++;
+                }
+                else if (File.Exists(p))
+                {
+                    parent ??= System.IO.Path.GetDirectoryName(p);
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(p,
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    done++;
+                }
+            }
+            catch (Exception ex) { Status("Delete error: " + ex.Message); }
+        }
+        if (parent != null) SendFolder(parent);
+        if (done > 0) Status($"Moved {done} item(s) to Recycle Bin");
+    }
+
+    // Move or copy file(s)/folder(s) into a folder chosen by the user.
+    private void MoveOrCopyItems(List<string> paths, bool move)
+    {
+        if (paths.Count == 0) { Status("Nothing selected"); return; }
+        var start = System.IO.Path.GetDirectoryName(paths[0]);
+        string? dest = null;
+        try
+        {
+            using var fbd = new FolderBrowserDialog
+            {
+                UseDescriptionForTitle = true,
+                Description = move ? "Move to which folder?" : "Copy to which folder?",
+                ShowNewFolderButton = true
+            };
+            if (!string.IsNullOrWhiteSpace(start) && Directory.Exists(start)) fbd.SelectedPath = start;
+            if (fbd.ShowDialog(this) == DialogResult.OK) dest = fbd.SelectedPath;
+        }
+        catch { }
+        if (string.IsNullOrWhiteSpace(dest) || !Directory.Exists(dest)) return;
+
+        int done = 0;
+        string? sourceParent = System.IO.Path.GetDirectoryName(paths[0]);
+        foreach (var p in paths)
+        {
+            try
+            {
+                bool isDir = Directory.Exists(p);
+                var name = isDir ? new DirectoryInfo(p).Name : System.IO.Path.GetFileName(p);
+                var target = UniquePath(System.IO.Path.Combine(dest, name), isDir);
+                if (string.Equals(System.IO.Path.GetFullPath(p), System.IO.Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase)) continue;
+                if (isDir)
+                {
+                    if (move) Directory.Move(p, target);
+                    else CopyDirectory(p, target);
+                }
+                else
+                {
+                    if (move) File.Move(p, target);
+                    else File.Copy(p, target);
+                }
+                done++;
+            }
+            catch (Exception ex) { Status((move ? "Move" : "Copy") + " error: " + ex.Message); }
+        }
+        // Show the destination so the user sees the result.
+        SendFolder(dest);
+        if (done > 0) Status($"{(move ? "Moved" : "Copied")} {done} item(s)");
+    }
+
+    // Make a copy of a file (or folder) in the same folder, "(copy)" suffixed.
+    private void DuplicateItem(string path)
+    {
+        try
+        {
+            bool isDir = Directory.Exists(path);
+            if (!isDir && !File.Exists(path)) { Status("File not found"); return; }
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = isDir ? new DirectoryInfo(path).Name : System.IO.Path.GetFileNameWithoutExtension(path);
+            var ext = isDir ? "" : System.IO.Path.GetExtension(path);
+            var target = UniquePath(System.IO.Path.Combine(dir, stem + " (copy)" + ext), isDir);
+            if (isDir) CopyDirectory(path, target);
+            else File.Copy(path, target);
+            SendFolder(dir);
+            Status("Duplicated: " + System.IO.Path.GetFileName(target));
+        }
+        catch (Exception ex) { Status("Duplicate error: " + ex.Message); }
+    }
+
+    private void RevealItem(string path)
+    {
+        try
+        {
+            if (!File.Exists(path) && !Directory.Exists(path)) { Status("Not found"); return; }
+            Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{path}\"", UseShellExecute = true });
+            Status("Shown in File Explorer");
+        }
+        catch (Exception ex) { Status("Reveal error: " + ex.Message); }
+    }
+
+    private void CopyPathToClipboard(string path)
+    {
+        try { Clipboard.SetText(path ?? ""); Status("Path copied to clipboard"); }
+        catch (Exception ex) { Status("Copy error: " + ex.Message); }
+    }
+
+    // Append " (2)", " (3)", … until the path is free.
+    private static string UniquePath(string path, bool isDir)
+    {
+        if (isDir ? !Directory.Exists(path) : !File.Exists(path)) return path;
+        var dir = System.IO.Path.GetDirectoryName(path)!;
+        var stem = isDir ? new DirectoryInfo(path).Name : System.IO.Path.GetFileNameWithoutExtension(path);
+        var ext = isDir ? "" : System.IO.Path.GetExtension(path);
+        int k = 1;
+        string candidate;
+        do { candidate = System.IO.Path.Combine(dir, $"{stem} ({++k}){ext}"); }
+        while (isDir ? Directory.Exists(candidate) : File.Exists(candidate));
+        return candidate;
+    }
+
+    private static void CopyDirectory(string src, string dest)
+    {
+        Directory.CreateDirectory(dest);
+        foreach (var file in Directory.GetFiles(src))
+            File.Copy(file, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(file)), false);
+        foreach (var sub in Directory.GetDirectories(src))
+            CopyDirectory(sub, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(sub)));
     }
 
     private async Task PreviewFileAsync(string path)

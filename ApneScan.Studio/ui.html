@@ -1585,6 +1585,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   // My Documents — a file-manager panel over the sidebar
   var docsData={path:'',name:'',parent:'',entries:[]};
   var docsFilter='all', docsSort='date', docsDir=-1, docsQuery='', docsSelected='', docsSelectedFile='';
+  var docsMultiSel=[];
+  function docsSelPaths(){ return docsMultiSel.slice(); }
   function fmtBytes(b){ b=b||0; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return Math.round(b/1024)+' KB'; return b+' B'; }
   // Natural (numeric-aware) name compare so 10 comes before 100.
   function natCmp(a,b){ return String(a||'').localeCompare(String(b||''), undefined, {numeric:true, sensitivity:'base'}); }
@@ -1596,7 +1598,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     return {sym:'i-doc', cls:''};
   }
   function renderFolder(m){
-    docsData=m||{entries:[]}; docsSelected='';
+    docsData=m||{entries:[]}; docsSelected=''; docsMultiSel=[];
     renderDocsBar(); renderDocsList();
   }
   function renderDocsBar(){
@@ -1630,7 +1632,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     });
     if(!arr.length){ list.innerHTML='<div class="docs-empty">Nothing here yet</div>'; return; }
     arr.forEach(function(en){
-      var selCls=(en.dir&&en.path===docsSelected)||(!en.dir&&en.path===docsSelectedFile)?' sel':'';
+      var selCls=(en.dir&&en.path===docsSelected)||(!en.dir&&(en.path===docsSelectedFile||docsMultiSel.indexOf(en.path)>=0))?' sel':'';
       var dimCls=(!en.dir&&!en.prev)?' dim':'';
       var r=document.createElement('div'); r.className='docs-row'+(en.dir?' dir':'')+selCls+dimCls;
       var meta=en.dir?((en.date||'')+' · '+(en.count||0)+' files'):((en.date||'')+' · '+fmtBytes(en.size));
@@ -1645,9 +1647,18 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         r.addEventListener('dragleave', function(){ r.classList.remove('drop'); });
         r.addEventListener('drop', function(ev){ if(!dtHasPages(ev)) return; ev.preventDefault(); ev.stopPropagation(); r.classList.remove('drop'); var idxs=parsePages(ev); if(idxs&&idxs.length && bridge){ setStatus('Saving to '+en.name+'…'); send({cmd:'savePagesToFolder', path:en.path, indices:idxs}); } });
       }
-      r.addEventListener('click', function(){
-        if(en.dir){ docsSelected=(docsSelected===en.path?'':en.path); docsSelectedFile=''; renderDocsList(); }
-        else { docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(en.prev){ if(bridge) send({cmd:'previewFile', path:en.path}); } else { setStatus('Preview is only for PDF & images — double-click to open'); } }
+      r.addEventListener('click', function(ev){
+        if(en.dir){ docsMultiSel=[]; docsSelected=(docsSelected===en.path?'':en.path); docsSelectedFile=''; renderDocsList(); return; }
+        // Ctrl/⌘-click toggles the file in a multi-selection for bulk actions.
+        if(ev.ctrlKey||ev.metaKey){
+          var p=docsMultiSel.indexOf(en.path);
+          if(p>=0) docsMultiSel.splice(p,1); else docsMultiSel.push(en.path);
+          docsSelectedFile=en.path; docsSelected=''; renderDocsList();
+          setStatus(docsMultiSel.length?(docsMultiSel.length+' selected — right-click for actions'):'Selection cleared');
+          return;
+        }
+        docsMultiSel=[]; docsSelectedFile=en.path; docsSelected=''; renderDocsList();
+        if(en.prev){ if(bridge) send({cmd:'previewFile', path:en.path}); } else { setStatus('Preview is only for PDF & images — double-click to open'); }
       });
       r.addEventListener('dblclick', function(){ if(!bridge) return; if(en.dir) send({cmd:'listFolder', path:en.path}); else send({cmd:'openFile', path:en.path}); });
       r.addEventListener('contextmenu', function(ev){ ev.preventDefault(); showFileMenu(ev.clientX, ev.clientY, en); });
@@ -1697,14 +1708,26 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function showFileMenu(x,y,en){
     var m=byId('ctxMenu'); if(!m) return; m.innerHTML='';
     function item(label, sym, fn){ var o=document.createElement('div'); o.className='opt'; o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
+    function sep(){ var s=document.createElement('div'); s.style.cssText='height:1px;background:var(--border);margin:4px 0'; m.appendChild(s); }
     var ext=(en.name||'').split('.').pop().toLowerCase();
+    // If several files are selected, the file ops act on all of them.
+    var sel=docsSelPaths(); var many=sel.length>1 && sel.indexOf(en.path)>=0;
+    var payload=many?{data:JSON.stringify(sel)}:{path:en.path};
     if(en.prev) item('Preview','i-doc', function(){ docsSelectedFile=en.path; docsSelected=''; renderDocsList(); if(bridge) send({cmd:'previewFile', path:en.path}); });
     item('Open','i-full', function(){ if(bridge) send({cmd:'openFile', path:en.path}); });
     item('Rename (F2)','i-editor', function(){ openFileRename(en.path, en.name); });
     if(ext==='pdf') item('Compress PDF','i-save', function(){ setStatus('Compressing PDF…'); if(bridge) send({cmd:'compressPdf', path:en.path}); });
     if(!en.dir) item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); if(bridge) send({cmd:'shareWhatsapp', path:en.path}); });
-    m.style.left=Math.min(x, window.innerWidth-190)+'px';
-    m.style.top=Math.min(y, window.innerHeight-210)+'px';
+    sep();
+    item(many?('Move '+sel.length+' items…'):'Move to folder…','i-folder', function(){ setStatus('Choose a destination folder…'); send(Object.assign({cmd:'moveFile'}, payload)); });
+    item(many?('Copy '+sel.length+' items…'):'Copy to folder…','i-files', function(){ setStatus('Choose a destination folder…'); send(Object.assign({cmd:'copyFile'}, payload)); });
+    if(!many) item('Duplicate','i-files', function(){ send({cmd:'duplicateFile', path:en.path}); });
+    if(!many) item('Reveal in Explorer','i-full', function(){ send({cmd:'revealFile', path:en.path}); });
+    if(!many) item('Copy path','i-editor', function(){ send({cmd:'copyPath', path:en.path}); });
+    sep();
+    item(many?('Delete '+sel.length+' items'):'Delete','i-delete', function(){ send(Object.assign({cmd:'deleteFile'}, payload)); });
+    m.style.left=Math.min(x, window.innerWidth-200)+'px';
+    m.style.top=Math.max(6, Math.min(y, window.innerHeight-360))+'px';
     m.classList.add('on');
   }
   // Right-click menu for scanned pages.
