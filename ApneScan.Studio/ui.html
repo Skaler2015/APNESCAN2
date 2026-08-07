@@ -1651,8 +1651,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     item('Open','i-full', function(){ if(bridge) send({cmd:'openFile', path:en.path}); });
     item('Rename (F2)','i-editor', function(){ openFileRename(en.path, en.name); });
     if(ext==='pdf') item('Compress PDF','i-save', function(){ setStatus('Compressing PDF…'); if(bridge) send({cmd:'compressPdf', path:en.path}); });
+    if(!en.dir) item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); if(bridge) send({cmd:'shareWhatsapp', path:en.path}); });
     m.style.left=Math.min(x, window.innerWidth-190)+'px';
-    m.style.top=Math.min(y, window.innerHeight-170)+'px';
+    m.style.top=Math.min(y, window.innerHeight-210)+'px';
     m.classList.add('on');
   }
   // Right-click menu for scanned pages.
@@ -1681,9 +1682,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     item('Move to bottom','i-chevron', function(){ pageOp('bottom'); });
     sep();
     item('Export as image','i-image', function(){ send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); });
+    item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); send({cmd:'shareWhatsapp', indices:selCurrent()}); });
+    sep();
     item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); });
     m.style.left=Math.min(x, window.innerWidth-210)+'px';
-    m.style.top=Math.max(6, Math.min(y, window.innerHeight-490))+'px';
+    m.style.top=Math.max(6, Math.min(y, window.innerHeight-540))+'px';
     m.classList.add('on');
   }
   document.addEventListener('click', function(){ var m=byId('ctxMenu'); if(m) m.classList.remove('on'); });

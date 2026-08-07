@@ -315,6 +315,9 @@ public class MainForm : Form
             case "share":
                 await SharePdfAsync();
                 break;
+            case "shareWhatsapp":
+                await ShareWhatsAppAsync(filePath, indices);
+                break;
             case "getText":
                 await GetTextAsync();
                 break;
@@ -985,6 +988,71 @@ public class MainForm : Form
         catch (Exception ex)
         {
             Status("Share error: " + ex.Message);
+        }
+    }
+
+    // Share a document to WhatsApp. WhatsApp has no link that can pre-attach a
+    // file, so the file is placed on the clipboard and WhatsApp is opened
+    // directly (the desktop app if installed, otherwise WhatsApp Web). The user
+    // picks a chat and presses Ctrl+V to attach it, then sends.
+    private async Task ShareWhatsAppAsync(string path, List<int> indices)
+    {
+        string file = path ?? "";
+        try
+        {
+            // From the Scanned Pages area no path is given — export the selected
+            // page(s) to a temporary PDF first.
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                if (_pages.Count == 0) { Status("Nothing to share — scan a page first"); return; }
+                var idx = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+                if (idx.Count == 0) { int s = Sel(); if (s >= 0) idx.Add(s); }
+                if (idx.Count == 0) { Status("No pages to share"); return; }
+                SyncNames();
+                var nm = (idx[0] < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[idx[0]]))
+                    ? SanitizeFileName(_pageNames[idx[0]]) : "scan";
+                file = Path.Combine(Path.GetTempPath(), nm + "_" + Guid.NewGuid().ToString("N")[..6] + ".pdf");
+                var pages = idx.Select(i => _pages[i]).ToList();
+                var ocrParams = _ocr ? new OcrParams("eng") : null;
+                Status("Preparing file for WhatsApp…");
+                await ExportPdf(file, pages, ocrParams);
+            }
+            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) { Status("File not found to share"); return; }
+
+            // Put the file on the clipboard so a single Ctrl+V attaches it.
+            bool onClip = false;
+            try
+            {
+                var col = new System.Collections.Specialized.StringCollection { file };
+                Clipboard.SetFileDropList(col);
+                onClip = true;
+            }
+            catch { /* clipboard is best-effort */ }
+
+            // Open the WhatsApp desktop app if its URL protocol is registered,
+            // otherwise fall back to WhatsApp Web in the browser.
+            bool desktop = false;
+            try { using var k = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("whatsapp"); desktop = k != null; } catch { }
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = desktop ? "whatsapp://" : "https://web.whatsapp.com/",
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                Process.Start(new ProcessStartInfo { FileName = "https://web.whatsapp.com/", UseShellExecute = true });
+            }
+
+            Status(onClip
+                ? "WhatsApp opened — pick a chat and press Ctrl+V to attach, then Send"
+                : "WhatsApp opened — attach the file to a chat and send");
+        }
+        catch (Exception ex)
+        {
+            Status("WhatsApp share error: " + ex.Message);
         }
     }
 
