@@ -43,6 +43,13 @@ require __DIR__ . '/admin/includes/actions.php';
 // ---- Early handlers that emit non-HTML (streamed downloads) ---------------
 if (isset($_GET['do'])) { require __DIR__ . '/admin/pages/export_stream.php'; exit; }
 
+// ---- Data retention (auto-apply, throttled to once/hour) ------------------
+$rd = (int) setting('retention_days', 0);
+if ($rd > 0 && cache_get('retention_ran') === null) {
+    try { $db->prepare('DELETE FROM events WHERE ts<?')->execute([time() - $rd * 86400]); } catch (Throwable $e) {}
+    cache_set('retention_ran', 1, 3600);
+}
+
 // ---- Shell data -----------------------------------------------------------
 $ov = metrics_overview(resolve_range($_GET['r'] ?? '30'));
 $notifs = notifications();

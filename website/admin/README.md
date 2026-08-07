@@ -59,6 +59,9 @@ profile endpoint. No document content or personal data is ever collected.
 ## Phased roadmap
 
 - **Phase 1 (done):** architecture, shell, all pages, charts, security, REST API, live.
-- **Phase 2:** app-side collection of device specs, scanner model, OCR timing/
-  language, scan time and file sizes (the "collecting…" panels fill in then).
-- **Phase 3:** SMTP settings, scheduled backups, 2FA, query caching/archiving.
+- **Phase 2 (done):** app-side collection of device specs, scanner model, DPI/color,
+  OCR timing/language, scan time and PDF sizes — the Devices/Scanner/OCR panels fill in.
+- **Phase 3 (done):** file-cache layer + retention auto-apply, SMTP email (pure-PHP
+  mailer) with test send, TOTP two-factor auth, scheduled + on-server backups,
+  and API-key generation. See `includes/cache.php`, `totp.php`, `backup.php`,
+  `../api/mailer.php`, `../api/backup-cron.php`.

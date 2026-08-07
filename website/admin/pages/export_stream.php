@@ -80,4 +80,14 @@ if ($do === 'backup') {
     audit('backup', 'sql dump'); exit;
 }
 
+if ($do === 'backupfile') {
+    require_cap('backup');
+    $p = backup_path($_GET['f'] ?? '');
+    if (!$p) { http_response_code(404); echo 'Not found.'; exit; }
+    header('Content-Type: application/gzip');
+    header('Content-Disposition: attachment; filename="' . basename($p) . '"');
+    audit('backup_download', basename($p));
+    readfile($p); exit;
+}
+
 http_response_code(400); echo 'Unknown export.';

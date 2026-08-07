@@ -81,9 +81,10 @@ function metrics_overview(array $rg): array {
 /** Approx DB size in bytes (information_schema). */
 function db_size_bytes(): int {
     global $DB_NAME;
-    try {
-        return (int) q1('SELECT COALESCE(SUM(data_length+index_length),0) FROM information_schema.tables WHERE table_schema=?', [$DB_NAME]);
-    } catch (Throwable $e) { return 0; }
+    return (int) remember('db_size', 300, function () use ($DB_NAME) {
+        try { return (int) q1('SELECT COALESCE(SUM(data_length+index_length),0) FROM information_schema.tables WHERE table_schema=?', [$DB_NAME]); }
+        catch (Throwable $e) { return 0; }
+    });
 }
 
 /** Daily events series padded to $span buckets. */
@@ -104,12 +105,14 @@ function daily_users(int $span): array {
     for ($i = $span - 1; $i >= 0; $i--) { $d = gmdate('Y-m-d', $now - $i * 86400); $out[] = ['label' => gmdate('d M', $now - $i * 86400), 'v' => (int)($m[$d] ?? 0)]; }
     return $out;
 }
-/** Cumulative install growth. */
+/** Cumulative install growth (cached — scans every install). */
 function growth_series(): array {
-    $rows = qa('SELECT firstday, COUNT(*) c FROM (SELECT install,MIN(day) firstday FROM events GROUP BY install) t GROUP BY firstday ORDER BY firstday');
-    $out = []; $cum = 0;
-    foreach ($rows as $r) { $cum += (int)$r['c']; $out[] = ['label' => $r['firstday'], 'v' => $cum]; }
-    return $out;
+    return remember('growth', 120, function () {
+        $rows = qa('SELECT firstday, COUNT(*) c FROM (SELECT install,MIN(day) firstday FROM events GROUP BY install) t GROUP BY firstday ORDER BY firstday');
+        $out = []; $cum = 0;
+        foreach ($rows as $r) { $cum += (int)$r['c']; $out[] = ['label' => $r['firstday'], 'v' => $cum]; }
+        return $out;
+    });
 }
 function feature_usage(int $since, int $limit = 25): array {
     return qa('SELECT event, SUM(cnt) c, COUNT(DISTINCT install) u FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY event ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);
@@ -124,8 +127,8 @@ function latest_version(): string {
     foreach (version_all() as $r) if ($r['version'] !== '') return $r['version'];
     return '';
 }
-function os_dist(): array { return qa('SELECT os, COUNT(DISTINCT install) u FROM events GROUP BY os ORDER BY u DESC LIMIT 12'); }
-function country_dist(): array { return qa("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 15"); }
+function os_dist(): array { return remember('os_dist', 90, fn() => qa('SELECT os, COUNT(DISTINCT install) u FROM events GROUP BY os ORDER BY u DESC LIMIT 12')); }
+function country_dist(): array { return remember('country_dist', 90, fn() => qa("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 15")); }
 function hours_dist(int $since): array {
     $rows = qa('SELECT HOUR(FROM_UNIXTIME(ts)) hr, SUM(cnt) c FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY hr', [$since]);
     $h = array_fill(0, 24, 0); foreach ($rows as $r) $h[(int)$r['hr']] = (int)$r['c'];
@@ -141,9 +144,9 @@ function funnel(): array {
     ];
 }
 function cohorts(int $limit = 8): array {
-    return qa('SELECT MIN(mn) wkstart, COUNT(*) n, SUM(CASE WHEN mx-mn>=604800 THEN 1 ELSE 0 END) ret
+    return remember('cohorts_' . $limit, 120, fn() => qa('SELECT MIN(mn) wkstart, COUNT(*) n, SUM(CASE WHEN mx-mn>=604800 THEN 1 ELSE 0 END) ret
                FROM (SELECT install,MIN(ts) mn,MAX(ts) mx FROM events GROUP BY install) t
-               GROUP BY YEARWEEK(FROM_UNIXTIME(mn),3) ORDER BY wkstart DESC LIMIT ' . (int)$limit);
+               GROUP BY YEARWEEK(FROM_UNIXTIME(mn),3) ORDER BY wkstart DESC LIMIT ' . (int)$limit));
 }
 function top_installs(int $since, int $limit = 10): array {
     return qa('SELECT install, SUM(cnt) c, COUNT(DISTINCT day) days, MAX(version) ver FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY install ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);

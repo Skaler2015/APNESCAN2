@@ -30,8 +30,37 @@ switch ($action) {
         setset('admin_email', trim((string)($_POST['admin_email'] ?? '')));
         if (($_POST['cron_token'] ?? '') !== '') setset('cron_token', preg_replace('/[^a-zA-Z0-9]/', '', (string)$_POST['cron_token']));
         setset('retention_days', (string)max(0, (int)($_POST['retention_days'] ?? 0)));
+        // SMTP
+        foreach (['smtp_host', 'smtp_user', 'smtp_from', 'smtp_from_name'] as $k) setset($k, trim((string)($_POST[$k] ?? '')));
+        setset('smtp_port', (string)max(1, (int)($_POST['smtp_port'] ?? 587)));
+        setset('smtp_secure', in_array($_POST['smtp_secure'] ?? 'tls', ['tls', 'ssl', 'none'], true) ? $_POST['smtp_secure'] : 'tls');
+        if (($_POST['smtp_pass'] ?? '') !== '') setset('smtp_pass', (string)$_POST['smtp_pass']); // keep existing if blank
         audit('settings_change', 'app controls updated');
         set_flash('Settings saved. Apps pick up broadcasts / flags on next launch.');
+        redirect($back);
+
+    case 'test_email':
+        require_cap('settings');
+        require_once SITE_ROOT . '/api/mailer.php';
+        $to = trim((string)($_POST['to'] ?? '')) ?: setting('admin_email', '');
+        if ($to === '') { set_flash('Set a daily-summary email or a test recipient first.', 'err'); redirect($back); }
+        [$ok, $detail] = apnescan_send_mail(getset(), $to, 'ApneScan test email', "This is a test email from your ApneScan admin dashboard.\nIf you received it, email delivery is working.");
+        audit('test_email', $to . ' — ' . $detail);
+        set_flash($ok ? 'Test email sent to ' . $to . ' (' . $detail . ').' : 'Could not send: ' . $detail, $ok ? 'ok' : 'err');
+        redirect($back);
+
+    case 'gen_api_key':
+        require_cap('settings');
+        setset('api_key', bin2hex(random_bytes(20)));
+        audit('api_key', 'generated');
+        set_flash('New API key generated.');
+        redirect($back);
+
+    case 'revoke_api_key':
+        require_cap('settings');
+        setset('api_key', '');
+        audit('api_key', 'revoked');
+        set_flash('API key revoked.');
         redirect($back);
 
     case 'passwd': // change own password
@@ -84,10 +113,40 @@ switch ($action) {
         set_flash('Admin removed.');
         redirect($back);
 
+    case '2fa_begin': // start 2FA setup — generate a secret held in the session
+        $_SESSION['setup_totp'] = totp_secret();
+        redirect($back);
+
+    case '2fa_enable':
+        $secret = $_SESSION['setup_totp'] ?? '';
+        if ($secret === '' || !totp_verify($secret, (string)($_POST['code'] ?? ''))) {
+            set_flash('That code did not match — try again.', 'err'); redirect($back);
+        }
+        set_user_2fa(current_user()['username'], $secret, true);
+        unset($_SESSION['setup_totp']);
+        audit('2fa_enable');
+        set_flash('Two-factor authentication is now ON.');
+        redirect($back);
+
+    case '2fa_disable':
+        set_user_2fa(current_user()['username'], '', false);
+        unset($_SESSION['setup_totp']);
+        audit('2fa_disable');
+        set_flash('Two-factor authentication disabled.');
+        redirect($back);
+
+    case 'backup_now':
+        require_cap('backup');
+        $name = write_backup_file($GLOBALS['db']);
+        audit('backup', 'saved ' . $name);
+        set_flash('Backup saved: ' . $name);
+        redirect($back);
+
     case 'archive': // delete events older than N days
         require_cap('settings');
         $days = max(1, (int)($_POST['days'] ?? 365));
         $GLOBALS['db']->prepare('DELETE FROM events WHERE ts<?')->execute([time() - $days * 86400]);
+        cache_flush();
         audit('archive', 'events older than ' . $days . 'd');
         set_flash('Archived events older than ' . $days . ' days.');
         redirect($back);

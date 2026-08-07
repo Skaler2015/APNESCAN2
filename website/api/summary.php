@@ -54,10 +54,9 @@ try {
     $lines[] = 'Open dashboard: https://apnescan.subhashkaler.com/admin.php';
 
     $body = implode("\n", $lines);
-    $host = parse_url('https://apnescan.subhashkaler.com', PHP_URL_HOST);
-    $headers = 'From: ApneScan <noreply@' . $host . ">\r\n" . 'Content-Type: text/plain; charset=utf-8';
-    @mail($email, 'ApneScan daily summary — ' . gmdate('d M', $now), $body, $headers);
-    echo 'sent to ' . $email;
+    require_once __DIR__ . '/mailer.php';
+    [$ok, $detail] = apnescan_send_mail($st, $email, 'ApneScan daily summary — ' . gmdate('d M', $now), $body);
+    echo ($ok ? 'sent to ' : 'failed to ') . $email . ' (' . $detail . ')';
 } catch (Throwable $e) {
     http_response_code(500); echo 'err';
 }

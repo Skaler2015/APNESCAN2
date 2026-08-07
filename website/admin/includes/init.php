@@ -41,6 +41,9 @@ $GLOBALS['ROLE_LABELS'] = [
 ];
 
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/cache.php';
+require_once __DIR__ . '/totp.php';
+require_once __DIR__ . '/backup.php';
 
 // ---- First-run: config missing -> hand off to setup wizard ----------------
 if (!file_exists(CONFIG_FILE)) {
@@ -82,7 +85,10 @@ function ensure_schema(PDO $db): void
     // Device profiles (populated by the app from Phase 2 onward).
     $db->exec("CREATE TABLE IF NOT EXISTS devices (install VARCHAR(40) PRIMARY KEY,os VARCHAR(40),arch VARCHAR(16),cpu_cores INT,ram_mb INT,screen VARCHAR(24),monitors INT,lang VARCHAR(16),tz VARCHAR(40),scanner VARCHAR(80),ts INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     // Multiple admins with roles.
-    $db->exec("CREATE TABLE IF NOT EXISTS admin_users (username VARCHAR(40) PRIMARY KEY,pass_hash VARCHAR(255),role VARCHAR(20),created INT,last_login INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $db->exec("CREATE TABLE IF NOT EXISTS admin_users (username VARCHAR(40) PRIMARY KEY,pass_hash VARCHAR(255),role VARCHAR(20),created INT,last_login INT,totp_secret VARCHAR(40) DEFAULT '',totp_enabled TINYINT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // 2FA columns for installs created before Phase 3 (ignore if they exist).
+    try { $db->exec("ALTER TABLE admin_users ADD COLUMN totp_secret VARCHAR(40) DEFAULT ''"); } catch (Throwable $e) {}
+    try { $db->exec("ALTER TABLE admin_users ADD COLUMN totp_enabled TINYINT DEFAULT 0"); } catch (Throwable $e) {}
     // Audit + login-attempt logs.
     $db->exec("CREATE TABLE IF NOT EXISTS audit_log (id BIGINT AUTO_INCREMENT PRIMARY KEY,user VARCHAR(40),role VARCHAR(20),action VARCHAR(40),detail VARCHAR(255),ip VARCHAR(64),ts INT,INDEX idx_ts(ts)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $db->exec("CREATE TABLE IF NOT EXISTS login_attempts (id BIGINT AUTO_INCREMENT PRIMARY KEY,ip VARCHAR(64),ts INT,INDEX idx_ip_ts(ip,ts)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
