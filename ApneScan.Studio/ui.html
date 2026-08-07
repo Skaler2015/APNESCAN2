@@ -330,16 +330,39 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .rc b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc small{color:var(--muted);font-size:10.5px}
 .grid-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:14px;margin-bottom:6px}
-.pg-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px;cursor:pointer;position:relative;transition:transform .12s,box-shadow .12s,border-color .12s}
-.pg-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#dcd6f5}
-.pg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.pg-card img{width:100%;height:158px;object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:7px;display:block}
-.pg-card .pn{position:absolute;top:13px;left:13px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;box-shadow:0 2px 5px rgba(109,40,217,.3)}
-.pg-card .pg-name{margin-top:7px;font-size:11px;font-weight:600;color:#3b4254;text-align:center;line-height:1.25;min-height:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.pg-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px;cursor:pointer;position:relative;transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s,border-color .18s;box-shadow:0 1px 2px rgba(20,20,50,.05)}
+.pg-card:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 30px rgba(20,20,50,.14);border-color:#dcd6f5;z-index:3}
+.pg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 8px 22px rgba(106,56,255,.22)}
+.pg-card .pg-imgwrap{position:relative;border-radius:9px;overflow:hidden;background:#fff}
+.pg-card img{width:100%;height:158px;object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:9px;display:block;transition:transform .2s}
+.pg-card:hover img{transform:scale(1.02)}
+.pg-card .pn{position:absolute;top:13px;left:13px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;box-shadow:0 2px 6px rgba(106,56,255,.4);z-index:2}
+/* selection checkbox */
+.pg-card .pg-chk{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.9);border:1.5px solid var(--border);display:grid;place-items:center;color:transparent;font-size:13px;font-weight:900;cursor:pointer;z-index:3;opacity:0;transition:opacity .15s,background .15s;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.pg-card:hover .pg-chk{opacity:1}
+.pg-card.sel .pg-chk{opacity:1;background:var(--accent);border-color:var(--accent);color:#fff;animation:chkPop .2s ease}
+@keyframes chkPop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+/* hover toolbar over the image */
+.pg-card .pg-tools{position:absolute;left:8px;right:8px;bottom:8px;display:flex;justify-content:center;gap:3px;padding:4px;border-radius:11px;background:rgba(24,27,38,.9);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transform:translateY(6px);transition:opacity .15s,transform .15s;z-index:4;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.pg-card:hover .pg-tools{opacity:1;transform:none}
+.pg-card .pg-tools .pt{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#dfe2ee;font-size:13px;cursor:pointer;transition:background .12s}
+.pg-card .pg-tools .pt:hover{background:rgba(255,255,255,.18)}
+.pg-card .pg-tools .pt.del:hover{background:#ef4444;color:#fff}
+.pg-card .pg-name{margin-top:8px;font-size:11px;font-weight:700;color:#3b4254;text-align:center;line-height:1.25;min-height:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .pg-card .pg-name.reading{color:var(--muted-2);font-weight:500;font-style:italic}
-.pg-card.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
-.pg-card.drop-after{box-shadow:3px 0 0 0 var(--accent)}
-.pg-card.dragging{opacity:.4}
+.pg-card .pg-meta{font-size:9.5px;color:var(--muted-2);text-align:center;margin-top:2px;font-weight:600}
+.pg-card.drop-before::before,.pg-card.drop-after::before{content:"";position:absolute;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.pg-card.drop-before::before{left:-8px}.pg-card.drop-after::before{right:-8px}
+.pg-card.dragging{opacity:.5;transform:rotate(2deg) scale(1.02);box-shadow:0 18px 40px rgba(20,20,50,.28)}
+/* batch action bar */
+#batchBar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(10px);z-index:120;display:none;align-items:center;gap:4px;padding:8px 10px;border-radius:16px;background:rgba(24,27,38,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;box-shadow:0 18px 44px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);animation:bbUp .2s ease}
+#batchBar.on{display:flex}
+@keyframes bbUp{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#batchBar .bb-cnt{font-size:12px;font-weight:800;background:var(--accent);padding:5px 11px;border-radius:11px;margin-right:4px}
+#batchBar .bb{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:10px;font-size:12px;font-weight:700;color:#dfe2ee;cursor:pointer;background:transparent;transition:background .12s}
+#batchBar .bb:hover{background:rgba(255,255,255,.14)}
+#batchBar .bb.del:hover{background:#ef4444;color:#fff}
+#batchBar .bb-sep{width:1px;height:20px;background:rgba(255,255,255,.14);margin:0 2px}
 /* Scanned-pages toolbar */
 .scan-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 12px}
 .st-group{display:flex;gap:3px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px}
@@ -353,8 +376,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 /* List (row) view for scanned pages */
 .grid-pages.listview{display:flex;flex-direction:column;gap:8px}
 .grid-pages.listview .pg-card{display:flex;align-items:center;gap:12px;padding:8px 12px}
+.grid-pages.listview .pg-card:hover{transform:none;scale:1}
+.grid-pages.listview .pg-imgwrap{flex:none;width:52px}
 .grid-pages.listview .pg-card img{width:52px;height:66px;flex:none}
-.grid-pages.listview .pg-card .pn{position:static;box-shadow:none}
+.grid-pages.listview .pg-card .pg-tools{display:none}
+.grid-pages.listview .pg-card .pg-meta{text-align:left;margin-top:2px}
+.grid-pages.listview .pg-card .pn{position:absolute;top:8px;left:8px}
 .grid-pages.listview .pg-card .pg-name{margin-top:0;text-align:left;flex:1;-webkit-line-clamp:1;min-height:0}
 .rightpanel{width:326px;flex:none;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;position:relative}
 /* Drag handles to resize the side panels */
@@ -1550,6 +1577,22 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   <button type="button" class="sm-x" id="smCancel" title="Cancel scan">✕</button>
 </div>
 
+<!-- Floating batch action bar (shown when 2+ scanned pages are selected) -->
+<div id="batchBar">
+  <span class="bb-cnt" id="bbCount">0 selected</span>
+  <span class="bb" data-bb="rot">↻ Rotate</span>
+  <span class="bb" data-bb="deskew">⟂ Deskew</span>
+  <span class="bb" data-bb="enhance">✦ Enhance</span>
+  <span class="bb-sep"></span>
+  <span class="bb" data-bb="savepdf">▤ Save PDF</span>
+  <span class="bb" data-bb="export">⭳ Export</span>
+  <span class="bb" data-bb="print">⎙ Print</span>
+  <span class="bb" data-bb="rename">✎ Rename</span>
+  <span class="bb-sep"></span>
+  <span class="bb del" data-bb="delete">🗑 Delete</span>
+  <span class="bb" data-bb="none">✕</span>
+</div>
+
 <!-- Scanner picker dropdown (list of detected scanners) -->
 <div class="menu" id="scannerMenu" style="min-width:240px;max-width:420px"></div>
 <div class="menu" id="setMenu" style="min-width:170px"></div>
@@ -2529,7 +2572,27 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   // Send a page operation for the current selection to the host.
   function pageOp(op, amount){ if(!scannedTotal){ setStatus('Scan or import a page first'); return; } send({cmd:'pageOp', op:op, amount:(amount||0), indices:selCurrent()}); }
   function applyScanView(){ var g=byId('scannedGrid'); if(!g) return; g.classList.toggle('listview', scanView==='list'); g.style.gridTemplateColumns = scanView==='list' ? '' : ('repeat(auto-fill,minmax('+thumbPx+'px,1fr))'); var vg=byId('viewGrid'), vl=byId('viewList'); if(vg) vg.classList.toggle('on', scanView==='grid'); if(vl) vl.classList.toggle('on', scanView==='list'); }
-  function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; }
+  function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; updateBatchBar(); }
+  function updateBatchBar(){
+    var bar=byId('batchBar'); if(!bar) return;
+    var n=selSet.length;
+    if(n>1){ bar.classList.add('on'); var c=byId('bbCount'); if(c) c.textContent=n+' selected'; }
+    else bar.classList.remove('on');
+  }
+  (function(){
+    var bar=byId('batchBar'); if(!bar) return;
+    bar.addEventListener('click', function(ev){ var b=ev.target.closest('.bb'); if(!b) return; var op=b.getAttribute('data-bb');
+      if(op==='rot'){ pageOp('rotate',90); }
+      else if(op==='deskew'){ pageOp('deskew'); }
+      else if(op==='enhance'){ pageOp('auto'); }
+      else if(op==='savepdf'){ if(bridge) send({cmd:'savePdfSelected', indices:selCurrent()}); }
+      else if(op==='export'){ if(bridge) send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); }
+      else if(op==='print'){ if(bridge) send({cmd:'print', op:'selected', indices:selSet.slice()}); }
+      else if(op==='rename'){ openRename(); }
+      else if(op==='delete'){ if(bridge) send({cmd:'deletePage', indices:selCurrent()}); }
+      else if(op==='none'){ selectNone(); }
+    });
+  })();
   function selectAllPages(){ if(!scannedTotal){ setStatus('Nothing to select'); return; } selSet=[]; for(var i=0;i<scannedTotal;i++) selSet.push(i); applyMultiHighlight(); setStatus(scannedTotal+' page(s) selected'); }
   function clearMultiSel(){ selSet=[]; applyMultiHighlight(); }
   function renderScanned(thumbs, selected, names){
@@ -2557,7 +2620,18 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(cnt) cnt.textContent=thumbs.length;
     thumbs.forEach(function(src,i){
       var c=document.createElement('div'); c.className='pg-card'+(i===selected?' sel':'');
-      var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); im.draggable=false; c.appendChild(im);
+      var wrap=document.createElement('div'); wrap.className='pg-imgwrap';
+      var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); im.draggable=false; wrap.appendChild(im);
+      var tools=document.createElement('div'); tools.className='pg-tools';
+      [['↺','rotL','Rotate left'],['↻','rotR','Rotate right'],['⟂','deskew','Deskew'],['✦','auto','Enhance'],['⧉','dup','Duplicate'],['🗑','del','Delete','del']].forEach(function(t){
+        var pb=document.createElement('span'); pb.className='pt'+(t[3]?(' '+t[3]):''); pb.textContent=t[0]; pb.title=t[2];
+        pb.addEventListener('click', function(ev){ ev.stopPropagation(); pgHoverOp(t[1], i); });
+        tools.appendChild(pb);
+      });
+      wrap.appendChild(tools); c.appendChild(wrap);
+      var chk=document.createElement('div'); chk.className='pg-chk'; chk.textContent='✓'; chk.title='Select page';
+      chk.addEventListener('click', function(ev){ ev.stopPropagation(); var p=selSet.indexOf(i); if(p>=0) selSet.splice(p,1); else selSet.push(i); scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); });
+      c.appendChild(chk);
       c.draggable=true;
       c.addEventListener('dragstart', function(ev){
         var idxs=(selSet.length && selSet.indexOf(i)>=0) ? selSet.slice().sort(function(a,b){return a-b;}) : [i];
@@ -2587,6 +2661,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else { nm.className='pg-name reading'; nm.textContent='Reading name…'; nm.title='Double-click or F2 to rename'; }
       nm.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openRename(i); });
       c.appendChild(nm);
+      var meta=document.createElement('div'); meta.className='pg-meta';
+      meta.textContent='Page '+(i+1)+(edLastDpi?(' · '+edLastDpi+' DPI'):'')+(edLastColor?(' · '+edLastColor):'');
+      c.appendChild(meta);
       c.addEventListener('click', function(ev){
         if(ev.ctrlKey||ev.metaKey){ var p=selSet.indexOf(i); if(p>=0) selSet.splice(p,1); else selSet.push(i); scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); return; }
         if(ev.shiftKey && scannedSel>=0){ selSet=[]; var a=Math.min(scannedSel,i), b=Math.max(scannedSel,i); for(var j=a;j<=b;j++) selSet.push(j); applyMultiHighlight(); return; }
@@ -2599,8 +2676,17 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       grid.appendChild(c);
     });
     applyScanView();
+    if(typeof updateBatchBar==='function') updateBatchBar();
   }
   var dragSrc=-1, dragSrcs=[];
+  // Per-card hover-toolbar op → acts on that single page index.
+  function pgHoverOp(op, i){
+    if(!bridge) return;
+    if(op==='del'){ send({cmd:'deletePage', indices:[i]}); return; }
+    if(op==='dup'){ send({cmd:'pageOp', op:'duplicate', indices:[i]}); return; }
+    var map={rotL:['rotate',-90],rotR:['rotate',90],deskew:['deskew',0],auto:['auto',0]};
+    if(map[op]) send({cmd:'pageOp', op:map[op][0], amount:map[op][1], indices:[i]});
+  }
   function clearDropMarks(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.remove('drop-before','drop-after'); } }
   // Scanned-pages toolbar
   var scanToolsMap={
