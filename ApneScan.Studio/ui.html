@@ -560,6 +560,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="dp-search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="docsSearch" placeholder="Search this folder…"></div>
           <div class="dp-more">
             <span id="dpSearchAll" class="dp-morebtn" style="display:none">&#128269; Search all subfolders</span>
+            <span id="dpContentSearch" class="dp-morebtn" style="display:none">&#128218; Search inside files (OCR)</span>
             <span id="dpRecentAll" class="dp-morebtn">&#128336; Recent (all folders)</span>
           </div>
           <div class="dp-chips">
@@ -1819,7 +1820,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var navDocs=byId('navDocs'); if(navDocs) navDocs.addEventListener('click', function(e){ e.stopPropagation(); openDocs(); });
   var docsClose=byId('docsClose'); if(docsClose) docsClose.addEventListener('click', function(e){ e.stopPropagation(); closeDocs(); });
   // search
-  var docsSearch=byId('docsSearch'); if(docsSearch) docsSearch.addEventListener('input', function(){ docsQuery=docsSearch.value; var sa=byId('dpSearchAll'); if(sa) sa.style.display=docsQuery.trim()?'inline':'none'; renderDocsList(); });
+  var docsSearch=byId('docsSearch'); if(docsSearch) docsSearch.addEventListener('input', function(){ docsQuery=docsSearch.value; var on=docsQuery.trim()?'inline':'none'; var sa=byId('dpSearchAll'); if(sa) sa.style.display=on; var cs=byId('dpContentSearch'); if(cs) cs.style.display=on; renderDocsList(); });
+  var dpContentSearch=byId('dpContentSearch'); if(dpContentSearch) dpContentSearch.addEventListener('click', function(){ if(docsQuery.trim() && bridge){ setStatus('Reading text inside files… (first time is slower)'); send({cmd:'contentSearch', path:(docsData.path||''), name:docsQuery.trim()}); } });
   if(docsSearch) docsSearch.addEventListener('keydown', function(e){ if(e.key==='Enter' && docsQuery.trim() && bridge){ setStatus('Searching all subfolders…'); send({cmd:'searchAll', path:(docsData.path||''), name:docsQuery.trim()}); } });
   var dpSearchAll=byId('dpSearchAll'); if(dpSearchAll) dpSearchAll.addEventListener('click', function(){ if(docsQuery.trim() && bridge){ setStatus('Searching all subfolders…'); send({cmd:'searchAll', path:(docsData.path||''), name:docsQuery.trim()}); } });
   var dpRecentAll=byId('dpRecentAll'); if(dpRecentAll) dpRecentAll.addEventListener('click', function(){ if(!bridge) return; var s=byId('docsSearch'); if(s) s.value=''; docsQuery=''; var sa=byId('dpSearchAll'); if(sa) sa.style.display='none'; setStatus('Finding recent files…'); send({cmd:'getRecent'}); });

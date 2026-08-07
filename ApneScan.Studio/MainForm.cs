@@ -434,6 +434,9 @@ public class MainForm : Form
             case "getSubfolders":
                 SendSubfolders(filePath);
                 break;
+            case "contentSearch":
+                await ContentSearchAsync(filePath, name);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -3153,6 +3156,136 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             entries
         });
         Status($"{entries.Count} recent file(s)");
+    }
+
+    // ---- Content search (OCR text inside PDFs/images), with a cache ----
+    private sealed class OcrEntry
+    {
+        public long Mtime { get; set; }
+        public string Text { get; set; } = "";
+    }
+
+    private static string OcrIndexFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "ocr_index.json");
+
+    private static Dictionary<string, OcrEntry> LoadOcrIndex()
+    {
+        try
+        {
+            if (File.Exists(OcrIndexFile))
+                return JsonSerializer.Deserialize<Dictionary<string, OcrEntry>>(File.ReadAllText(OcrIndexFile))
+                       ?? new(StringComparer.OrdinalIgnoreCase);
+        }
+        catch { }
+        return new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static void SaveOcrIndex(Dictionary<string, OcrEntry> idx)
+    {
+        try
+        {
+            if (idx.Count > 4000)
+                idx = idx.OrderByDescending(kv => kv.Value.Mtime).Take(4000)
+                         .ToDictionary(k => k.Key, v => v.Value, StringComparer.OrdinalIgnoreCase);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(OcrIndexFile)!);
+            File.WriteAllText(OcrIndexFile, JsonSerializer.Serialize(idx));
+        }
+        catch { }
+    }
+
+    private async Task<string> OcrPageFullAsync(ProcessedImage page)
+    {
+        var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_cs_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+        try
+        {
+            page.Save(tmp);
+            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            return result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
+        }
+        finally { try { File.Delete(tmp); } catch { } }
+    }
+
+    private async Task ContentSearchAsync(string folder, string query)
+    {
+        query = (query ?? "").Trim();
+        if (query.Length < 2) { Status("Type at least 2 letters to search inside files"); return; }
+        if (_ctx.OcrEngine == null) { Status("OCR is not available"); return; }
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder)) { Status("Open a folder first"); return; }
+
+        var files = new List<FileInfo>();
+        try
+        {
+            foreach (var f in new DirectoryInfo(folder).GetFiles())
+            {
+                if ((f.Attributes & FileAttributes.Hidden) != 0) continue;
+                if (DocExts.Contains(f.Extension)) files.Add(f);
+            }
+        }
+        catch { }
+        files = files.OrderByDescending(f => f.LastWriteTime).Take(60).ToList();
+        if (files.Count == 0) { Status("No PDF/image files here to search"); return; }
+
+        var index = LoadOcrIndex();
+        var favs = LoadFavs();
+        var entries = new List<object>();
+        int done = 0;
+        foreach (var f in files)
+        {
+            done++;
+            Status($"Reading text {done}/{files.Count}: {f.Name}…");
+            long mt = new DateTimeOffset(f.LastWriteTimeUtc).ToUnixTimeMilliseconds();
+            string text;
+            if (index.TryGetValue(f.FullName, out var cached) && cached.Mtime == mt)
+            {
+                text = cached.Text;
+            }
+            else
+            {
+                var sb = new StringBuilder();
+                try
+                {
+                    var pages = await ImportPagesAsync(f.FullName);
+                    try
+                    {
+                        int pc = 0;
+                        foreach (var p in pages) { sb.Append('\n').Append(await OcrPageFullAsync(p)); if (++pc >= 3) break; }
+                    }
+                    finally { foreach (var p in pages) p.Dispose(); }
+                }
+                catch { }
+                text = sb.ToString();
+                index[f.FullName] = new OcrEntry { Mtime = mt, Text = text };
+            }
+            if (text.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                entries.Add(new
+                {
+                    name = f.Name,
+                    path = f.FullName,
+                    dir = false,
+                    date = f.LastWriteTime.ToString("dd MMM yyyy"),
+                    ms = new DateTimeOffset(f.LastWriteTime).ToUnixTimeMilliseconds(),
+                    count = 0,
+                    size = f.Length,
+                    fav = favs.Contains(f.FullName),
+                    prev = true
+                });
+            }
+        }
+        SaveOcrIndex(index);
+        Post(new
+        {
+            type = "folder",
+            path = folder,
+            name = $"🔤 “{query}” in text — {entries.Count} found",
+            parent = folder,
+            curFav = false,
+            ctx = "",
+            search = true,
+            entries
+        });
+        Status($"Content search done — {entries.Count} match(es)");
     }
 
     // Immediate subfolders of a folder, for the tree view.
