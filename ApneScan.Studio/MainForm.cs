@@ -252,6 +252,7 @@ public class MainForm : Form
         string op = "";
         string footerText = "";
         int amount = 0;
+        long target = 0;
         var indices = new List<int>();
         try
         {
@@ -282,6 +283,7 @@ public class MainForm : Form
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
+            if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
@@ -394,7 +396,8 @@ public class MainForm : Form
                 await PreviewFileAsync(filePath);
                 break;
             case "compressPdf":
-                await CompressPdfFileAsync(filePath);
+                if (target > 0) await CompressPdfToTargetAsync(filePath, target);
+                else await CompressPdfFileAsync(filePath, amount);
                 break;
             case "renameItem":
                 RenameItem(filePath, name);
@@ -2833,7 +2836,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         }
     }
 
-    private async Task CompressPdfFileAsync(string path)
+    private async Task CompressPdfFileAsync(string path, int explicitPercent = 0)
     {
         if (string.IsNullOrEmpty(path) || !File.Exists(path) ||
             System.IO.Path.GetExtension(path).ToLowerInvariant() != ".pdf")
@@ -2844,7 +2847,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         try
         {
             Status("Compressing PDF…");
-            int percent = _compressPercent > 0 ? _compressPercent : 40;
+            int percent = explicitPercent > 0 ? explicitPercent : (_compressPercent > 0 ? _compressPercent : 40);
             int quality = Math.Clamp(100 - percent, 20, 95);
             var src = new List<ProcessedImage>();
             await foreach (var img in new PdfImporter(_ctx).Import(path)) src.Add(img);
@@ -2862,6 +2865,76 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             long oldS = new FileInfo(path).Length, newS = new FileInfo(outFile).Length;
             SendFolder(dir);
             Status($"Compressed → {System.IO.Path.GetFileName(outFile)} ({FormatSize(oldS)} → {FormatSize(newS)})");
+        }
+        catch (Exception ex)
+        {
+            Status("Compress error: " + ex.Message);
+        }
+    }
+
+    // Compress a PDF to (approximately) a target size by searching JPEG quality.
+    private async Task CompressPdfToTargetAsync(string path, long targetBytes)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path) ||
+            System.IO.Path.GetExtension(path).ToLowerInvariant() != ".pdf")
+        {
+            Status("Select a PDF to compress");
+            return;
+        }
+        try
+        {
+            long origSize = new FileInfo(path).Length;
+            Status("Reading PDF…");
+            var src = new List<ProcessedImage>();
+            await foreach (var img in new PdfImporter(_ctx).Import(path)) src.Add(img);
+            if (src.Count == 0) { Status("Could not read the PDF"); return; }
+
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = System.IO.Path.GetFileNameWithoutExtension(path) + "_small";
+            var outFile = System.IO.Path.Combine(dir, stem + ".pdf");
+            int k = 1;
+            while (File.Exists(outFile)) outFile = System.IO.Path.Combine(dir, $"{stem} ({++k}).pdf");
+
+            string? bestFile = null;
+            try
+            {
+                // Binary-search quality for the best one whose output fits the target.
+                int lo = 20, hi = 92;
+                for (int it = 0; it < 6 && lo <= hi; it++)
+                {
+                    int q = (lo + hi) / 2;
+                    Status($"Compressing… (try {it + 1})");
+                    var probe = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_probe_" + Guid.NewGuid().ToString("N")[..8] + ".pdf");
+                    await BuildCompressedPdfAsync(src, probe, q, null);
+                    long sz = new FileInfo(probe).Length;
+                    if (sz <= targetBytes)
+                    {
+                        if (bestFile != null) { try { File.Delete(bestFile); } catch { } }
+                        bestFile = probe;
+                        lo = q + 1; // try higher quality (bigger, still under target)
+                    }
+                    else { try { File.Delete(probe); } catch { } hi = q - 1; }
+                }
+                if (bestFile == null)
+                {
+                    // Even the lowest quality overshoots — keep the smallest we can make.
+                    var probe = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_probe_" + Guid.NewGuid().ToString("N")[..8] + ".pdf");
+                    await BuildCompressedPdfAsync(src, probe, 20, null);
+                    bestFile = probe;
+                }
+                File.Move(bestFile, outFile);
+                bestFile = null;
+            }
+            finally
+            {
+                if (bestFile != null) { try { File.Delete(bestFile); } catch { } }
+                foreach (var p in src) p.Dispose();
+            }
+
+            long newS = new FileInfo(outFile).Length;
+            SendFolder(dir);
+            string note = newS <= targetBytes ? "" : " — couldn't go smaller";
+            Status($"Compressed → {System.IO.Path.GetFileName(outFile)} ({FormatSize(origSize)} → {FormatSize(newS)}){note}");
         }
         catch (Exception ex)
         {
