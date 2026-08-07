@@ -796,10 +796,29 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
     <div class="set-row"><label>Send anonymous usage stats <span style="color:var(--muted-2);font-weight:400;font-size:11px">(no documents or personal data)</span></label><input type="checkbox" id="setTelemetryChk"></div>
 
+    <div class="set-sec">Feedback &amp; Support</div>
+    <div class="set-row"><label>Have a suggestion or found a bug?</label><div class="cam-btn" id="setFeedback" style="padding:7px 14px">💬 Send feedback</div></div>
+
     <div class="cam-actions">
       <div class="cam-btn" id="setRestore" style="margin-right:auto">Restore Defaults</div>
       <div class="cam-btn no" id="setCancel">Cancel</div>
       <div class="cam-btn primary" id="setSave">OK</div>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div class="cam-overlay" id="fbOverlay">
+  <div class="cam-box" style="max-width:440px;text-align:left">
+    <h3>💬 Send feedback</h3>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Tell us what you like, what's missing, or report a problem. It goes straight to the developer.</p>
+    <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Your message</label>
+    <textarea id="fbMsg" placeholder="Type your feedback here…" style="width:100%;min-height:110px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;color:var(--text);background:var(--card);resize:vertical"></textarea>
+    <label style="font-size:12.5px;font-weight:600;display:block;margin:12px 0 6px">Email or phone <span style="color:var(--muted-2);font-weight:400">(optional — if you'd like a reply)</span></label>
+    <input id="fbContact" type="text" placeholder="you@example.com" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;color:var(--text);background:var(--card)">
+    <div class="cam-actions">
+      <div class="cam-btn no" id="fbCancel" style="margin-left:auto">Cancel</div>
+      <div class="cam-btn primary" id="fbSend">Send</div>
     </div>
   </div>
 </div>
@@ -1351,6 +1370,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       else if(m.type==='filePreview'){ showFilePreview(m.name, m.pages); }
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
+      else if(m.type==='banner'){ showBanner(m.text, m.style, m.id); }
+      else if(m.type==='forceUpdate'){ showForceUpdate(m.url, m.min, m.force); }
+      else if(m.type==='flags'){ try{ window.appFlags = m.flags ? JSON.parse(m.flags) : {}; }catch(e){ window.appFlags={}; } }
     });
     setDevice('Detecting…'); setStatus('Starting…');
     send({cmd:'getSettings'});
@@ -1541,6 +1563,53 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var nSet=byId('navSettings'); if(nSet) nSet.addEventListener('click', openSettings);
   var sCancel=byId('setCancel'); if(sCancel) sCancel.addEventListener('click', closeSettings);
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
+  // Feedback dialog
+  var setFb=byId('setFeedback'); if(setFb) setFb.addEventListener('click', function(){ closeSettings(); overlay('fbOverlay', true); var t=byId('fbMsg'); if(t){ t.value=''; setTimeout(function(){ t.focus(); },50); } var c=byId('fbContact'); if(c) c.value=''; });
+  var fbCancel=byId('fbCancel'); if(fbCancel) fbCancel.addEventListener('click', function(){ overlay('fbOverlay', false); });
+  var fbSend=byId('fbSend'); if(fbSend) fbSend.addEventListener('click', function(){
+    var msg=(byId('fbMsg')||{}).value||''; var contact=(byId('fbContact')||{}).value||'';
+    if(!msg.trim()){ setStatus('Please type your feedback first.'); return; }
+    if(bridge) send({cmd:'sendFeedback', data:msg, name:contact});
+    overlay('fbOverlay', false); setStatus('Thanks! Your feedback was sent. 🙏');
+  });
+  // Broadcast banner from the server (dismissible, de-duplicated by id)
+  function showBanner(text, style, id){
+    if(!text) return;
+    try{ if(id && localStorage.getItem('as_banner_seen')===String(id)) return; }catch(e){}
+    var colors={info:'#6d28d9', success:'#16a34a', warning:'#d97706'};
+    var bg=colors[style]||colors.info;
+    var b=byId('appBanner');
+    if(!b){ b=document.createElement('div'); b.id='appBanner';
+      b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;padding:11px 46px 11px 18px;color:#fff;font-size:13.5px;font-weight:600;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.18);font-family:inherit';
+      document.body.appendChild(b);
+    }
+    b.style.background=bg;
+    b.innerHTML='';
+    var span=document.createElement('span'); span.textContent=text; b.appendChild(span);
+    var x=document.createElement('span'); x.textContent='✕';
+    x.style.cssText='position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;opacity:.85;font-weight:700';
+    x.onclick=function(){ b.remove(); try{ if(id) localStorage.setItem('as_banner_seen', String(id)); }catch(e){} };
+    b.appendChild(x);
+  }
+  // Force / recommended update prompt from the server
+  function showForceUpdate(url, min, force){
+    if(byId('fuOverlay')) return;
+    var ov=document.createElement('div'); ov.id='fuOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(10,8,20,.6);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+    var box=document.createElement('div');
+    box.style.cssText='max-width:400px;background:var(--card,#fff);color:var(--text,#191426);border-radius:16px;padding:26px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)';
+    box.innerHTML='<div style="font-size:34px;margin-bottom:8px">⬆️</div>'+
+      '<h3 style="margin:0 0 8px;font-size:18px">Update available</h3>'+
+      '<p style="color:var(--muted,#6d6785);font-size:13.5px;margin:0 0 18px">A newer version ('+(min||'')+') of ApneScan is available'+(force?' and is required to continue.':'.')+'</p>';
+    var row=document.createElement('div'); row.style.cssText='display:flex;gap:10px;justify-content:center';
+    if(!force){ var later=document.createElement('div'); later.textContent='Later';
+      later.style.cssText='padding:10px 18px;border-radius:10px;border:1px solid var(--border,#e9e4f4);cursor:pointer;font-weight:600;font-size:13.5px';
+      later.onclick=function(){ ov.remove(); }; row.appendChild(later); }
+    var up=document.createElement('div'); up.textContent='Update now';
+    up.style.cssText='padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;cursor:pointer;font-weight:700;font-size:13.5px';
+    up.onclick=function(){ if(url) openUrl(url); };
+    row.appendChild(up); box.appendChild(row); ov.appendChild(box); document.body.appendChild(ov);
+  }
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
@@ -2243,7 +2312,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   });
 
   // ---- Customizable keyboard shortcuts ----
-  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
+  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
   function modalOverlayOpen(){ for(var i=0;i<MODAL_IDS.length;i++){ var el=byId(MODAL_IDS[i]); if(el && el.classList.contains('on')) return true; } return false; }
   function anyOverlayOpen(){
     if(modalOverlayOpen()) return true;
@@ -2426,7 +2495,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});

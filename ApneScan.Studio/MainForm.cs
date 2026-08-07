@@ -185,6 +185,13 @@ public class MainForm : Form
         Load += async (_, _) => await InitAsync();
         FormClosed += (_, _) =>
         {
+            try
+            {
+                _pingTimer?.Stop();
+                var mins = (int)Math.Round((DateTime.UtcNow - _sessionStart).TotalMinutes);
+                if (mins > 0) SendTelemetrySync("session_min", Math.Min(mins, 100000));
+            }
+            catch { }
             StopPhoneServer();
             foreach (var p in _pages) p.Dispose();
             foreach (var p in _copiedPages) p.Dispose();
@@ -228,6 +235,15 @@ public class MainForm : Form
 
         _telemetry = LoadSettings().Telemetry;
         SendTelemetry("app_open");
+        PingLive();
+
+        // Heartbeat every 60s so the dashboard's "online now" stays current.
+        _pingTimer = new System.Windows.Forms.Timer { Interval = 60_000 };
+        _pingTimer.Tick += (_, _) => PingLive();
+        _pingTimer.Start();
+
+        // Fetch broadcast / force-update / feature flags from the server.
+        _ = PollRemoteConfigAsync();
     }
 
     // ---- Anonymous usage telemetry (opt-out) ----
@@ -237,6 +253,8 @@ public class MainForm : Form
     private string? _installId;
     private bool _telemetry = true;
     private const string TelemetryUrl = "https://apnescan.subhashkaler.com/api/track.php";
+    private readonly DateTime _sessionStart = DateTime.UtcNow;
+    private System.Windows.Forms.Timer? _pingTimer;
 
     private string InstallId()
     {
@@ -257,6 +275,11 @@ public class MainForm : Form
         return _installId!;
     }
 
+    private const string ConfigUrl = "https://apnescan.subhashkaler.com/api/config-app.php";
+    private const string FeedbackUrl = "https://apnescan.subhashkaler.com/api/feedback.php";
+    private static string AppVer() => (Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)).ToString(3);
+    private static string OsStr() => "Win " + Environment.OSVersion.Version.Major + "." + Environment.OSVersion.Version.Build;
+
     private void SendTelemetry(string ev, int count = 1)
     {
         if (!_telemetry) return;
@@ -264,14 +287,120 @@ public class MainForm : Form
         {
             try
             {
-                var ver = (Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)).ToString(3);
-                var os = "Win " + Environment.OSVersion.Version.Major + "." + Environment.OSVersion.Version.Build;
-                var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), @event = ev, count, version = ver, os };
+                var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), @event = ev, count, version = AppVer(), os = OsStr() };
                 using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
                 await _tele.PostAsync(TelemetryUrl, content);
             }
             catch { /* telemetry is best-effort; never disturb the user */ }
         });
+    }
+
+    // Blocking send — used on shutdown when there's no time for a background task.
+    private void SendTelemetrySync(string ev, int count = 1)
+    {
+        if (!_telemetry) return;
+        try
+        {
+            var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), @event = ev, count, version = AppVer(), os = OsStr() };
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            _tele.PostAsync(TelemetryUrl, content).GetAwaiter().GetResult();
+        }
+        catch { }
+    }
+
+    // Live-presence heartbeat so the dashboard can show "online now".
+    private void PingLive()
+    {
+        if (!_telemetry) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), @event = "ping", count = 1, version = AppVer(), os = OsStr() };
+                using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                await _tele.PostAsync(TelemetryUrl, content);
+            }
+            catch { }
+        });
+    }
+
+    // Send free-text feedback the user typed in the app.
+    private void SendFeedback(string message, string contact)
+    {
+        if (string.IsNullOrWhiteSpace(message)) { Status("Please type your feedback first."); return; }
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var payload = new { key = "apnescan-telemetry-v1", install = InstallId(), version = AppVer(), message, contact };
+                using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                await _tele.PostAsync(FeedbackUrl, content);
+            }
+            catch { }
+        });
+        Status("Thanks! Your feedback was sent. 🙏");
+    }
+
+    // Compare two dotted versions. Returns <0, 0 or >0.
+    private static int CompareVersions(string a, string b)
+    {
+        try { return (Version.TryParse(a, out var va) ? va : new Version(0, 0)).CompareTo(Version.TryParse(b, out var vb) ? vb : new Version(0, 0)); }
+        catch { return 0; }
+    }
+
+    // Pull remote config (broadcast banner, min version, feature flags) and hand
+    // it to the UI. Skipped entirely when the user opted out of phoning home.
+    private async Task PollRemoteConfigAsync()
+    {
+        if (!_telemetry) return;
+        try
+        {
+            var url = ConfigUrl + "?install=" + Uri.EscapeDataString(InstallId()) + "&version=" + Uri.EscapeDataString(AppVer());
+            var json = await _tele.GetStringAsync(url);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("ok", out var ok) || ok.ValueKind != JsonValueKind.True) return;
+
+            string msg = root.TryGetProperty("message", out var m) ? (m.GetString() ?? "") : "";
+            int msgId = root.TryGetProperty("messageId", out var mi) && mi.ValueKind == JsonValueKind.Number ? mi.GetInt32() : 0;
+            string style = root.TryGetProperty("messageType", out var mt) ? (mt.GetString() ?? "info") : "info";
+            string minV = root.TryGetProperty("minVersion", out var mv) ? (mv.GetString() ?? "") : "";
+            bool force = root.TryGetProperty("forceUpdate", out var fu) && fu.ValueKind == JsonValueKind.True;
+            string dl = root.TryGetProperty("downloadUrl", out var du) ? (du.GetString() ?? "") : "";
+            string flags = root.TryGetProperty("flags", out var fl) ? fl.GetRawText() : "{}";
+
+            if (msg.Length > 0)
+                Post(new { type = "banner", id = msgId, style, text = msg });
+            if (!string.IsNullOrEmpty(minV) && CompareVersions(AppVer(), minV) < 0)
+                Post(new { type = "forceUpdate", force, url = dl, min = minV });
+            Post(new { type = "flags", flags });
+        }
+        catch { }
+    }
+
+    // Static crash reporter (called from Program's global handler). Reads the
+    // install id + telemetry opt-out straight from disk since the form may be
+    // in an unusable state. Best-effort and short-timeout.
+    public static void ReportCrash(Exception? ex)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ApneScan");
+            var setFile = Path.Combine(dir, "settings.json");
+            if (File.Exists(setFile))
+            {
+                var txt = File.ReadAllText(setFile).Replace(" ", "");
+                if (txt.Contains("\"telemetry\":false")) return; // respect opt-out
+            }
+            var install = "anon";
+            var idf = Path.Combine(dir, "install.id");
+            if (File.Exists(idf)) { var s = File.ReadAllText(idf).Trim(); if (s.Length > 0) install = s; }
+            var payload = new { key = "apnescan-telemetry-v1", install, @event = "crash", count = 1, version = AppVer(), os = OsStr() };
+            using var c = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            c.PostAsync(TelemetryUrl, content).GetAwaiter().GetResult();
+        }
+        catch { }
     }
 
     // Commands that are passive UI reads / polling — not user actions worth
@@ -650,6 +779,9 @@ public class MainForm : Form
             case "update":
                 await RunUpdateAsync();
                 break;
+            case "sendFeedback":
+                SendFeedback(data, name);
+                break;
         }
     }
 
@@ -892,6 +1024,8 @@ public class MainForm : Form
             await RefreshAsync(true);
             _ = AutoNameAsync();
             Bump("scan", added);
+            SendTelemetry("pages_scanned", added);                       // total pages captured
+            SendTelemetry("src_" + (string.IsNullOrEmpty(source) ? "auto" : source)); // flatbed/feeder/auto/duplex
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
         }
         catch (Exception ex)
