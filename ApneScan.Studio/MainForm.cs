@@ -530,9 +530,9 @@ public class MainForm : Form
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
-            if (root.TryGetProperty("b", out var abEl) && abEl.ValueKind == JsonValueKind.Number) adjB = abEl.GetInt32();
-            if (root.TryGetProperty("c", out var acEl) && acEl.ValueKind == JsonValueKind.Number) adjC = acEl.GetInt32();
-            if (root.TryGetProperty("s", out var asEl) && asEl.ValueKind == JsonValueKind.Number) adjS = asEl.GetInt32();
+            if (root.TryGetProperty("b", out var adjBEl) && adjBEl.ValueKind == JsonValueKind.Number) adjB = adjBEl.GetInt32();
+            if (root.TryGetProperty("c", out var adjCEl) && adjCEl.ValueKind == JsonValueKind.Number) adjC = adjCEl.GetInt32();
+            if (root.TryGetProperty("s", out var adjSEl) && adjSEl.ValueKind == JsonValueKind.Number) adjS = adjSEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
