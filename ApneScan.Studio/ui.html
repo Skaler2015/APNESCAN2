@@ -1322,6 +1322,27 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   var fsCropApply=byId('fsCropApply'); if(fsCropApply) fsCropApply.addEventListener('click', function(){ var ir=fsImgRect(); if(!ir||!fsRect){ fsEndCrop(); return; } var x0=(fsRect.x-ir.left)/ir.width, y0=(fsRect.y-ir.top)/ir.height; var x1=(fsRect.x+fsRect.w-ir.left)/ir.width, y1=(fsRect.y+fsRect.h-ir.top)/ir.height; if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1}); fsEndCrop(); });
   var fsCropCancel=byId('fsCropCancel'); if(fsCropCancel) fsCropCancel.addEventListener('click', fsEndCrop);
+
+  // Paste an image or PDF copied from anywhere (browser, Explorer) straight into
+  // the scanned thumbnail area.
+  document.addEventListener('paste', function(e){
+    if(!bridge) return;
+    var dt=e.clipboardData; if(!dt) return;
+    var files=[], i;
+    var items=dt.items||[];
+    for(i=0;i<items.length;i++){ if(items[i].kind==='file'){ var f=items[i].getAsFile(); if(f) files.push(f); } }
+    if(!files.length && dt.files){ for(i=0;i<dt.files.length;i++) files.push(dt.files[i]); }
+    var ok=files.filter(function(f){ return /^image\//.test(f.type) || /pdf/i.test(f.type) || /\.(png|jpe?g|tiff?|bmp|gif|webp|pdf)$/i.test(f.name||''); });
+    if(!ok.length) return;                 // nothing pasteable → let normal paste happen
+    e.preventDefault();
+    setStatus('Pasting '+ok.length+' item(s)…');
+    ok.forEach(function(f){
+      var r=new FileReader();
+      r.onload=function(){ var nm=f.name||('pasted.'+(/pdf/i.test(f.type)?'pdf':'png')); send({cmd:'importDropped', dataUrl:r.result, name:nm}); };
+      r.onerror=function(){ setStatus('Could not read pasted item'); };
+      r.readAsDataURL(f);
+    });
+  });
   var zfull=byId('zoomFull'); if(zfull) zfull.addEventListener('click', openFs);
   // Close only when the dark backdrop itself is clicked (not the editor/toolbar).
   var fsov=byId('fsOverlay'); if(fsov) fsov.addEventListener('click', function(e){ if(e.target===fsov) fsClose(); });
