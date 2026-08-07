@@ -777,6 +777,9 @@ public class MainForm : Form
             case "toggleNameFav":
                 ToggleNameFav(name);
                 break;
+            case "setNameCat":
+                SetNameCat(name, data);
+                break;
             case "reorderNames":
                 ReorderNames(data);
                 break;
@@ -2507,6 +2510,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string Name { get; set; } = "";
         public int Count { get; set; }
         public bool Fav { get; set; }
+        public string Cat { get; set; } = "";   // user-assigned category (colour badge)
     }
 
     // Loads names, transparently upgrading the old "array of strings" format.
@@ -2533,7 +2537,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                             if (string.IsNullOrWhiteSpace(n)) continue;
                             int c = el.TryGetProperty("Count", out var cc) && cc.ValueKind == JsonValueKind.Number ? cc.GetInt32() : 0;
                             bool f = el.TryGetProperty("Fav", out var ff) && ff.ValueKind == JsonValueKind.True;
-                            list.Add(new NameEntry { Name = n!, Count = c, Fav = f });
+                            string cat = el.TryGetProperty("Cat", out var ct) && ct.ValueKind == JsonValueKind.String ? (ct.GetString() ?? "") : "";
+                            list.Add(new NameEntry { Name = n!, Count = c, Fav = f, Cat = cat });
                         }
                     }
                     return list;
@@ -2556,7 +2561,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     private void SendNames() => Post(new
     {
         type = "names",
-        items = LoadNameEntries().Select(e => new { name = e.Name, count = e.Count, fav = e.Fav }).ToArray()
+        items = LoadNameEntries().Select(e => new { name = e.Name, count = e.Count, fav = e.Fav, cat = e.Cat }).ToArray()
     });
 
     private void AddName(string n)
@@ -2606,6 +2611,15 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         var l = LoadNameEntries();
         var e = l.FirstOrDefault(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase));
         if (e != null) { e.Fav = !e.Fav; StoreEntries(l); }
+        SendNames();
+    }
+
+    // Assign a colour category (Medical/Identity/Finance/Legal/Education/Custom or "").
+    private void SetNameCat(string n, string cat)
+    {
+        var l = LoadNameEntries();
+        var e = l.FirstOrDefault(x => string.Equals(x.Name, n, StringComparison.OrdinalIgnoreCase));
+        if (e != null) { e.Cat = cat ?? ""; StoreEntries(l); }
         SendNames();
     }
 

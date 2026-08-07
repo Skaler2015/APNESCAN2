@@ -660,6 +660,98 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 #ctxMenu .opt svg{width:15px;height:15px}
 .menu .opt.danger{color:#dc2626}
 .menu .opt.danger:hover{background:#fee2e2}
+/* ===== Premium Rename + Manage Names dialogs ===== */
+#rnBox,#mnBox{width:min(740px,96vw);max-height:94vh;overflow:hidden;background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 30px 90px rgba(20,20,50,.32),0 2px 10px rgba(20,20,50,.1);display:flex;flex-direction:column;text-align:left;animation:rnPop .2s cubic-bezier(.2,.9,.25,1)}
+#mnBox{width:min(940px,97vw)}
+@keyframes rnPop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.rn-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border-2);background:linear-gradient(90deg,var(--accent-soft),transparent)}
+.rn-h-ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:grid;place-items:center;flex:none}
+.rn-h-ic svg{width:19px;height:19px;stroke:#fff}
+.rn-h-t{flex:1;min-width:0}
+.rn-h-t b{font-size:15px;font-weight:800;display:block}
+.rn-h-t small{font-size:12px;color:var(--muted)}
+.rn-h-x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:16px}
+.rn-h-x:hover{background:var(--accent-soft);color:var(--accent-ink)}
+#rnMultiBar{margin:12px 18px 0;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:8px 12px;border-radius:9px;font-weight:600}
+.rn-body{display:grid;grid-template-columns:180px 1fr;gap:18px;padding:18px;overflow:auto}
+.rn-left{display:flex;flex-direction:column;gap:10px}
+.rn-preview{aspect-ratio:3/4;border-radius:12px;border:1px solid var(--border);background:var(--panel-2,#f4f5f9);display:grid;place-items:center;overflow:hidden}
+.rn-preview img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
+.rn-noimg{color:var(--muted-2);font-size:12px}
+.rn-info{font-size:11.5px;color:var(--muted);line-height:1.7}
+.rn-info b{color:var(--text);font-weight:700}
+.rn-right{min-width:0;display:flex;flex-direction:column}
+.rn-lbl{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted-2);margin-bottom:6px;display:block}
+.rn-inwrap{position:relative}
+#rnInput{width:100%;box-sizing:border-box;padding:12px 34px 12px 13px;border:1.5px solid var(--border);border-radius:11px;font:inherit;font-size:14px;color:var(--text);background:var(--panel);transition:border-color .15s,box-shadow .15s}
+#rnInput:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#rnClear{position:absolute;right:11px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:18px;display:none;line-height:1}
+#rnSuggestBox{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:var(--panel);border:1px solid var(--border);border-radius:11px;box-shadow:0 14px 40px rgba(20,20,50,.2);max-height:230px;overflow:auto;display:none}
+#rnSuggestBox.on{display:block}
+.rn-sg{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;font-size:13px}
+.rn-sg:hover,.rn-sg.hi{background:var(--accent-soft)}
+.rn-sg .st{color:var(--amber);font-size:12px}
+.rn-sg .nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rn-sg .ct{font-size:11px;color:var(--muted);background:var(--border-2);padding:1px 7px;border-radius:99px}
+.rn-recent-h{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted-2);margin:14px 0 7px}
+#rnChips{display:flex;flex-wrap:wrap;gap:6px;max-height:84px;overflow:auto}
+.rn-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:transform .08s}
+.rn-chip:hover{transform:translateY(-1px);border-color:var(--accent)}
+.rn-chip .rc-star{color:var(--amber)}
+.rn-row2{display:flex;gap:12px;margin-top:14px}
+#rnTemplate,.mn-sel{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:13px;background:var(--panel);color:var(--text);cursor:pointer}
+.rn-preview-box{margin-top:14px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border-2);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:10px}
+.rn-pv-lbl{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted-2);flex:none}
+#rnPreview{font-size:14px;font-weight:800;color:var(--accent-ink);word-break:break-all;font-family:ui-monospace,'Cascadia Code',monospace}
+.rn-opt{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:12.5px;cursor:pointer}
+.rn-opt input{width:18px;height:18px;accent-color:var(--accent);flex:none;margin-top:1px}
+.rn-opt small{color:var(--muted)}
+.rn-foot{display:flex;align-items:center;gap:12px;padding:13px 18px;border-top:1px solid var(--border-2);background:var(--panel-2,#fafafe)}
+.rn-tip{font-size:11.5px;color:var(--muted);flex:1}
+.rn-tip kbd{background:var(--border-2);border-radius:5px;padding:1px 6px;font-size:11px;font-family:inherit}
+.rn-foot-b{display:flex;gap:9px}
+.rn-btn{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;user-select:none;min-height:20px;display:inline-flex;align-items:center;border:1px solid var(--border)}
+.rn-btn.ghost{background:transparent;color:var(--muted);margin-right:auto}
+.rn-btn.ghost:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.rn-btn.no{background:var(--panel);color:var(--text)}
+.rn-btn.go{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(109,40,217,.35);transition:box-shadow .15s,transform .05s}
+.rn-btn.go:hover{box-shadow:0 8px 26px rgba(109,40,217,.55)}
+.rn-btn.go:active{transform:translateY(1px)}
+/* Manage names table */
+.mn-toolbar{display:flex;align-items:center;gap:8px;padding:12px 18px;flex-wrap:wrap}
+.mn-search{flex:1;min-width:150px;display:flex;align-items:center;gap:8px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border);border-radius:10px;padding:8px 11px}
+.mn-search svg{width:15px;height:15px;stroke:var(--muted)}
+.mn-search input{border:0;background:transparent;font:inherit;font-size:13px;color:var(--text);width:100%;outline:none}
+.mn-sel{width:auto}
+.mn-tb-b{font-size:12px;font-weight:700;padding:8px 12px;border-radius:9px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border);cursor:pointer;color:var(--text);white-space:nowrap}
+.mn-tb-b:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.mn-thead{display:grid;grid-template-columns:34px 1fr 120px 60px 40px;gap:8px;padding:8px 20px;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted-2);border-bottom:1px solid var(--border-2)}
+#mnList{max-height:44vh;overflow:auto;padding:4px 10px}
+.mn-row{display:grid;grid-template-columns:34px 1fr 120px 60px 40px;gap:8px;align-items:center;padding:9px 10px;border-radius:9px;cursor:default}
+.mn-row:hover{background:var(--accent-soft)}
+.mn-row.sel{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.mn-star{color:#d7dae3;cursor:pointer;font-size:16px;text-align:center}
+.mn-star.on{color:var(--amber)}
+.mn-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn-edit{width:100%;padding:6px 9px;border:1px solid var(--accent);border-radius:7px;font:inherit;color:var(--text);background:var(--panel)}
+.mn-catbadge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;cursor:pointer;text-align:center;border:1px solid transparent;white-space:nowrap}
+.mn-cnt2{font-size:12.5px;font-weight:700;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.mn-del{color:#d7dae3;cursor:pointer;text-align:center;font-size:15px}
+.mn-del:hover{color:#dc2626}
+.mn-empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+.mn-analytics{display:flex;gap:10px;padding:12px 18px;border-top:1px solid var(--border-2);flex-wrap:wrap}
+.mn-stat{background:var(--panel-2,#f4f5f9);border:1px solid var(--border-2);border-radius:11px;padding:10px 14px;min-width:78px}
+.mn-stat b{font-size:20px;font-weight:800;display:block;font-variant-numeric:tabular-nums}
+.mn-stat span{font-size:10.5px;color:var(--muted)}
+.mn-topchart{flex:1;min-width:180px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border-2);border-radius:11px;padding:10px 14px}
+.mn-topchart .h{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted-2);margin-bottom:7px}
+.mn-bar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:11.5px}
+.mn-bar .bn{width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600}
+.mn-bar .bt{flex:1;height:8px;border-radius:99px;background:var(--border-2);overflow:hidden}
+.mn-bar .bf{height:100%;border-radius:99px;background:linear-gradient(90deg,#8b5cf6,#6d28d9)}
+.mn-bar .bv{width:24px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:640px){.rn-body{grid-template-columns:1fr}.rn-left{flex-direction:row}.rn-preview{width:120px;flex:none}}
 .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
 .tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
@@ -1464,60 +1556,89 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 
 <!-- Rename a scanned page -->
 <div class="cam-overlay" id="rnOverlay">
-  <div class="cam-box" style="max-width:460px;text-align:left">
-    <h3>Rename</h3>
-    <div id="rnMultiBar" style="display:none;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:6px 10px;border-radius:8px;margin-bottom:10px"></div>
-    <div style="display:flex;gap:14px;align-items:flex-start">
-      <img id="rnThumb" alt="" style="width:66px;height:86px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:8px;flex:none;display:none">
-      <div style="flex:1;min-width:0">
-        <p style="color:var(--muted);font-size:12px;margin:0 0 6px">Name for <span id="rnPageNo">this page</span>:</p>
-        <div style="position:relative">
-          <input id="rnInput" list="rnSuggest" placeholder="Type a name…" autocomplete="off"
-            style="width:100%;box-sizing:border-box;padding:10px 30px 10px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text)">
-          <datalist id="rnSuggest"></datalist>
-          <span id="rnClear" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:17px;display:none;line-height:1">&times;</span>
+  <div id="rnBox">
+    <div class="rn-head">
+      <div class="rn-h-ic"><svg class="ic"><use href="#i-editor"/></svg></div>
+      <div class="rn-h-t"><b>Rename page</b><small id="rnSubtitle">Give this page a clear, searchable name</small></div>
+      <div class="rn-h-x" id="rnCancel2" title="Close (Esc)">✕</div>
+    </div>
+    <div id="rnMultiBar" style="display:none"></div>
+    <div class="rn-body">
+      <div class="rn-left">
+        <div class="rn-preview"><img id="rnThumb" alt=""><div class="rn-noimg" id="rnNoImg">No preview</div></div>
+        <div class="rn-info" id="rnInfo"></div>
+      </div>
+      <div class="rn-right">
+        <label class="rn-lbl">Document name</label>
+        <div class="rn-inwrap">
+          <input id="rnInput" placeholder="Type a name…" autocomplete="off">
+          <span id="rnClear" title="Clear">&times;</span>
+          <div id="rnSuggestBox"></div>
         </div>
-        <div id="rnChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:98px;overflow:auto"></div>
+        <div class="rn-recent-h">Recently used</div>
+        <div id="rnChips"></div>
+        <div class="rn-row2">
+          <div style="flex:1">
+            <label class="rn-lbl">Template</label>
+            <select id="rnTemplate">
+              <option value="{name}">Name only</option>
+              <option value="{name}_{page}">Name + page</option>
+              <option value="{date}_{name}">Date + name</option>
+              <option value="{date}_{name}_{page}">Date + name + page</option>
+            </select>
+          </div>
+        </div>
+        <div class="rn-preview-box">
+          <span class="rn-pv-lbl">New name</span>
+          <b id="rnPreview">document</b>
+        </div>
+        <label class="rn-opt"><input type="checkbox" id="rnRemember"><span>Remember this name <small>(suggestions &amp; auto-naming)</small></span></label>
+        <label class="rn-opt" id="rnNumberRow" style="display:none"><input type="checkbox" id="rnNumber"><span>Auto-number pages <small>(Name_001, Name_002…)</small></span></label>
+        <span id="rnPageNo" style="display:none"></span>
       </div>
     </div>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12.5px;cursor:pointer">
-      <input type="checkbox" id="rnRemember" style="width:18px;height:18px;accent-color:var(--accent)">
-      Remember this name (suggestions + auto-naming)
-    </label>
-    <label id="rnNumberRow" style="display:none;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;cursor:pointer">
-      <input type="checkbox" id="rnNumber" style="width:18px;height:18px;accent-color:var(--accent)">
-      Auto-number pages (Name_001, Name_002…) — off = same name for all
-    </label>
-    <div style="font-size:10.5px;color:var(--muted-2);margin-top:8px">Tip: use tokens {date}, {page}, {n} in the name.</div>
-    <div class="cam-actions">
-      <div class="cam-btn" id="rnManage" style="margin-right:auto">Manage names</div>
-      <div class="cam-btn no" id="rnCancel">Cancel</div>
-      <div class="cam-btn primary" id="rnOk">OK</div>
+    <div class="rn-foot">
+      <div class="rn-tip"><kbd>Enter</kbd> rename · <kbd>Esc</kbd> cancel</div>
+      <div class="rn-foot-b">
+        <div class="rn-btn ghost" id="rnManage">Manage names</div>
+        <div class="rn-btn no" id="rnCancel">Cancel</div>
+        <div class="rn-btn go" id="rnOk">Rename</div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Manage suggested names -->
 <div class="cam-overlay" id="mnOverlay">
-  <div class="cam-box" style="max-width:440px;text-align:left">
-    <h3>Manage suggested names</h3>
-    <p style="color:var(--muted);font-size:12px;margin:0 0 8px">These are the names suggested when renaming. Select to remove / edit.</p>
-    <div class="dp-search" style="margin:0"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search…"></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px">
-      <span style="color:var(--muted-2)">Sort:</span>
-      <select id="mnSort" style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font:inherit;background:#fff;color:var(--text)"><option value="used">Most used</option><option value="az">A–Z</option><option value="manual">Manual (drag)</option></select>
-      <span style="margin-left:auto"></span>
-      <div class="cam-btn mn-b" id="mnBulk">Bulk add</div>
-      <div class="cam-btn mn-b" id="mnImport">Import</div>
-      <div class="cam-btn mn-b" id="mnExport">Export</div>
+  <div id="mnBox">
+    <div class="rn-head">
+      <div class="rn-h-ic"><svg class="ic"><use href="#i-files"/></svg></div>
+      <div class="rn-h-t"><b>Manage suggested names</b><small>Your intelligent rename library — usage, favorites &amp; categories</small></div>
+      <div class="rn-h-x" id="mnClose2" title="Close (Esc)">✕</div>
     </div>
-    <div id="mnList" style="max-height:42vh;overflow:auto;margin-top:8px;border:1px solid var(--border-2);border-radius:8px"></div>
-    <div class="cam-actions" style="flex-wrap:wrap">
-      <div class="cam-btn mn-b" id="mnAdd">＋ Add</div>
-      <div class="cam-btn mn-b" id="mnRemove">Remove</div>
-      <div class="cam-btn mn-b" id="mnEdit">Edit</div>
-      <div class="cam-btn mn-b" id="mnClear">Clear all</div>
-      <div class="cam-btn primary" id="mnClose" style="margin-left:auto">Close</div>
+    <div class="mn-toolbar">
+      <div class="mn-search"><svg class="ic"><use href="#i-search"/></svg><input id="mnSearch" placeholder="Search names…"></div>
+      <select id="mnSort" class="mn-sel">
+        <option value="used">Most used</option>
+        <option value="az">A–Z</option>
+        <option value="fav">Favorites first</option>
+        <option value="manual">Manual (drag)</option>
+      </select>
+      <div class="mn-tb-b" id="mnAdd">＋ Add</div>
+      <div class="mn-tb-b" id="mnBulk">Bulk</div>
+      <div class="mn-tb-b" id="mnImport">Import</div>
+      <div class="mn-tb-b" id="mnExport">Export</div>
+      <div class="mn-tb-b" id="mnDupes">Find duplicates</div>
+    </div>
+    <div class="mn-thead"><span></span><span>Name</span><span>Category</span><span>Uses</span><span></span></div>
+    <div id="mnList"></div>
+    <div class="mn-analytics" id="mnAnalytics"></div>
+    <div class="rn-foot">
+      <div class="rn-tip" id="mnTotals"></div>
+      <div class="rn-foot-b">
+        <div class="rn-btn no" id="mnClear">Clear all</div>
+        <div class="rn-btn go" id="mnClose">Close</div>
+      </div>
     </div>
   </div>
 </div>
@@ -3406,26 +3527,40 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     return (s||'').replace(/\{date\}/gi, ds).replace(/\{page\}/gi, String(pageNo)).replace(/\{n\}/gi, String(seq));
   }
   var rnIndex=-1, rnMulti=null;
+  function rnApplyTemplate(base, seq, pageNo){
+    var t=byId('rnTemplate'); var tpl=(t&&t.value)||'{name}';
+    return expandTokens(tpl.replace(/\{name\}/gi, base||'document'), seq, pageNo);
+  }
+  function rnUpdatePreview(){
+    var inp=byId('rnInput'); var base=(inp?inp.value.trim():'')||'document';
+    var pageNo=rnMulti?((rnMulti[0]||0)+1):(rnIndex+1);
+    var name=rnApplyTemplate(base,1,pageNo);
+    if(rnMulti){ var auto=byId('rnNumber'); if(auto&&auto.checked) name=name+'_'+twoPad(1); }
+    var pv=byId('rnPreview'); if(pv) pv.textContent=name;
+  }
   function openRename(i){
     if(selSet && selSet.length>1){ rnMulti=selSet.slice().sort(function(a,b){return a-b;}); }
     else { rnMulti=null; if(typeof i!=='number' || i<0){ i=scannedSel; } if(i<0){ setStatus('Select a page first, then rename'); return; } rnIndex=i; }
-    var mb=byId('rnMultiBar'), no=byId('rnPageNo'), thumb=byId('rnThumb'), numRow=byId('rnNumberRow');
+    var mb=byId('rnMultiBar'), thumb=byId('rnThumb'), noimg=byId('rnNoImg'), numRow=byId('rnNumberRow'), sub=byId('rnSubtitle'), info=byId('rnInfo');
     if(rnMulti){
       if(mb){ mb.style.display='block'; mb.textContent='Renaming '+rnMulti.length+' pages'; }
-      if(no) no.textContent='these pages';
-      if(thumb) thumb.style.display='none';
+      if(sub) sub.textContent='Naming '+rnMulti.length+' selected pages';
+      if(thumb) thumb.style.display='none'; if(noimg){ noimg.style.display='block'; noimg.textContent=rnMulti.length+' pages'; }
       if(numRow) numRow.style.display='flex';
-      var numChk=byId('rnNumber'); if(numChk) numChk.checked=false; // default: same name for all
+      var numChk=byId('rnNumber'); if(numChk) numChk.checked=false;
       var inp0=byId('rnInput'); if(inp0) inp0.value='';
+      if(info) info.innerHTML='<div><b>'+rnMulti.length+'</b> pages selected</div>';
     } else {
       if(mb) mb.style.display='none';
-      if(no) no.textContent='page '+(rnIndex+1);
-      if(thumb){ if(scannedThumbs[rnIndex]){ thumb.src=scannedThumbs[rnIndex]; thumb.style.display='block'; } else thumb.style.display='none'; }
+      if(sub) sub.textContent='Give page '+(rnIndex+1)+' a clear, searchable name';
+      if(thumb){ if(scannedThumbs[rnIndex]){ thumb.src=scannedThumbs[rnIndex]; thumb.style.display='block'; if(noimg) noimg.style.display='none'; } else { thumb.style.display='none'; if(noimg){ noimg.style.display='block'; noimg.textContent='No preview'; } } }
       if(numRow) numRow.style.display='none';
       var inp1=byId('rnInput'); if(inp1) inp1.value=scannedNames[rnIndex]||'';
+      if(info){ var extra=(edLastDpi?('<div><b>'+edLastDpi+'</b> DPI</div>'):'')+(edLastColor?('<div>'+edLastColor+'</div>'):''); info.innerHTML='<div>Page <b>'+(rnIndex+1)+'</b> of '+(scannedTotal||1)+'</div>'+extra; }
     }
     var rem=byId('rnRemember'); if(rem) rem.checked=false;
-    fillNameSuggest(); rebuildChips(); toggleRnClear();
+    rebuildChips(); toggleRnClear(); rnUpdatePreview();
+    var sb=byId('rnSuggestBox'); if(sb) sb.classList.remove('on');
     overlay('rnOverlay', true);
     var inp=byId('rnInput'); if(inp){ inp.focus(); inp.select(); }
   }
@@ -3436,29 +3571,75 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(rnMulti){
       var auto=byId('rnNumber'); var num=!!(auto&&auto.checked);
       rnMulti.forEach(function(idx,k){
-        var nm=num ? (expandTokens(base,k+1,idx+1)+'_'+twoPad(k+1)) : expandTokens(base,k+1,idx+1);
+        var nm=num ? (rnApplyTemplate(base,k+1,idx+1)+'_'+twoPad(k+1)) : rnApplyTemplate(base,k+1,idx+1);
         if(bridge) send({cmd:'renamePage', index:idx, name:nm, on:false});
       });
       if(remember && base && bridge) send({cmd:'addName', name:base});
       setStatus('Renamed '+rnMulti.length+' pages');
     } else {
-      var name=expandTokens(base,1,rnIndex+1);
+      var name=rnApplyTemplate(base,1,rnIndex+1);
       if(bridge) send({cmd:'renamePage', index:rnIndex, name:name, on:remember});
     }
     overlay('rnOverlay', false);
   }
+  // custom autocomplete dropdown
+  var rnSgHi=-1;
+  function rnRenderSuggest(){
+    var box=byId('rnSuggestBox'); if(!box) return;
+    var inp=byId('rnInput'); var q=(inp?inp.value.trim().toLowerCase():'');
+    var arr=nameEntries.slice().sort(function(a,b){ if((b.fav?1:0)!==(a.fav?1:0)) return (b.fav?1:0)-(a.fav?1:0); return (b.count||0)-(a.count||0); });
+    arr=arr.filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0; }).slice(0,8);
+    if(!arr.length){ box.classList.remove('on'); box.innerHTML=''; rnSgHi=-1; return; }
+    box.innerHTML=''; rnSgHi=-1;
+    arr.forEach(function(e){
+      var d=document.createElement('div'); d.className='rn-sg';
+      d.innerHTML=(e.fav?'<span class="st">★</span>':'')+'<span class="nm">'+esc(e.name)+'</span>'+(e.cat?('<span class="ct">'+esc(e.cat)+'</span>'):(e.count?('<span class="ct">'+e.count+'×</span>'):''));
+      d.addEventListener('mousedown', function(ev){ ev.preventDefault(); if(inp){ inp.value=e.name; toggleRnClear(); rnUpdatePreview(); rebuildChips(); } box.classList.remove('on'); inp.focus(); });
+      box.appendChild(d);
+    });
+    box.classList.add('on');
+  }
+  function rnSgMove(dir){
+    var box=byId('rnSuggestBox'); if(!box||!box.classList.contains('on')) return false;
+    var items=box.querySelectorAll('.rn-sg'); if(!items.length) return false;
+    rnSgHi=(rnSgHi+dir+items.length)%items.length;
+    items.forEach(function(x,i){ x.classList.toggle('hi', i===rnSgHi); if(i===rnSgHi&&x.scrollIntoView) x.scrollIntoView({block:'nearest'}); });
+    return true;
+  }
   var rnOk=byId('rnOk'); if(rnOk) rnOk.addEventListener('click', doRename);
-  var rnCancel=byId('rnCancel'); if(rnCancel) rnCancel.addEventListener('click', function(){ overlay('rnOverlay', false); });
-  var rnInp=byId('rnInput'); if(rnInp){ rnInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doRename(); } }); rnInp.addEventListener('input', function(){ toggleRnClear(); rebuildChips(); }); }
-  var rnClearBtn=byId('rnClear'); if(rnClearBtn) rnClearBtn.addEventListener('click', function(){ var inp=byId('rnInput'); if(inp){ inp.value=''; inp.focus(); toggleRnClear(); rebuildChips(); } });
+  function rnClose(){ overlay('rnOverlay', false); }
+  var rnCancel=byId('rnCancel'); if(rnCancel) rnCancel.addEventListener('click', rnClose);
+  var rnCancel2=byId('rnCancel2'); if(rnCancel2) rnCancel2.addEventListener('click', rnClose);
+  var rnTpl=byId('rnTemplate'); if(rnTpl) rnTpl.addEventListener('change', rnUpdatePreview);
+  var rnNumEl=byId('rnNumber'); if(rnNumEl) rnNumEl.addEventListener('change', rnUpdatePreview);
+  var rnInp=byId('rnInput');
+  if(rnInp){
+    rnInp.addEventListener('keydown', function(e){
+      var box=byId('rnSuggestBox'), open=box&&box.classList.contains('on');
+      if(e.key==='ArrowDown'){ if(open){ e.preventDefault(); rnSgMove(1); return; } }
+      if(e.key==='ArrowUp'){ if(open){ e.preventDefault(); rnSgMove(-1); return; } }
+      if(e.key==='Enter'){ e.preventDefault();
+        if(open&&rnSgHi>=0){ var it=box.querySelectorAll('.rn-sg')[rnSgHi]; if(it){ it.dispatchEvent(new MouseEvent('mousedown')); return; } }
+        doRename(); return;
+      }
+      if(e.key==='Escape'){ if(open){ e.stopPropagation(); box.classList.remove('on'); return; } }
+    });
+    rnInp.addEventListener('input', function(){ toggleRnClear(); rebuildChips(); rnUpdatePreview(); rnRenderSuggest(); });
+    rnInp.addEventListener('focus', rnRenderSuggest);
+    rnInp.addEventListener('blur', function(){ setTimeout(function(){ var b=byId('rnSuggestBox'); if(b) b.classList.remove('on'); }, 150); });
+  }
+  var rnClearBtn=byId('rnClear'); if(rnClearBtn) rnClearBtn.addEventListener('click', function(){ var inp=byId('rnInput'); if(inp){ inp.value=''; inp.focus(); toggleRnClear(); rebuildChips(); rnUpdatePreview(); rnRenderSuggest(); } });
   var rnManage=byId('rnManage'); if(rnManage) rnManage.addEventListener('click', openManageNames);
 
   var mnSelected=null, mnEditing=null, mnDrag=null;
+  var MN_CATS=[['','None','var(--muted-2)','var(--border-2)'],['Medical','Medical','#6d28d9','#ede9fe'],['Identity','Identity','#1d4ed8','#dbeafe'],['Finance','Finance','#16a34a','#dcfce7'],['Legal','Legal','#dc2626','#fee2e2'],['Education','Education','#d97706','#ffedd5'],['Custom','Custom','#475569','#e2e8f0']];
+  function mnCatStyle(cat){ var c=MN_CATS.filter(function(x){return x[0]===(cat||'');})[0]||MN_CATS[0]; return c; }
   function mnSortedEntries(){
     var q=(byId('mnSearch')?byId('mnSearch').value:'').trim().toLowerCase();
     var sort=byId('mnSort')?byId('mnSort').value:'used';
     var arr=nameEntries.slice().filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0; });
     if(sort==='az') arr.sort(function(a,b){ return natCmp(a.name, b.name); });
+    else if(sort==='fav') arr.sort(function(a,b){ if((b.fav?1:0)!==(a.fav?1:0)) return (b.fav?1:0)-(a.fav?1:0); return natCmp(a.name,b.name); });
     else if(sort==='used') arr.sort(function(a,b){ if((b.fav?1:0)!==(a.fav?1:0)) return (b.fav?1:0)-(a.fav?1:0); if((b.count||0)!==(a.count||0)) return (b.count||0)-(a.count||0); return natCmp(a.name, b.name); });
     return { arr:arr, sort:sort };
   }
@@ -3466,24 +3647,28 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var list=byId('mnList'); if(!list) return; list.innerHTML='';
     if(mnSelected && !nameEntries.some(function(e){ return e.name===mnSelected; })) mnSelected=null;
     var s=mnSortedEntries(), arr=s.arr, manual=(s.sort==='manual');
-    if(!arr.length){ list.innerHTML='<div class="mn-empty">'+((byId('mnSearch')&&byId('mnSearch').value.trim())?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; return; }
+    if(!arr.length){ list.innerHTML='<div class="mn-empty">'+((byId('mnSearch')&&byId('mnSearch').value.trim())?'No matching names':'No saved names yet — rename a page and tick “Remember”.')+'</div>'; mnRenderAnalytics(); return; }
     arr.forEach(function(e){
       var n=e.name;
       var row=document.createElement('div'); row.className='mn-row'+(n===mnSelected?' sel':'');
       if(n===mnEditing){
-        var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=n;
-        var ok=document.createElement('span'); ok.className='mn-ok'; ok.textContent='✓';
+        var inp=document.createElement('input'); inp.className='mn-edit'; inp.value=n; inp.style.gridColumn='2 / 6';
         var save=function(){ var v=inp.value.trim(); mnEditing=null; if(bridge && v && v!==n){ send({cmd:'renameName', path:n, name:v}); } else renderNames(); };
-        ok.addEventListener('click', save);
+        inp.addEventListener('blur', save);
         inp.addEventListener('keydown', function(ev){ if(ev.key==='Enter') save(); if(ev.key==='Escape'){ ev.stopPropagation(); mnEditing=null; renderNames(); } });
-        row.appendChild(inp); row.appendChild(ok); list.appendChild(row); inp.focus(); inp.select();
+        var sp=document.createElement('span'); row.appendChild(sp); row.appendChild(inp); list.appendChild(row); inp.focus(); inp.select();
         return;
       }
       var star=document.createElement('span'); star.className='mn-star'+(e.fav?' on':''); star.innerHTML='&#9733;'; star.title='Favorite';
       star.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'toggleNameFav', name:n}); });
-      var nm=document.createElement('span'); nm.className='mn-name'; nm.textContent=n;
-      var cnt=document.createElement('span'); cnt.className='mn-cnt'; cnt.textContent=(e.count||0); cnt.title=(e.count||0)+' uses';
-      row.appendChild(star); row.appendChild(nm); row.appendChild(cnt);
+      var nm=document.createElement('span'); nm.className='mn-name'; nm.textContent=n; nm.title='Double-click to rename';
+      var cs=mnCatStyle(e.cat);
+      var cat=document.createElement('span'); cat.className='mn-catbadge'; cat.textContent=cs[1]; cat.style.color=cs[2]; cat.style.background=cs[3]; cat.title='Click to change category';
+      cat.addEventListener('click', function(ev){ ev.stopPropagation(); var idx=MN_CATS.findIndex(function(x){return x[0]===(e.cat||'');}); var nx=MN_CATS[(idx+1)%MN_CATS.length]; if(bridge) send({cmd:'setNameCat', name:n, data:nx[0]}); });
+      var cnt=document.createElement('span'); cnt.className='mn-cnt2'; cnt.textContent=(e.count||0); cnt.title=(e.count||0)+' uses';
+      var del=document.createElement('span'); del.className='mn-del'; del.innerHTML='&#128465;'; del.title='Delete';
+      del.addEventListener('click', function(ev){ ev.stopPropagation(); if(bridge) send({cmd:'removeName', name:n}); });
+      row.appendChild(star); row.appendChild(nm); row.appendChild(cat); row.appendChild(cnt); row.appendChild(del);
       row.addEventListener('click', function(){ mnSelected=(mnSelected===n?null:n); renderNames(); });
       row.addEventListener('dblclick', function(){ mnSelected=n; mnEditing=n; renderNames(); });
       if(manual){
@@ -3496,6 +3681,33 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       }
       list.appendChild(row);
     });
+    mnRenderAnalytics();
+  }
+  function mnRenderAnalytics(){
+    var host=byId('mnAnalytics'); if(!host) return;
+    var total=nameEntries.length, favs=nameEntries.filter(function(e){return e.fav;}).length;
+    var top=nameEntries.slice().sort(function(a,b){ return (b.count||0)-(a.count||0); }).filter(function(e){return (e.count||0)>0;}).slice(0,5);
+    var max=top.length?(top[0].count||1):1;
+    var bars=top.map(function(e){ return '<div class="mn-bar"><span class="bn">'+esc(e.name)+'</span><span class="bt"><span class="bf" style="width:'+Math.round((e.count||0)/max*100)+'%"></span></span><span class="bv">'+(e.count||0)+'</span></div>'; }).join('') || '<div style="font-size:11.5px;color:var(--muted)">No usage yet — names rank here as you use them.</div>';
+    host.innerHTML=
+      '<div class="mn-stat"><b>'+total+'</b><span>Total names</span></div>'+
+      '<div class="mn-stat"><b>'+favs+'</b><span>Favorites</span></div>'+
+      '<div class="mn-topchart"><div class="h">Top used</div>'+bars+'</div>';
+    var tot=byId('mnTotals'); if(tot) tot.textContent=total+' name(s) · '+favs+' favorite(s)';
+  }
+  function mnFindDuplicates(){
+    // group by a normalised key (lowercase, strip spaces/underscores/punctuation)
+    var groups={};
+    nameEntries.forEach(function(e){ var k=e.name.toLowerCase().replace(/[\s_\-.]+/g,''); (groups[k]=groups[k]||[]).push(e.name); });
+    var dupes=Object.keys(groups).map(function(k){ return groups[k]; }).filter(function(g){ return g.length>1; });
+    if(!dupes.length){ setStatus('No duplicate names found'); return; }
+    var first=dupes[0];
+    // Merge into the most-used spelling.
+    var keep=first.slice().sort(function(a,b){ var ca=(nameEntries.find(function(x){return x.name===a;})||{}).count||0; var cb=(nameEntries.find(function(x){return x.name===b;})||{}).count||0; return cb-ca; })[0];
+    if(confirm('Found '+dupes.length+' duplicate group(s).\n\nMerge these into “'+keep+'”?\n\n'+first.join('\n'))){
+      first.forEach(function(nm){ if(nm!==keep && bridge) send({cmd:'removeName', name:nm}); });
+      setStatus('Merged '+(first.length-1)+' duplicate(s) into “'+keep+'”');
+    }
   }
   function reorderName(dragName, targetName){
     var order=nameEntries.map(function(e){ return e.name; });
@@ -3507,6 +3719,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   function openManageNames(){ mnSelected=null; mnEditing=null; overlay('mnOverlay', true); if(bridge) send({cmd:'getNames'}); renderNames(); }
   var mnClose=byId('mnClose'); if(mnClose) mnClose.addEventListener('click', function(){ overlay('mnOverlay', false); });
+  var mnClose2=byId('mnClose2'); if(mnClose2) mnClose2.addEventListener('click', function(){ overlay('mnOverlay', false); });
+  var mnDupes=byId('mnDupes'); if(mnDupes) mnDupes.addEventListener('click', mnFindDuplicates);
   var mnSearch=byId('mnSearch'); if(mnSearch) mnSearch.addEventListener('input', renderNames);
   var mnSortSel=byId('mnSort'); if(mnSortSel) mnSortSel.addEventListener('change', renderNames);
   var mnClear=byId('mnClear'); if(mnClear) mnClear.addEventListener('click', function(){ if(bridge) send({cmd:'clearNames'}); mnSelected=null; mnEditing=null; });
