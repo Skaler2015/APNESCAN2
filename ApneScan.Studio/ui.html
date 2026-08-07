@@ -478,6 +478,24 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 #fsPerspBar .cb2{padding:8px 16px;border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;background:#252a36;color:#e7e9f2;border:1px solid rgba(255,255,255,.12)}
 #fsPerspBar .cb2.ok{background:var(--accent);color:#fff;border-color:transparent}
 #fsPerspBar .cb2.no{background:#fff;color:#222;border-color:transparent}
+/* annotation layer */
+#fsAnn{position:absolute;inset:0;display:none;z-index:7}
+#fsAnn.on{display:block}
+#fsAnnCanvas{position:absolute;cursor:crosshair;touch-action:none}
+#fsAnnBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:5px;z-index:9;
+  background:#1b1f2b;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 8px;box-shadow:0 12px 34px rgba(0,0,0,.5);flex-wrap:wrap;max-width:94vw}
+#fsAnnBar .anb{min-width:30px;height:30px;padding:0 7px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:#dfe2ee;background:#252a36;font-size:14px;font-weight:700}
+#fsAnnBar .anb svg{width:15px;height:15px;stroke:currentColor}
+#fsAnnBar .anb:hover{background:#333a4a}
+#fsAnnBar .anb.on{background:var(--accent);color:#fff}
+#fsAnnBar .anb2{height:30px;padding:0 11px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:#dfe2ee;background:#252a36;font-size:12.5px;font-weight:700}
+#fsAnnBar .anb2:hover{background:#333a4a}
+#fsAnnBar .anb2.ok{background:var(--accent);color:#fff}
+#fsAnnBar .anb2.no{background:#3a4152;color:#fff}
+#fsAnnBar .an-sep{width:1px;height:22px;background:#3a4152;margin:0 3px}
+#fsAnnBar .an-sw{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+#fsAnnBar .an-sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+#fsAnnBar #fsAnnW{width:80px;accent-color:#a78bfa}
 #fsProps{background:#12151d;border-left:1px solid rgba(255,255,255,.06);overflow-y:auto;display:flex;flex-direction:column}
 .fsp-tabs{display:flex;gap:4px;padding:10px 10px 0}
 .fsp-tabs button{flex:1;font-size:12px;font-weight:700;padding:8px;border-radius:8px 8px 0 0;border:0;background:transparent;color:#8b93a7;cursor:pointer}
@@ -1242,6 +1260,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <div class="fsb" data-fs="rot180" title="Rotate 180°">180°</div>
           <div class="fsb" data-fs="deskew" title="Auto-straighten">Deskew</div>
           <div class="fsb" data-fs="persp" title="Perspective correct — drag the 4 corners onto the document">⧉ Perspective</div>
+          <div class="fsb" data-fs="annot" title="Annotate — draw, highlight, redact, add text">✎ Annotate</div>
         </div>
         <div class="fssep"></div>
         <div class="fsg">
@@ -1292,6 +1311,30 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
             <div class="cb2" id="fsPerspAuto">✦ Auto-detect</div>
             <div class="cb2 ok" id="fsPerspApply">Apply</div>
             <div class="cb2 no" id="fsPerspCancel">Cancel</div>
+          </div>
+        </div>
+        <div id="fsAnn">
+          <canvas id="fsAnnCanvas"></canvas>
+          <div id="fsAnnBar">
+            <div class="anb" data-t="pen" title="Free draw"><svg class="ic"><use href="#i-editor"/></svg></div>
+            <div class="anb" data-t="rect" title="Rectangle">▭</div>
+            <div class="anb" data-t="ellipse" title="Ellipse">◯</div>
+            <div class="anb" data-t="arrow" title="Arrow">↗</div>
+            <div class="anb" data-t="highlight" title="Highlighter">🖍</div>
+            <div class="anb" data-t="text" title="Text">T</div>
+            <div class="anb" data-t="redact" title="Redact (black-out)">▮</div>
+            <div class="an-sep"></div>
+            <div class="an-sw" data-col="#ef4444" style="background:#ef4444"></div>
+            <div class="an-sw" data-col="#2563eb" style="background:#2563eb"></div>
+            <div class="an-sw" data-col="#16a34a" style="background:#16a34a"></div>
+            <div class="an-sw" data-col="#111827" style="background:#111827"></div>
+            <div class="an-sw" data-col="#f59e0b" style="background:#f59e0b"></div>
+            <input type="range" id="fsAnnW" min="2" max="26" value="6" title="Line width">
+            <div class="an-sep"></div>
+            <div class="anb2" id="fsAnnUndo" title="Undo last">↶</div>
+            <div class="anb2" id="fsAnnClear" title="Clear all">Clear</div>
+            <div class="anb2 ok" id="fsAnnApply">Apply</div>
+            <div class="anb2 no" id="fsAnnCancel">Done</div>
           </div>
         </div>
       </div>
@@ -1936,6 +1979,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(op==='done'){ fsClose(); return; }
     if(op==='crop'){ fsStartCrop(); return; }
     if(op==='persp'){ fsPerspStart(); return; }
+    if(op==='annot'){ fsAnnStart(); return; }
     if(op==='adjust'){ fsShowTab('adjust'); return; }
     if(op==='undo'){ if(bridge) send({cmd:'undo'}); return; }
     if(op==='redo'){ if(bridge) send({cmd:'redo'}); return; }
@@ -2053,6 +2097,102 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     });
     var cn=byId('fsPerspCancel'); if(cn) cn.addEventListener('click', fsPerspEnd);
   })();
+
+  /* ===== Annotation layer (draw / highlight / redact / text → flatten) ===== */
+  var annOn=false, annTool='pen', annColor='#ef4444', annWidth=6, annShapes=[], annCur=null;
+  function fsAnnBox(){ var st=byId('fsStage'), im=byId('fsImg'); if(!st||!im||!im.getAttribute('src')) return null; var sr=st.getBoundingClientRect(), ir=im.getBoundingClientRect(); return {ix:ir.left-sr.left, iy:ir.top-sr.top, iw:ir.width, ih:ir.height}; }
+  function fsAnnPlace(){
+    var c=byId('fsAnnCanvas'), b=fsAnnBox(); if(!c||!b) return;
+    c.style.left=b.ix+'px'; c.style.top=b.iy+'px'; c.style.width=b.iw+'px'; c.style.height=b.ih+'px';
+    c.width=Math.max(1,Math.round(b.iw)); c.height=Math.max(1,Math.round(b.ih));
+    annRedraw();
+  }
+  function fsAnnStart(){
+    var b=fsAnnBox(); if(!b){ setStatus('Open a page first'); return; }
+    fsZoom=0; fsApplyZoom(); fsEndCrop();
+    annShapes=[]; annCur=null; annOn=true;
+    var p=byId('fsAnn'); if(p) p.classList.add('on');
+    setTimeout(fsAnnPlace, 30);
+    annSelTool(annTool); annSelColor(annColor);
+    setStatus('Annotate: pick a tool, draw on the page, then Apply');
+  }
+  function fsAnnEnd(){ annOn=false; var p=byId('fsAnn'); if(p) p.classList.remove('on'); var t=byId('fsAnnText'); if(t) t.remove(); }
+  function annSelTool(t){ annTool=t; document.querySelectorAll('#fsAnnBar .anb').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-t')===t); }); }
+  function annSelColor(col){ annColor=col; document.querySelectorAll('#fsAnnBar .an-sw').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-col')===col); }); }
+  function annDraw(ctx, sh, W, H, scale){
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle=sh.col; ctx.fillStyle=sh.col; ctx.lineWidth=Math.max(1, sh.w*scale);
+    var P=sh.pts.map(function(p){ return {x:p.x*W, y:p.y*H}; });
+    if(sh.type==='pen'||sh.type==='highlight'){
+      if(sh.type==='highlight'){ ctx.globalAlpha=0.32; ctx.lineWidth=Math.max(6, sh.w*scale*2.4); }
+      ctx.beginPath(); P.forEach(function(p,i){ i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); }); ctx.stroke();
+    } else if(sh.type==='rect'||sh.type==='redact'){
+      var x=Math.min(P[0].x,P[1].x), y=Math.min(P[0].y,P[1].y), w=Math.abs(P[1].x-P[0].x), h=Math.abs(P[1].y-P[0].y);
+      if(sh.type==='redact'){ ctx.fillStyle='#000'; ctx.fillRect(x,y,w,h); } else { ctx.strokeRect(x,y,w,h); }
+    } else if(sh.type==='ellipse'){
+      var cx=(P[0].x+P[1].x)/2, cy=(P[0].y+P[1].y)/2, rx=Math.abs(P[1].x-P[0].x)/2, ry=Math.abs(P[1].y-P[0].y)/2;
+      ctx.beginPath(); ctx.ellipse(cx,cy,Math.max(1,rx),Math.max(1,ry),0,0,Math.PI*2); ctx.stroke();
+    } else if(sh.type==='arrow'){
+      var a=P[0], bb=P[1]; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(bb.x,bb.y); ctx.stroke();
+      var ang=Math.atan2(bb.y-a.y, bb.x-a.x), hl=Math.max(10, sh.w*scale*3);
+      ctx.beginPath(); ctx.moveTo(bb.x,bb.y); ctx.lineTo(bb.x-hl*Math.cos(ang-0.5), bb.y-hl*Math.sin(ang-0.5)); ctx.lineTo(bb.x-hl*Math.cos(ang+0.5), bb.y-hl*Math.sin(ang+0.5)); ctx.closePath(); ctx.fill();
+    } else if(sh.type==='text'){
+      var fs=Math.max(10, sh.w*scale*3.4); ctx.font='700 '+fs+'px system-ui,Segoe UI,sans-serif'; ctx.textBaseline='top';
+      ctx.fillText(sh.text||'', P[0].x, P[0].y);
+    }
+    ctx.restore();
+  }
+  function annRedraw(){
+    var c=byId('fsAnnCanvas'); if(!c) return; var ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+    annShapes.forEach(function(s){ annDraw(ctx, s, c.width, c.height, 1); });
+    if(annCur) annDraw(ctx, annCur, c.width, c.height, 1);
+  }
+  (function(){
+    var c=byId('fsAnnCanvas'); if(!c) return;
+    function nrm(e){ var r=c.getBoundingClientRect(); return { x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)), y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)) }; }
+    var drawing=false;
+    c.addEventListener('mousedown', function(e){
+      if(!annOn) return; e.preventDefault(); var p=nrm(e);
+      if(annTool==='text'){ annAddText(e, p); return; }
+      drawing=true; annCur={ type:annTool, col:annColor, w:annWidth, pts:[p, p] };
+      if(annTool==='pen'||annTool==='highlight') annCur.pts=[p];
+    });
+    window.addEventListener('mousemove', function(e){
+      if(!drawing||!annCur) return; var p=nrm(e);
+      if(annCur.type==='pen'||annCur.type==='highlight') annCur.pts.push(p); else annCur.pts[1]=p;
+      annRedraw();
+    });
+    window.addEventListener('mouseup', function(){ if(!drawing) return; drawing=false; if(annCur){ annShapes.push(annCur); annCur=null; annRedraw(); } });
+    document.querySelectorAll('#fsAnnBar .anb').forEach(function(b){ b.addEventListener('click', function(){ annSelTool(b.getAttribute('data-t')); }); });
+    document.querySelectorAll('#fsAnnBar .an-sw').forEach(function(b){ b.addEventListener('click', function(){ annSelColor(b.getAttribute('data-col')); }); });
+    var w=byId('fsAnnW'); if(w) w.addEventListener('input', function(){ annWidth=parseInt(w.value,10)||6; });
+    var un=byId('fsAnnUndo'); if(un) un.addEventListener('click', function(){ annShapes.pop(); annRedraw(); });
+    var cl=byId('fsAnnClear'); if(cl) cl.addEventListener('click', function(){ annShapes=[]; annRedraw(); });
+    var cn=byId('fsAnnCancel'); if(cn) cn.addEventListener('click', fsAnnEnd);
+    var ap=byId('fsAnnApply'); if(ap) ap.addEventListener('click', annApply);
+  })();
+  function annAddText(e, p){
+    var wrap=byId('fsStage'); if(!wrap) return; var old=byId('fsAnnText'); if(old) old.remove();
+    var inp=document.createElement('input'); inp.id='fsAnnText'; inp.placeholder='Type…';
+    inp.style.cssText='position:absolute;z-index:10;left:'+(e.clientX-wrap.getBoundingClientRect().left)+'px;top:'+(e.clientY-wrap.getBoundingClientRect().top)+'px;background:rgba(0,0,0,.5);color:'+annColor+';border:1px solid '+annColor+';border-radius:6px;padding:4px 8px;font:700 '+(annWidth*3.4)+'px system-ui;outline:none';
+    wrap.appendChild(inp); inp.focus();
+    function commit(){ var v=inp.value.trim(); if(v){ annShapes.push({type:'text',col:annColor,w:annWidth,pts:[p],text:v}); annRedraw(); } inp.remove(); }
+    inp.addEventListener('keydown', function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); commit(); } if(ev.key==='Escape'){ ev.stopPropagation(); inp.remove(); } });
+    inp.addEventListener('blur', commit);
+  }
+  function annApply(){
+    var im=byId('fsImg'); if(!im||!im.naturalWidth){ fsAnnEnd(); return; }
+    if(!annShapes.length){ fsAnnEnd(); return; }
+    var natW=im.naturalWidth, natH=im.naturalHeight;
+    var oc=document.createElement('canvas'); oc.width=natW; oc.height=natH; var ctx=oc.getContext('2d');
+    ctx.drawImage(im, 0, 0, natW, natH);
+    var disp=byId('fsAnnCanvas'); var scale=natW/(disp?disp.width:natW);
+    annShapes.forEach(function(s){ annDraw(ctx, s, natW, natH, scale); });
+    var url=oc.toDataURL('image/png');
+    if(bridge) send({cmd:'applyImage', dataUrl:url});
+    fsAnnEnd();
+  }
 
   // Paste an image or PDF copied from anywhere (browser, Explorer) straight into
   // the scanned thumbnail area.

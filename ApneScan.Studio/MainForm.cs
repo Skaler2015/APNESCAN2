@@ -839,6 +839,9 @@ public class MainForm : Form
             case "adjustApply":
                 await AdjustApplyAsync(adjB, adjC, adjS);
                 break;
+            case "applyImage":
+                await ReplacePageImageAsync(dataUrl);
+                break;
             case "pageOp":
                 await PageOpAsync(op, amount, indices);
                 break;
@@ -2963,6 +2966,36 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         }
         catch { }
         finally { _adjBusy = false; }
+    }
+
+    // Replace the current page with a flattened image (used by annotations —
+    // the marks are composited onto the page in the browser and sent here).
+    private async Task ReplacePageImageAsync(string dataUrl)
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count) return;
+        if (string.IsNullOrEmpty(dataUrl)) return;
+        try
+        {
+            var comma = dataUrl.IndexOf(',');
+            var b64 = comma >= 0 ? dataUrl[(comma + 1)..] : dataUrl;
+            var bytes = Convert.FromBase64String(b64);
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_an_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            await File.WriteAllBytesAsync(tmp, bytes);
+            ProcessedImage? ni = null;
+            await foreach (var im in new ImageImporter(_ctx).Import(tmp)) { ni = im; break; }
+            try { File.Delete(tmp); } catch { }
+            if (ni != null)
+            {
+                PushUndo();
+                _pages[i].Dispose();
+                _pages[i] = ni;
+                await RefreshAsync(false);
+                Banner("Annotations applied", "ok");
+                Status("Annotations applied");
+            }
+        }
+        catch (Exception ex) { Status("Apply error: " + ex.Message); }
     }
 
     // Commit the live adjustments to the current page (undoable).
