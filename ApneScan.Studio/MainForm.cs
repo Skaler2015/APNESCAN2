@@ -1532,6 +1532,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             SyncNames();
             var suggestions = LoadNames();
+            var learned = LoadLearned();
             for (int i = 0; i < _pages.Count; i++)
             {
                 if (i < _pageNames.Count && !string.IsNullOrEmpty(_pageNames[i])) continue;
@@ -1539,9 +1540,10 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 try
                 {
                     var text = await OcrTopTextAsync(_pages[i]);
-                    // A remembered name that appears in the page wins (clean label);
-                    // otherwise fall back to the first strong line of text.
-                    name = MatchName(text, suggestions) ?? FirstStrongLine(text);
+                    // 1) The exact name you gave a matching document last time wins.
+                    // 2) Else a remembered name that appears in the page.
+                    // 3) Else the first strong line of text.
+                    name = LearnedMatch(text, learned) ?? MatchName(text, suggestions) ?? FirstStrongLine(text);
                 }
                 catch { /* per-page best-effort */ }
                 if (i < _pageNames.Count) _pageNames[i] = name;
@@ -1597,6 +1599,121 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             }
         }
         return "";
+    }
+
+    // ---- Learned document names ----
+    // Remembers what you named a document last time (by an OCR content
+    // signature) so the same name comes back automatically next time you scan
+    // a matching document.
+    private sealed class LearnedName
+    {
+        public string Sig { get; set; } = "";
+        public string Name { get; set; } = "";
+    }
+
+    private static string LearnedFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "learned.json");
+
+    private static List<LearnedName> LoadLearned()
+    {
+        try
+        {
+            if (File.Exists(LearnedFile))
+                return JsonSerializer.Deserialize<List<LearnedName>>(File.ReadAllText(LearnedFile)) ?? new();
+        }
+        catch { /* non-fatal */ }
+        return new();
+    }
+
+    private static void SaveLearned(List<LearnedName> list)
+    {
+        try
+        {
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(LearnedFile)!);
+            File.WriteAllText(LearnedFile, JsonSerializer.Serialize(list));
+        }
+        catch { /* non-fatal */ }
+    }
+
+    // A content signature from the OCR'd top text: lowercase words with digits
+    // and tiny tokens dropped, first ~16 words kept. The letterhead/title stays
+    // stable across scans while dates/amounts/names vary.
+    private static string DocSignature(string text)
+    {
+        var norm = Norm(text);
+        if (norm.Length == 0) return "";
+        var toks = norm.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => t.Length >= 3 && !t.All(char.IsDigit))
+            .Take(16);
+        return string.Join(' ', toks);
+    }
+
+    private static HashSet<string> SigTokens(string sig) =>
+        new(sig.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+    private static double Similarity(HashSet<string> a, HashSet<string> b)
+    {
+        if (a.Count == 0 || b.Count == 0) return 0;
+        int inter = a.Count(b.Contains);
+        int union = a.Count + b.Count - inter;
+        return union == 0 ? 0 : (double) inter / union;
+    }
+
+    // Best remembered name for a document whose signature closely matches.
+    private static string? LearnedMatch(string text, List<LearnedName> list)
+    {
+        var toks = SigTokens(DocSignature(text));
+        if (toks.Count < 2) return null;
+        string? best = null; double bestScore = 0; int bestShared = 0;
+        foreach (var e in list)
+        {
+            var et = SigTokens(e.Sig);
+            double score = Similarity(toks, et);
+            if (score > bestScore) { bestScore = score; best = e.Name; bestShared = toks.Count(et.Contains); }
+        }
+        return (bestScore >= 0.55 && bestShared >= 2) ? best : null;
+    }
+
+    private static void LearnName(string text, string name)
+    {
+        name = (name ?? "").Trim();
+        if (name.Length == 0) return;
+        var sig = DocSignature(text);
+        var toks = SigTokens(sig);
+        if (toks.Count < 2) return; // too little content to match reliably later
+        var list = LoadLearned();
+        LearnedName? closest = null; double bestScore = 0;
+        foreach (var e in list)
+        {
+            double score = Similarity(toks, SigTokens(e.Sig));
+            if (score > bestScore) { bestScore = score; closest = e; }
+        }
+        // Update the name for a document we've seen before, else remember a new one.
+        if (closest != null && bestScore >= 0.7)
+        {
+            closest.Name = name;
+            closest.Sig = sig;
+        }
+        else
+        {
+            list.Add(new LearnedName { Sig = sig, Name = name });
+        }
+        while (list.Count > 800) list.RemoveAt(0);
+        SaveLearned(list);
+    }
+
+    // On rename: OCR the page and remember its signature → the chosen name.
+    private async Task LearnFromRenameAsync(int index, string name)
+    {
+        try
+        {
+            if (_ctx.OcrEngine == null) return;
+            if (index < 0 || index >= _pages.Count) return;
+            var text = await OcrTopTextAsync(_pages[index]);
+            LearnName(text, name);
+        }
+        catch { /* learning is best-effort */ }
     }
 
     // ---- Remembered / suggested names ---------------------------------------
@@ -1791,6 +1908,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             if (remember) AddName(name);
             BumpName(name); // track usage of known names
+            _ = LearnFromRenameAsync(index, name); // remember this name for next time
         }
         Status(name.Length > 0 ? $"Page {index + 1} named “{name}”" : $"Page {index + 1} name cleared");
     }
