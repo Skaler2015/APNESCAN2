@@ -46,6 +46,15 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         uses: actions/checkout@v4
 
+      - name: Bake the current app version into the page
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          VER=$(grep -oPm1 '(?<=<Version>)[^<]+' ApneScan.Studio/ApneScan.Studio.csproj)
+          echo "App version: ${VER:-unknown}"
+          if [ -n "$VER" ]; then
+            sed -i "s/__APP_VERSION__/$VER/g" website/index.html
+          fi
+
       - name: Deploy to Hostinger via FTP
         if: steps.check.outputs.configured == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

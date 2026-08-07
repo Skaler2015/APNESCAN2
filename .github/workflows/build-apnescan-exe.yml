@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build-windows-exe:
@@ -111,3 +112,10 @@ jobs:
             installer-out/ApneScan-Setup.exe
             installer-out/update.json
           make_latest: true
+
+      - name: Update the website (redeploy with the new version)
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-website.yml --ref "${{ github.ref_name }}"

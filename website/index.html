@@ -206,17 +206,25 @@ footer a{color:var(--muted)}footer a:hover{color:var(--ink)}
     try{ localStorage.setItem('apnescan-theme',next); }catch(e){}
   });
 
-  // Show the current version by reading the release's update.json (best-effort)
+  // Version shown on the page. It is baked in at deploy time (the CI replaces
+  // the token below with the released app version), so it updates automatically
+  // whenever a new version is published. If for some reason it isn't replaced,
+  // fall back to reading the release's update.json in the browser.
   function setVer(v){
     var s=v?('v'+v):'latest version';
     ['verMeta','verBand'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=s; });
-    var p=document.getElementById('verPill'); if(p && v) p.textContent='v'+v;
+    var p=document.getElementById('verPill'); if(p) p.textContent = v ? ('v'+v) : 'latest release';
   }
-  setVer(null);
-  fetch("https://github.com/Skaler2015/APNESCAN2/releases/latest/download/update.json",{cache:'no-store'})
-    .then(function(r){ return r.ok?r.json():null; })
-    .then(function(j){ try{ var v=j.versions[0].name; if(v) setVer(v); }catch(e){} })
-    .catch(function(){ /* CORS or offline — the download link still works */ });
+  var INJECTED_VERSION="__APP_VERSION__";
+  if(/^\d+\.\d+/.test(INJECTED_VERSION)){
+    setVer(INJECTED_VERSION);
+  } else {
+    setVer(null);
+    fetch("https://github.com/Skaler2015/APNESCAN2/releases/latest/download/update.json",{cache:'no-store'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ try{ var v=j.versions[0].name; if(v) setVer(v); }catch(e){} })
+      .catch(function(){ /* CORS or offline — the download link still works */ });
+  }
 })();
 </script>
 </body>
