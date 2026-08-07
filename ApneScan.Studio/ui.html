@@ -394,6 +394,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .menu .opt{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:7px;cursor:pointer;font-size:13px;color:#3b4254}
 .menu .opt:hover{background:#f4f5f9}
 .menu .opt svg{width:16px;height:16px}
+.menu .mhd{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);padding:8px 11px 3px}
+.menu .opt .ic{stroke:currentColor}
 .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
 .tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
@@ -570,6 +572,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <div class="tool" id="btnCrop" title="Crop selected page"><svg class="ic"><use href="#i-crop"/></svg></div>
           <div class="tool" id="btnRotR"><svg class="ic"><use href="#i-rotate"/></svg></div>
           <div class="tool" id="btnRotL"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
+          <div class="tool" id="btnEditTr" title="Edit &amp; enhance page"><svg class="ic"><use href="#i-editor"/></svg></div>
           <div class="tool" id="btnPrintTr" title="Print"><svg class="ic"><use href="#i-print"/></svg></div>
           <div class="tool g" id="btnUndoTr" title="Undo"><svg class="ic"><use href="#i-undo"/></svg></div>
           <div class="tool" id="btnToolsTr" title="Tools"><svg class="ic"><use href="#i-wrench"/></svg></div>
@@ -870,6 +873,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 <div class="menu" id="scannerMenu" style="min-width:240px;max-width:420px"></div>
 <div class="menu" id="setMenu" style="min-width:170px"></div>
 <div class="menu" id="printMenu" style="min-width:200px"></div>
+<div class="menu" id="editMenu" style="min-width:210px;max-height:70vh;overflow:auto"></div>
 
 <!-- Save-as dropdown menu (PDF / JPG / PNG) -->
 <div class="menu" id="saveMenu">
@@ -1380,6 +1384,46 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   };
   var scanToolsEl=byId('scanTools');
   if(scanToolsEl){ scanToolsEl.addEventListener('click', function(ev){ var b=ev.target.closest('.st-btn'); if(!b) return; var op=b.getAttribute('data-op'); if(scanToolsMap[op]) scanToolsMap[op](); }); }
+
+  // Full "Edit & enhance" popover for the compact preview toolbar — exposes
+  // every Scanned-Pages operation without leaving the preview.
+  var editMenu=byId('editMenu');
+  function closeEditMenu(){ if(editMenu){ editMenu.classList.remove('on'); editMenu.__anchor=null; } }
+  function openEditMenu(anchor){
+    if(!editMenu||!anchor) return;
+    var wasOpen = editMenu.classList.contains('on') && editMenu.__anchor===anchor;
+    closeEditMenu();
+    if(wasOpen) return;
+    if(!scannedTotal){ setStatus('Scan or import a page first'); return; }
+    editMenu.__anchor=anchor; editMenu.innerHTML='';
+    function sep(label){ var s=document.createElement('div'); s.className='mhd'; s.textContent=label; editMenu.appendChild(s); }
+    function it(label, sym, op){
+      var o=document.createElement('div'); o.className='opt';
+      o.innerHTML=(sym?('<svg class="ic"><use href="#'+sym+'"/></svg>'):'<span style="width:15px;display:inline-block"></span>')+'<span style="flex:1;white-space:nowrap">'+label+'</span>';
+      o.addEventListener('click', function(e){ e.stopPropagation(); closeEditMenu(); if(scanToolsMap[op]) scanToolsMap[op](); });
+      editMenu.appendChild(o);
+    }
+    sep('Rotate & straighten');
+    it('Rotate left','i-rotate','rotL'); it('Rotate right','i-rotate','rotR');
+    it('Rotate 180°','i-rotate','rot180'); it('Deskew (auto-straighten)','i-crop','deskew');
+    sep('Enhance');
+    it('Auto-enhance','i-check','auto'); it('Black & white','i-image','bw');
+    it('Grayscale','i-image','gray'); it('Sharpen','i-image','sharpen');
+    it('Brighter','i-image','brUp'); it('Darker','i-image','brDn');
+    it('More contrast','i-image','coUp'); it('Less contrast','i-image','coDn');
+    sep('Arrange');
+    it('Duplicate','i-files','dup'); it('Move to top','i-chevron','top');
+    it('Move to bottom','i-chevron','bottom'); it('Reverse order','i-swap','reverse');
+    sep('Page');
+    it('Export as image','i-image','export'); it('Redo','i-refresh','redo');
+    it('Delete page','i-delete','del');
+    var rect=anchor.getBoundingClientRect();
+    editMenu.style.left=Math.max(8, Math.min(rect.left-90, window.innerWidth-225))+'px';
+    editMenu.style.top=Math.max(8, Math.min(rect.bottom+6, window.innerHeight-40))+'px';
+    editMenu.classList.add('on');
+  }
+  document.addEventListener('click', function(e){ if(editMenu && editMenu.classList.contains('on') && !editMenu.contains(e.target) && !(editMenu.__anchor && editMenu.__anchor.contains(e.target))){ closeEditMenu(); } });
+  var bEdit=byId('btnEditTr'); if(bEdit) bEdit.addEventListener('click', function(e){ e.stopPropagation(); openEditMenu(bEdit); });
   var thumbSize=byId('thumbSize'); if(thumbSize) thumbSize.addEventListener('input', function(){ thumbPx=parseInt(thumbSize.value,10)||122; if(scanView==='list'){ scanView='grid'; } applyScanView(); });
   function highlightScanned(index){
     if(selSet.length) return; // keep multi-selection highlight
