@@ -23,6 +23,9 @@ using NAPS2.Scan;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using WinRT;
+// Disambiguate types that now collide with the WinRT namespaces above.
+using Clipboard = System.Windows.Forms.Clipboard;
+using FileAttributes = System.IO.FileAttributes;
 
 namespace ApneScan.Studio;
 
