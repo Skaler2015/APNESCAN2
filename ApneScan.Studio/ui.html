@@ -397,9 +397,11 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .menu .mhd{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);padding:8px 11px 3px}
 .menu .opt .ic{stroke:currentColor}
 /* Compact right-click page menu so the long option list stays short */
-#ctxMenu{padding:4px}
+#ctxMenu{padding:4px;max-height:calc(100vh - 16px);overflow:auto}
 #ctxMenu .opt{padding:5px 10px;font-size:12.5px;gap:8px}
 #ctxMenu .opt svg{width:15px;height:15px}
+.menu .opt.danger{color:#dc2626}
+.menu .opt.danger:hover{background:#fee2e2}
 .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
 .tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
@@ -2217,7 +2219,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   // Right-click menu for files in My Documents
   function showFileMenu(x,y,en){
     var m=byId('ctxMenu'); if(!m) return; m.innerHTML='';
-    function item(label, sym, fn){ var o=document.createElement('div'); o.className='opt'; o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
+    function item(label, sym, fn, cls){ var o=document.createElement('div'); o.className='opt'+(cls?(' '+cls):''); o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
     function sep(){ var s=document.createElement('div'); s.style.cssText='height:1px;background:var(--border);margin:2px 0'; m.appendChild(s); }
     var ext=(en.name||'').split('.').pop().toLowerCase();
     // If several files are selected, the file ops act on all of them.
@@ -2257,16 +2259,24 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(!many) item('Reveal in Explorer','i-full', function(){ send({cmd:'revealFile', path:en.path}); });
     if(!many) item('Copy path','i-editor', function(){ send({cmd:'copyPath', path:en.path}); });
     sep();
-    item(many?('Delete '+sel.length+' items'):'Delete','i-delete', function(){ send(Object.assign({cmd:'deleteFile'}, payload)); });
-    m.style.left=Math.min(x, window.innerWidth-200)+'px';
-    m.style.top=Math.max(6, Math.min(y, window.innerHeight-520))+'px';
+    item(many?('Delete '+sel.length+' items'):'Delete','i-delete', function(){ send(Object.assign({cmd:'deleteFile'}, payload)); }, 'danger');
     m.classList.add('on');
+    placeMenu(m, x, y);
+  }
+  // Position a context menu so it stays fully on screen (measures real height,
+  // so the last items — e.g. Delete — are never clipped off the bottom).
+  function placeMenu(m, x, y){
+    m.style.left='0px'; m.style.top='0px';
+    var w=m.offsetWidth||200, h=m.offsetHeight||300;
+    var left=Math.max(6, Math.min(x, window.innerWidth-w-6));
+    var top=Math.max(6, Math.min(y, window.innerHeight-h-6));
+    m.style.left=left+'px'; m.style.top=top+'px';
   }
   // Right-click menu for scanned pages.
   function showPageMenu(x,y){
     var m=byId('ctxMenu'); if(!m) return; m.innerHTML='';
     var n=selCurrent().length;
-    function item(label, sym, fn){ var o=document.createElement('div'); o.className='opt'; o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
+    function item(label, sym, fn, cls){ var o=document.createElement('div'); o.className='opt'+(cls?(' '+cls):''); o.innerHTML='<svg class="ic"><use href="#'+sym+'"/></svg>'+esc(label); o.addEventListener('click', function(e){ e.stopPropagation(); m.classList.remove('on'); fn(); }); m.appendChild(o); }
     function sep(){ var s=document.createElement('div'); s.style.cssText='height:1px;background:var(--border);margin:2px 0'; m.appendChild(s); }
     item((n>1?'Rename '+n+' pages':'Rename')+' (F2)','i-editor', function(){ openRename(scannedSel); });
     sep();
@@ -2291,10 +2301,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); send({cmd:'shareWhatsapp', indices:selCurrent()}); });
     item('Share… (Windows)','i-share', function(){ setStatus('Opening Share…'); send({cmd:'shareWindows', indices:selCurrent()}); });
     sep();
-    item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); });
-    m.style.left=Math.min(x, window.innerWidth-210)+'px';
-    m.style.top=Math.max(6, Math.min(y, window.innerHeight-540))+'px';
+    item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); }, 'danger');
     m.classList.add('on');
+    placeMenu(m, x, y);
   }
   document.addEventListener('click', function(){ var m=byId('ctxMenu'); if(m) m.classList.remove('on'); });
 
