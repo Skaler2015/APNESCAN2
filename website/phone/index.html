@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6d28d9">
+<title>ApneScan · Phone bridge</title>
+<style>
+  :root{--brand:#6d28d9;--brand2:#9333ea;--bg:#f4f2fb;--card:#fff;--ink:#191426;--muted:#6d6785;--line:#e8e3f3;--good:#16a34a}
+  @media(prefers-color-scheme:dark){:root{--bg:#0d0a16;--card:#171221;--ink:#f1eef8;--muted:#a49dba;--line:#241f34}}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding:16px;max-width:560px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;margin:8px 2px 4px}
+  .logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;color:#fff;font-weight:800}
+  .sub{color:var(--muted);font-size:13px;margin:0 2px 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 6px 20px rgba(20,12,45,.06)}
+  .card h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .card p{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+  .btn{display:block;width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;font-size:15px;cursor:pointer;text-align:center;text-decoration:none;margin-top:10px}
+  .btn.ghost{background:var(--card);color:var(--brand);border:1.5px solid var(--brand)}
+  input[type=file]{display:none}
+  .status{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:16px}
+  .status.ok{color:var(--good);font-weight:600}
+  .flist a{display:flex;align-items:center;gap:10px;padding:12px 6px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13.5px}
+  .flist a:last-child{border-bottom:0}
+  .flist .ic{width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand);display:grid;place-items:center;font-size:16px;flex:none}
+  .flist .dl{margin-left:auto;color:var(--brand);font-weight:700;font-size:12px}
+  .empty{color:var(--muted);font-size:12.5px;padding:10px 2px}
+  .badcode{padding:40px 16px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="brand"><span class="logo">A</span><span>ApneScan</span></div>
+  <p class="sub">Phone bridge — send &amp; receive files with your PC over the internet.</p>
+  <div id="app"></div>
+
+<script>
+(function(){
+  var code=(new URLSearchParams(location.search)).get('s')||'';
+  var app=document.getElementById('app');
+  if(!/^[a-zA-Z0-9]{4,}$/.test(code)){
+    app.innerHTML='<div class="card"><div class="badcode">Open this page by scanning the QR code shown in ApneScan on your PC.</div></div>';
+    return;
+  }
+  var API='../api/phone.php';
+
+  app.innerHTML=
+    '<div class="card"><h2>📤 Send to PC</h2><p>Pick photos or files — they appear in ApneScan on your PC automatically.</p>'+
+      '<label class="btn" for="pick">Choose photos / files</label>'+
+      '<label class="btn ghost" for="cam">Take a photo</label>'+
+      '<input type="file" id="pick" multiple accept="image/*,application/pdf">'+
+      '<input type="file" id="cam" accept="image/*" capture="environment">'+
+      '<div class="status" id="upStatus"></div></div>'+
+    '<div class="card"><h2>📥 From PC</h2><p>Files your PC shared to this phone show up here.</p>'+
+      '<div class="flist" id="fromPC"><div class="empty">Nothing yet…</div></div></div>';
+
+  var upStatus=document.getElementById('upStatus');
+  function uploadFiles(files){
+    if(!files||!files.length) return;
+    var total=files.length, done=0, failed=0;
+    upStatus.className='status'; upStatus.textContent='Sending '+total+' file(s)…';
+    Array.prototype.forEach.call(files,function(f){
+      var fd=new FormData(); fd.append('file', f, f.name||'photo.jpg');
+      fetch(API+'?action=up&s='+encodeURIComponent(code)+'&dir=toPC',{method:'POST',body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ done++; if(!d||!d.ok) failed++; finish(); })
+        .catch(function(){ done++; failed++; finish(); });
+    });
+    function finish(){ if(done<total) return;
+      if(failed===0){ upStatus.className='status ok'; upStatus.textContent='✓ Sent '+total+' file(s) to your PC.'; }
+      else { upStatus.className='status'; upStatus.textContent='Sent '+(total-failed)+'/'+total+' — some failed, try again.'; }
+    }
+  }
+  document.getElementById('pick').addEventListener('change', function(e){ uploadFiles(e.target.files); e.target.value=''; });
+  document.getElementById('cam').addEventListener('change', function(e){ uploadFiles(e.target.files); e.target.value=''; });
+
+  var fromPC=document.getElementById('fromPC'), seen={};
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function pollFromPC(){
+    fetch(API+'?action=list&s='+encodeURIComponent(code)+'&dir=toPhone&since=0',{cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d||!d.ok) return;
+        if(!d.items.length){ fromPC.innerHTML='<div class="empty">Nothing yet…</div>'; return; }
+        fromPC.innerHTML=d.items.map(function(it){
+          var url=API+'?action=dl&s='+encodeURIComponent(code)+'&dir=toPhone&id='+encodeURIComponent(it.id);
+          var kb=Math.max(1,Math.round(it.size/1024));
+          return '<a href="'+url+'" download><span class="ic">📄</span><span style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(it.name)+'</b><span style="color:var(--muted);font-size:11px">'+kb+' KB</span></span><span class="dl">Download</span></a>';
+        }).join('');
+      }).catch(function(){});
+  }
+  pollFromPC(); setInterval(pollFromPC, 3000);
+})();
+</script>
+</body>
+</html>

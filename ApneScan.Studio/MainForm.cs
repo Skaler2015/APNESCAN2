@@ -157,10 +157,16 @@ public class MainForm : Form
     private string? _updateUrl;
     private string? _updateSha;
 
-    // Phone-to-PC: a tiny HTTP server phones on the same WiFi upload photos to.
+    // Phone <-> PC bridge over the internet relay (works on any network, both ways).
+    private const string PhoneRelay = "https://apnescan.subhashkaler.com/api/phone.php";
+    private const string PhonePageBase = "https://apnescan.subhashkaler.com/phone/";
+    private static readonly HttpClient _relay = new() { Timeout = TimeSpan.FromSeconds(60) };
+    private string _phoneCode = "";
+    private System.Windows.Forms.Timer? _phonePollTimer;
+    private long _lastPhoneTs = 0;
+    // Legacy same-WiFi server fields (kept for compatibility; no longer started).
     private TcpListener? _phoneServer;
     private const int PhonePort = 8765;
-    // token → file path, for sending a file to the phone via a QR download link.
     private readonly Dictionary<string, string> _phoneShares = new();
 
     public MainForm()
@@ -1747,35 +1753,94 @@ public class MainForm : Form
         }
     }
 
+    private string PhoneCode()
+    {
+        if (string.IsNullOrEmpty(_phoneCode)) _phoneCode = Guid.NewGuid().ToString("N")[..8];
+        return _phoneCode;
+    }
+
+    private static string QrDataUri(string url)
+    {
+        var gen = new QRCodeGenerator();
+        var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+        var png = new PngByteQRCode(data).GetGraphic(8);
+        return "data:image/png;base64," + Convert.ToBase64String(png);
+    }
+
+    // Show the QR to a page the phone opens (any network). Also start polling
+    // the relay for files the phone sends back to this PC.
     private void StartPhoneServer()
     {
-        var url = $"http://{GetLocalIp()}:{PhonePort}/";
+        var url = PhonePageBase + "?s=" + PhoneCode();
         try
         {
-            if (_phoneServer == null)
+            Post(new { type = "phone", qr = QrDataUri(url), url });
+            Status("Phone-to-PC ready — scan the QR with your phone (any network)");
+            _lastPhoneTs = 0;
+            if (_phonePollTimer == null)
             {
-                _phoneServer = new TcpListener(IPAddress.Any, PhonePort);
-                _phoneServer.Start();
-                _ = Task.Run(PhoneServerLoop);
+                _phonePollTimer = new System.Windows.Forms.Timer { Interval = 3000 };
+                _phonePollTimer.Tick += (_, _) => { _ = PhonePollAsync(); };
             }
-            var gen = new QRCodeGenerator();
-            var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-            var png = new PngByteQRCode(data).GetGraphic(8);
-            var qr = "data:image/png;base64," + Convert.ToBase64String(png);
-            Post(new { type = "phone", qr, url });
-            Status("Phone-to-PC ready — scan the QR with your phone (same WiFi)");
+            _phonePollTimer.Start();
         }
         catch (Exception ex)
         {
-            Post(new { type = "phone", qr = (string?) null, url });
+            Post(new { type = "phone", qr = (string?)null, url });
             Status("Phone-to-PC error: " + ex.Message);
         }
     }
 
     private void StopPhoneServer()
     {
-        try { _phoneServer?.Stop(); } catch { /* ignore */ }
+        try { _phonePollTimer?.Stop(); } catch { /* ignore */ }
+        try { _phoneServer?.Stop(); } catch { /* legacy */ }
         _phoneServer = null;
+    }
+
+    // Poll the relay for files the phone sent to this PC and import them.
+    private async Task PhonePollAsync()
+    {
+        var code = _phoneCode;
+        if (string.IsNullOrEmpty(code)) return;
+        try
+        {
+            var listUrl = PhoneRelay + "?action=list&s=" + Uri.EscapeDataString(code) + "&dir=toPC&since=" + _lastPhoneTs;
+            var json = await _relay.GetStringAsync(listUrl);
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return;
+            foreach (var it in items.EnumerateArray())
+            {
+                string id = it.TryGetProperty("id", out var idv) ? (idv.GetString() ?? "") : "";
+                string name = it.TryGetProperty("name", out var nv) ? (nv.GetString() ?? "file") : "file";
+                long ts = it.TryGetProperty("ts", out var tv) && tv.ValueKind == JsonValueKind.Number ? tv.GetInt64() : 0;
+                if (id == "") continue;
+                if (ts > _lastPhoneTs) _lastPhoneTs = ts;
+                var bytes = await _relay.GetByteArrayAsync(PhoneRelay + "?action=dl&s=" + Uri.EscapeDataString(code) + "&dir=toPC&id=" + Uri.EscapeDataString(id));
+                var ext = System.IO.Path.GetExtension(name);
+                if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+                var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_phone_" + Guid.NewGuid().ToString("N")[..8] + ext);
+                await File.WriteAllBytesAsync(temp, bytes);
+                if (IsHandleCreated) BeginInvoke(new Action(() => { _ = AddPhoneFileAsync(temp); }));
+            }
+        }
+        catch { /* transient network errors are fine */ }
+    }
+
+    private async Task<bool> UploadToRelayAsync(string path, string dir)
+    {
+        try
+        {
+            using var form = new MultipartFormDataContent();
+            var bytes = await File.ReadAllBytesAsync(path);
+            var fc = new ByteArrayContent(bytes);
+            fc.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ContentTypeFor(path));
+            form.Add(fc, "file", System.IO.Path.GetFileName(path));
+            var url = PhoneRelay + "?action=up&s=" + Uri.EscapeDataString(PhoneCode()) + "&dir=" + dir;
+            var resp = await _relay.PostAsync(url, form);
+            return resp.IsSuccessStatusCode;
+        }
+        catch { return false; }
     }
 
     private async Task PhoneServerLoop()
@@ -1804,22 +1869,21 @@ public class MainForm : Form
         catch { _phoneServer = null; return false; }
     }
 
-    // Show a QR that a phone (same WiFi) can scan to download this file.
-    private void SharePhoneFile(string path)
+    // Upload the file to the relay so the phone can download it from anywhere.
+    private async void SharePhoneFile(string path)
     {
         if (!File.Exists(path)) { Status("File not found"); return; }
-        if (!EnsurePhoneServer()) { Status("Could not start the phone server"); return; }
-        var token = Guid.NewGuid().ToString("N")[..10];
-        lock (_phoneShares) _phoneShares[token] = path;
-        var url = $"http://{GetLocalIp()}:{PhonePort}/get/{token}";
+        Status("Uploading to the phone bridge…");
         try
         {
-            var gen = new QRCodeGenerator();
-            var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-            var png = new PngByteQRCode(data).GetGraphic(8);
-            var qr = "data:image/png;base64," + Convert.ToBase64String(png);
-            Post(new { type = "phoneShare", qr, url, name = System.IO.Path.GetFileName(path) });
-            Status("Scan the QR with your phone (same WiFi) to download");
+            if (!await UploadToRelayAsync(path, "toPhone"))
+            {
+                Status("Could not upload — check your internet connection");
+                return;
+            }
+            var url = PhonePageBase + "?s=" + PhoneCode();
+            Post(new { type = "phoneShare", qr = QrDataUri(url), url, name = System.IO.Path.GetFileName(path) });
+            Status("Scan the QR — the file is ready on the phone (any network)");
         }
         catch (Exception ex) { Status("Phone share error: " + ex.Message); }
     }
@@ -1928,9 +1992,10 @@ public class MainForm : Form
         try
         {
             PushUndo();
-            var importer = new ImageImporter(_ctx);
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
             int added = 0;
-            await foreach (var img in importer.Import(path))
+            var importer = ext == ".pdf" ? new PdfImporter(_ctx).Import(path) : new ImageImporter(_ctx).Import(path);
+            await foreach (var img in importer)
             {
                 _pages.Add(img);
                 added++;
