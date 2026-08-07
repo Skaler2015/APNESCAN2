@@ -1506,34 +1506,29 @@ public class MainForm : Form
             }
             else
             {
-                // Standard CR80 ID card = 85.6 × 54 mm = 3.37 × 2.125 in.
-                // PrintDocument coordinates are 1/100 inch by default.
-                const int cardW = 337, cardH = 213, gap = 22;
+                // ID mode: both parts of the card (front + back) on ONE sheet,
+                // enlarged to fill the page — two slots stacked vertically, each
+                // image maximised inside its half (aspect preserved, centered).
+                const int perPage = 2, gap = 40;
                 int idx = 0;
                 doc.PrintPage += (_, e) =>
                 {
                     var pb = e.MarginBounds;
-                    int cols = Math.Max(1, (pb.Width + gap) / (cardW + gap));
-                    int rows = Math.Max(1, (pb.Height + gap) / (cardH + gap));
-                    int perPage = cols * rows;
-                    using var pen = new Pen(Color.FromArgb(200, 200, 200));
-                    for (int cell = 0; cell < perPage && idx < pages.Count; cell++, idx++)
+                    int rowH = (pb.Height - gap * (perPage - 1)) / perPage;
+                    for (int slot = 0; slot < perPage && idx < pages.Count; slot++, idx++)
                     {
-                        int r = cell / cols, c = cell % cols;
-                        int cx = pb.Left + c * (cardW + gap);
-                        int cy = pb.Top + r * (cardH + gap);
+                        int top = pb.Top + slot * (rowH + gap);
                         var image = _pages[pages[idx]].Render();
                         try
                         {
-                            // Rotate a portrait scan so it fills the landscape card.
+                            // Rotate a portrait scan so the (landscape) card uses the width.
                             if (image.Height > image.Width)
                                 image = image.PerformTransform(new RotationTransform(90));
                             var bmp = image.AsBitmap();
-                            double scale = Math.Min((double)cardW / bmp.Width, (double)cardH / bmp.Height);
+                            double scale = Math.Min((double)pb.Width / bmp.Width, (double)rowH / bmp.Height);
                             int w = (int)Math.Round(bmp.Width * scale);
                             int h = (int)Math.Round(bmp.Height * scale);
-                            e.Graphics!.DrawImage(bmp, new Rectangle(cx + (cardW - w) / 2, cy + (cardH - h) / 2, w, h));
-                            e.Graphics.DrawRectangle(pen, cx, cy, cardW, cardH);
+                            e.Graphics!.DrawImage(bmp, new Rectangle(pb.Left + (pb.Width - w) / 2, top + (rowH - h) / 2, w, h));
                         }
                         finally { image.Dispose(); }
                     }
