@@ -367,7 +367,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 #cropBar .cb{padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;border:0}
 #cropBar .cb.ok{background:var(--accent);color:#fff}
 #cropBar .cb.no{background:#fff;color:var(--text);border:1px solid var(--border)}
-.rp-view.cropping{cursor:crosshair}
+.rp-view.cropping{cursor:crosshair;user-select:none}
+.rp-view.cropping img{pointer-events:none;-webkit-user-drag:none;user-select:none}
+#previewImg{-webkit-user-drag:none;user-drag:none}
 .cam-overlay{position:fixed;inset:0;background:rgba(15,18,28,.72);display:none;place-items:center;z-index:60}
 .cam-overlay.on{display:grid}
 .cam-box{background:var(--panel);border-radius:16px;padding:16px;width:min(700px,92vw);box-shadow:0 24px 70px rgba(0,0,0,.45)}
@@ -698,7 +700,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           </div>
           <div class="rp-view" id="rpView">
             <div class="rp-page" id="previewPage"><i></i><i></i><i></i><i></i></div>
-            <img id="previewImg" alt="Scanned preview">
+            <img id="previewImg" alt="Scanned preview" draggable="false">
             <div id="cropBox"></div>
             <div id="cropBar"><div class="cb ok" id="cropApply">Apply crop</div><div class="cb no" id="cropCancel">Cancel</div></div>
             <div id="textPanel"></div>
@@ -1396,13 +1398,15 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var bcrop=byId('btnCrop'); if(bcrop) bcrop.addEventListener('click', startCrop);
   var rpv=byId('rpView');
   if(rpv){
+    rpv.addEventListener('dragstart', function(e){ if(cropping) e.preventDefault(); });
     rpv.addEventListener('mousedown', function(e){
       if(!cropping) return; var rr=rpRect(); if(!rr) return;
+      e.preventDefault();                       // stop the browser's native image-drag
       cStart={x:e.clientX,y:e.clientY}; cRect=null;
       var cb=byId('cropBox'); if(cb){ cb.style.display='block'; cb.style.left=(e.clientX-rr.left)+'px'; cb.style.top=(e.clientY-rr.top)+'px'; cb.style.width='0px'; cb.style.height='0px'; }
       var bar=byId('cropBar'); if(bar) bar.style.display='none';
     });
-    rpv.addEventListener('mousemove', function(e){
+    window.addEventListener('mousemove', function(e){
       if(!cropping || !cStart) return; var rr=rpRect(); if(!rr) return;
       var x=Math.min(e.clientX,cStart.x), y=Math.min(e.clientY,cStart.y);
       var w=Math.abs(e.clientX-cStart.x), h=Math.abs(e.clientY-cStart.y);
