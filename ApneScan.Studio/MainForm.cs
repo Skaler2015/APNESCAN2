@@ -244,6 +244,9 @@ public class MainForm : Form
 
         // Fetch broadcast / force-update / feature flags from the server.
         _ = PollRemoteConfigAsync();
+
+        // Report a coarse device profile (Phase 2 analytics).
+        SendDeviceProfile();
     }
 
     // ---- Anonymous usage telemetry (opt-out) ----
@@ -277,8 +280,44 @@ public class MainForm : Form
 
     private const string ConfigUrl = "https://apnescan.subhashkaler.com/api/config-app.php";
     private const string FeedbackUrl = "https://apnescan.subhashkaler.com/api/feedback.php";
+    private const string DeviceUrl = "https://apnescan.subhashkaler.com/api/device.php";
+    private string _lastScanner = "";
     private static string AppVer() => (Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)).ToString(3);
     private static string OsStr() => "Win " + Environment.OSVersion.Version.Major + "." + Environment.OSVersion.Version.Build;
+
+    // Coarse, non-identifying device profile for the admin Devices page.
+    private void SendDeviceProfile()
+    {
+        if (!_telemetry) return;
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
+                long ramMb = 0;
+                try { ramMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024); } catch { }
+                string screen = ""; int monitors = 0;
+                try
+                {
+                    var b = Screen.PrimaryScreen?.Bounds;
+                    if (b.HasValue) screen = b.Value.Width + "x" + b.Value.Height;
+                    monitors = Screen.AllScreens.Length;
+                }
+                catch { }
+                string lang = ""; string tz = "";
+                try { lang = System.Globalization.CultureInfo.CurrentUICulture.Name; } catch { }
+                try { tz = TimeZoneInfo.Local.Id; } catch { }
+                var payload = new
+                {
+                    key = "apnescan-telemetry-v1", install = InstallId(), os = OsStr(), arch,
+                    cpu_cores = Environment.ProcessorCount, ram_mb = ramMb, screen, monitors, lang, tz, scanner = _lastScanner
+                };
+                using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                _tele.PostAsync(DeviceUrl, content).GetAwaiter().GetResult();
+            }
+            catch { }
+        });
+    }
 
     private void SendTelemetry(string ev, int count = 1)
     {
@@ -997,6 +1036,7 @@ public class MainForm : Form
                 Dpi = dpi > 0 ? dpi : 200
             };
 
+            var scanSw = Stopwatch.StartNew();
             int added = 0, skipped = 0;
             await foreach (var image in controller.Scan(options))
             {
@@ -1021,11 +1061,18 @@ public class MainForm : Form
                 Status($"Skipped {skipped} blank page(s)");
             }
 
+            scanSw.Stop();
             await RefreshAsync(true);
             _ = AutoNameAsync();
             Bump("scan", added);
             SendTelemetry("pages_scanned", added);                       // total pages captured
             SendTelemetry("src_" + (string.IsNullOrEmpty(source) ? "auto" : source)); // flatbed/feeder/auto/duplex
+            SendTelemetry("dpi_" + (dpi > 0 ? dpi : 200));               // scan resolution
+            SendTelemetry("color_" + (string.IsNullOrEmpty(color) ? "color" : color)); // color/gray/bw
+            var scanMs = (int)Math.Min(scanSw.ElapsedMilliseconds, 100000);
+            if (scanMs > 0) SendTelemetry("scan_ms", scanMs);           // total scan time (avg = scan_ms / scan)
+            _lastScanner = _devices[deviceIndex].Name;                   // remember scanner model
+            SendDeviceProfile();
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
         }
         catch (Exception ex)
@@ -1164,6 +1211,7 @@ public class MainForm : Form
             await ExportPdf(sfd.FileName, _pages, ocrParams);
             AddHistory(sfd.FileName, _pages.Count);
             Bump("pdf", 1);
+            try { var kb = (int)Math.Min(new FileInfo(sfd.FileName).Length / 1024, 100000); if (kb > 0) SendTelemetry("pdf_kb", kb); } catch { }
             Post(new { type = "done", path = sfd.FileName });
             Status("Saved: " + sfd.FileName);
             if (_clearAfter) ClearPages();
@@ -2817,9 +2865,15 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             int i = Sel();
             var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_ocr_" + Guid.NewGuid().ToString("N")[..8] + ".png");
             _pages[i].Save(tmp);
+            var ocrSw = Stopwatch.StartNew();
             var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            ocrSw.Stop();
             try { File.Delete(tmp); } catch { /* best-effort */ }
             var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
+            var ocrMs = (int)Math.Min(ocrSw.ElapsedMilliseconds, 100000);
+            if (ocrMs > 0) SendTelemetry("ocr_ms", ocrMs);                        // avg = ocr_ms / ocr_run
+            SendTelemetry("ocr_lang_eng");                                        // language used
+            SendTelemetry(string.IsNullOrWhiteSpace(text) ? "ocr_fail" : "ocr_ok"); // success/blank
             Post(new { type = "text", text });
             Status(string.IsNullOrWhiteSpace(text) ? "No text found on this page" : "Text ready");
         }

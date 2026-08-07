@@ -24,18 +24,28 @@ function delta_pct(int $cur, int $prev): int {
     return $prev > 0 ? (int)round(($cur - $prev) / $prev * 100) : ($cur > 0 ? 100 : 0);
 }
 
+/**
+ * SQL predicate that excludes "measurement" events (where cnt is a value, not a
+ * count) and their prefixes, so action-count aggregations stay meaningful.
+ */
+function meta_filter(): string {
+    return " AND event NOT IN ('scan_ms','ocr_ms','pdf_kb','session_min','pages_scanned') "
+         . "AND event NOT LIKE 'dpi\\_%' AND event NOT LIKE 'color\\_%' "
+         . "AND event NOT LIKE 'src\\_%' AND event NOT LIKE 'ocr\\_lang\\_%' ";
+}
+
 /** Headline KPIs for the overview + live API. */
 function metrics_overview(array $rg): array {
     $now = time(); $since = $rg['since']; $prev = $rg['prev'];
     $installs = (int) q1('SELECT COUNT(DISTINCT install) FROM events');
-    $eventsRange = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=?', [$since]);
-    $eventsPrev  = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=? AND ts<?', [$prev, $since]);
+    $eventsRange = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=?' . meta_filter(), [$since]);
+    $eventsPrev  = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=? AND ts<?' . meta_filter(), [$prev, $since]);
     $newInstalls = (int) q1('SELECT COUNT(*) FROM (SELECT install,MIN(ts) f FROM events GROUP BY install HAVING f>=?) t', [$since]);
     $newPrev     = (int) q1('SELECT COUNT(*) FROM (SELECT install,MIN(ts) f FROM events GROUP BY install HAVING f>=? AND f<?) t', [$prev, $since]);
     $returning   = (int) q1('SELECT COUNT(*) FROM (SELECT install,COUNT(DISTINCT day) d FROM events GROUP BY install HAVING d>=2) t');
-    $eventsAll   = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events');
-    $scans   = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN (\'scan\',\'pages_scanned\') AND ts>=?', [$now - 86400]);
-    $ocr     = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN (\'getText\',\'setOcr\') AND ts>=?', [$now - 86400]);
+    $eventsAll   = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE 1=1' . meta_filter());
+    $scans   = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event=\'scan\' AND ts>=?', [$now - 86400]);
+    $ocr     = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN (\'ocr_ok\',\'ocr_fail\',\'setOcr\') AND ts>=?', [$now - 86400]);
     $pdfs    = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN (\'savePdf\',\'savePdfSelected\',\'savePdfHere\',\'imagesToPdf\') AND ts>=?', [$now - 86400]);
     $crashes = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE event=\'crash\' AND ts>=?', [$since]);
     return [
@@ -61,6 +71,10 @@ function metrics_overview(array $rg): array {
         'unread_fb'   => (int) q1('SELECT COUNT(*) FROM feedback WHERE seen=0'),
         'countries'   => (int) q1("SELECT COUNT(DISTINCT country) FROM geo WHERE country<>'' AND country<>'??'"),
         'db_bytes'    => db_size_bytes(),
+        'avg_scan_ms' => round(event_stats('scan_ms')['avg']),
+        'avg_ocr_ms'  => round(event_stats('ocr_ms')['avg']),
+        'avg_pdf_kb'  => round(event_stats('pdf_kb')['avg']),
+        'avg_pages'   => avg_pages_per_scan(),
     ];
 }
 
@@ -75,7 +89,7 @@ function db_size_bytes(): int {
 /** Daily events series padded to $span buckets. */
 function daily_series(int $span): array {
     $now = time();
-    $rows = qa('SELECT day, SUM(cnt) c FROM events WHERE ts>=? GROUP BY day', [$now - $span * 86400]);
+    $rows = qa('SELECT day, SUM(cnt) c FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY day', [$now - $span * 86400]);
     $m = []; foreach ($rows as $r) $m[$r['day']] = (int)$r['c'];
     $out = [];
     for ($i = $span - 1; $i >= 0; $i--) { $d = gmdate('Y-m-d', $now - $i * 86400); $out[] = ['label' => gmdate('d M', $now - $i * 86400), 'v' => (int)($m[$d] ?? 0)]; }
@@ -98,7 +112,7 @@ function growth_series(): array {
     return $out;
 }
 function feature_usage(int $since, int $limit = 25): array {
-    return qa('SELECT event, SUM(cnt) c, COUNT(DISTINCT install) u FROM events WHERE ts>=? GROUP BY event ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);
+    return qa('SELECT event, SUM(cnt) c, COUNT(DISTINCT install) u FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY event ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);
 }
 function version_active(): array {
     return qa('SELECT version, COUNT(DISTINCT install) u FROM events WHERE ts>=? GROUP BY version ORDER BY u DESC LIMIT 12', [time() - 7 * 86400]);
@@ -113,7 +127,7 @@ function latest_version(): string {
 function os_dist(): array { return qa('SELECT os, COUNT(DISTINCT install) u FROM events GROUP BY os ORDER BY u DESC LIMIT 12'); }
 function country_dist(): array { return qa("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 15"); }
 function hours_dist(int $since): array {
-    $rows = qa('SELECT HOUR(FROM_UNIXTIME(ts)) hr, SUM(cnt) c FROM events WHERE ts>=? GROUP BY hr', [$since]);
+    $rows = qa('SELECT HOUR(FROM_UNIXTIME(ts)) hr, SUM(cnt) c FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY hr', [$since]);
     $h = array_fill(0, 24, 0); foreach ($rows as $r) $h[(int)$r['hr']] = (int)$r['c'];
     return $h;
 }
@@ -132,11 +146,11 @@ function cohorts(int $limit = 8): array {
                GROUP BY YEARWEEK(FROM_UNIXTIME(mn),3) ORDER BY wkstart DESC LIMIT ' . (int)$limit);
 }
 function top_installs(int $since, int $limit = 10): array {
-    return qa('SELECT install, SUM(cnt) c, COUNT(DISTINCT day) days, MAX(version) ver FROM events WHERE ts>=? GROUP BY install ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);
+    return qa('SELECT install, SUM(cnt) c, COUNT(DISTINCT day) days, MAX(version) ver FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY install ORDER BY c DESC LIMIT ' . (int)$limit, [$since]);
 }
 /** Paginated event feed with optional filters. */
 function events_page(array $f, int $page, int $per = 40): array {
-    $c = '1=1'; $a = [];
+    $c = '1=1' . meta_filter(); $a = [];
     if (!empty($f['q'])) { $c .= ' AND event LIKE ?'; $a[] = '%' . $f['q'] . '%'; }
     if (!empty($f['version'])) { $c .= ' AND version=?'; $a[] = $f['version']; }
     if (!empty($f['os'])) { $c .= ' AND os=?'; $a[] = $f['os']; }
@@ -158,10 +172,27 @@ function scanner_sources(): array {
 function pages_scanned_total(): int { return (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event='pages_scanned'"); }
 function ocr_totals(): array {
     return [
-        'runs'   => (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN ('getText','setOcr')"),
-        'onusers'=> (int) q1("SELECT COUNT(DISTINCT install) FROM events WHERE event IN ('getText','setOcr')"),
+        'runs'   => (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event IN ('ocr_ok','ocr_fail')"),
+        'onusers'=> (int) q1("SELECT COUNT(DISTINCT install) FROM events WHERE event IN ('ocr_ok','ocr_fail','setOcr')"),
     ];
 }
+/** Sum + count + average of a value-carrying event (e.g. scan_ms, pdf_kb). */
+function event_stats(string $ev): array {
+    $r = qr('SELECT COALESCE(SUM(cnt),0) s, COUNT(*) c FROM events WHERE event=?', [$ev]) ?: ['s' => 0, 'c' => 0];
+    $s = (int)$r['s']; $c = (int)$r['c'];
+    return ['sum' => $s, 'count' => $c, 'avg' => $c > 0 ? $s / $c : 0];
+}
+/** Grouped totals for prefixed events (dpi_, color_, ocr_lang_ …). */
+function prefixed_events(string $prefix): array {
+    $rows = qa('SELECT event, SUM(cnt) c FROM events WHERE event LIKE ? GROUP BY event ORDER BY c DESC', [$prefix . '%']);
+    $out = []; foreach ($rows as $r) $out[] = ['name' => substr($r['event'], strlen($prefix)), 'c' => (int)$r['c']];
+    return $out;
+}
+function avg_pages_per_scan(): float {
+    $scans = (int) q1("SELECT COUNT(*) FROM events WHERE event='scan'");
+    return $scans > 0 ? round(pages_scanned_total() / $scans, 1) : 0;
+}
+
 /** Device analytics (from the devices table — populated Phase 2). */
 function device_field(string $col): array {
     $ok = ['os', 'arch', 'cpu_cores', 'ram_mb', 'screen', 'monitors', 'lang', 'tz', 'scanner'];

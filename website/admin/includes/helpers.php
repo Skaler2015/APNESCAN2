@@ -16,6 +16,10 @@ function human_bytes($b): string {
     while ($b >= 1024 && $i < 4) { $b /= 1024; $i++; }
     return round($b, $b < 10 && $i > 0 ? 1 : 0) . ' ' . $u[$i];
 }
+function human_ms($ms): string {
+    $ms = (float)$ms; if ($ms <= 0) return '—';
+    return $ms < 1000 ? round($ms) . ' ms' : round($ms / 1000, 1) . ' s';
+}
 function ago($ts): string {
     $d = time() - (int)$ts; if ($d < 60) return $d . 's ago';
     if ($d < 3600) return floor($d / 60) . 'm ago';

@@ -23,9 +23,22 @@ echo '<div class="grid g2" style="margin-top:16px">'
    . ($scanners ? barlist($scanners, 'v', 'u') : empty_state('Scanner model collection ships in Phase 2.', 'monitor')) . '</div>'
    . '</div>';
 
+// Real capture settings (from 1.0.73+)
+$dpi = prefixed_events('dpi_'); usort($dpi, fn($a, $b) => (int)$a['name'] <=> (int)$b['name']);
+$dpiRows = array_map(fn($r) => ['name' => $r['name'] . ' dpi', 'c' => $r['c']], $dpi);
+$colors = prefixed_events('color_');
+$colorLabel = ['color' => 'Color', 'gray' => 'Grayscale', 'bw' => 'Black & White'];
+$colorRows = array_map(fn($r) => ['name' => $colorLabel[$r['name']] ?? $r['name'], 'c' => $r['c']], $colors);
+$scanTime = event_stats('scan_ms');
+
 echo '<div class="sec">' . icon('zap') . 'Performance &amp; settings</div>';
-echo '<div class="grid g3">'
-   . '<div class="card pad"><div class="ctitle">' . icon('clock') . 'Average scan time</div>' . empty_state('Timing arrives in Phase 2.', 'clock') . '</div>'
-   . '<div class="card pad"><div class="ctitle">' . icon('layers') . 'DPI &amp; color mode</div>' . empty_state('DPI/color capture in Phase 2.', 'layers') . '</div>'
-   . '<div class="card pad"><div class="ctitle">' . icon('alert') . 'Scanner errors</div>' . empty_state('No scanner errors reported.', 'check') . '</div>'
+echo '<div class="grid kpis">'
+   . kpi('clock', human_ms($scanTime['avg']), 'Average scan time')
+   . kpi('layers', avg_pages_per_scan(), 'Avg pages / scan')
+   . kpi('scan', nf($scanTime['count']), 'Timed scans')
+   . kpi('alert', nf((int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event='crash'")), 'Crashes (all)')
+   . '</div>';
+echo '<div class="grid g2" style="margin-top:16px">'
+   . '<div class="card pad"><div class="ctitle">' . icon('layers') . 'Resolution (DPI)</div><div class="csub">What resolutions people scan at</div>' . ($dpiRows ? barlist($dpiRows, 'name', 'c') : empty_state('DPI data appears as clients update to 1.0.73+.', 'layers')) . '</div>'
+   . '<div class="card pad"><div class="ctitle">' . icon('eye') . 'Color mode</div><div class="csub">Color vs grayscale vs B&amp;W</div>' . ($colorRows ? chartjs('scColor', doughnut_config(array_column($colorRows, 'name'), array_map('intval', array_column($colorRows, 'c'))), 'sm') : empty_state('Color-mode data appears as clients update.', 'eye')) . '</div>'
    . '</div>';

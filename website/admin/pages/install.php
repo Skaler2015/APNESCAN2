@@ -6,7 +6,7 @@ if ($inst === '') { echo empty_state('No install selected.', 'user'); return; }
 $s = qr('SELECT MIN(ts) first, MAX(ts) last, SUM(cnt) events, COUNT(DISTINCT day) days, MAX(version) ver FROM events WHERE install=?', [$inst]) ?: [];
 $cc = (string) q1('SELECT country FROM geo WHERE install=?', [$inst]);
 $dev = qr('SELECT * FROM devices WHERE install=?', [$inst]);
-$feat = qa('SELECT event, SUM(cnt) c FROM events WHERE install=? GROUP BY event ORDER BY c DESC LIMIT 25', [$inst]);
+$feat = qa('SELECT event, SUM(cnt) c FROM events WHERE install=?' . meta_filter() . ' GROUP BY event ORDER BY c DESC LIMIT 25', [$inst]);
 $hist = qa('SELECT ts,event,version FROM events WHERE install=? ORDER BY id DESC LIMIT 120', [$inst]);
 
 echo '<a class="btn ghost" href="?page=events" style="margin-bottom:14px">' . icon('chevron') . ' Back to events</a>';
