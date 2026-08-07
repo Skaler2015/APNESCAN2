@@ -1819,7 +1819,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var dp=byId('docsPanel'); if(dp && dp.classList.contains('on')) return true;
     return false;
   }
-  function typingTarget(t){ return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable); }
+  function typingTarget(t){ return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable); }
   function setDpiVal(n){ settings.dpi=n; var v=byId('valDpi'); if(v) v.textContent=n+' dpi'; persistSettings(); setStatus(n+' dpi selected'); }
 
   var ACTIONS=[
