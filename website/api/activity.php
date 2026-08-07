@@ -24,12 +24,13 @@ try {
     foreach ($s as $r) $tod[$r['event']] = (int)$r['c'];
 
     $groups = [
-        ['Scan',     ['scan'], '#16a34a'],
-        ['PDF Save', ['savePdf', 'savePdfSelected', 'savePdfHere'], '#2563eb'],
-        ['Rename',   ['renameItem', 'renamePage'], '#dc2626'],
-        ['Print',    ['print', 'printFile'], '#d97706'],
-        ['Import',   ['import', 'importPath', 'importDropped'], '#7c3aed'],
-        ['Share',    ['share', 'shareWhatsapp', 'shareWindows', 'sharePhone'], '#0891b2'],
+        ['Scan',        ['scan'], '#16a34a'],
+        ['Pages scanned', ['pages_scanned'], '#0ea5e9'],
+        ['PDF Save',    ['savePdf', 'savePdfSelected', 'savePdfHere'], '#2563eb'],
+        ['Rename',      ['renameItem', 'renamePage'], '#dc2626'],
+        ['Print',       ['print', 'printFile'], '#d97706'],
+        ['Import',      ['import', 'importPath', 'importDropped'], '#7c3aed'],
+        ['Share',       ['share', 'shareWhatsapp', 'shareWindows', 'sharePhone'], '#0891b2'],
     ];
     $out = [];
     foreach ($groups as $g) {
