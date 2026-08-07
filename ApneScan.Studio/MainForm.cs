@@ -610,6 +610,9 @@ public class MainForm : Form
             case "shareWindows":
                 await ShareWindowsAsync(filePath, indices);
                 break;
+            case "detectTypes":
+                await DetectTypesAsync();
+                break;
             case "getText":
                 await GetTextAsync();
                 break;
@@ -3415,6 +3418,58 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Post(new { type = "text", text = "" });
             Status("OCR error: " + ex.Message);
         }
+    }
+
+    // Classify a document from its OCR text using keyword matching. Real:
+    // the type comes from words actually found on the page, not a guess.
+    private static (string type, int conf) ClassifyDocType(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return ("", 0);
+        var t = " " + text.ToLowerInvariant().Replace("\n", " ").Replace("\r", " ") + " ";
+        int Score(params string[] kws) { int n = 0; foreach (var k in kws) if (t.Contains(k)) n++; return n; }
+        var cands = new List<(string type, int score)>
+        {
+            ("Aadhaar",         Score("aadhaar", "aadhar", "uidai", "unique identification")),
+            ("PAN Card",        Score("permanent account number", "income tax department", "पर्मानेंट")),
+            ("Passport",        Score("passport", "republic of india", "given name", "place of issue")),
+            ("Driving Licence", Score("driving licence", "driving license", "transport department", "motor vehicle", "dl no")),
+            ("ECHS Card",       Score("echs", "ex-servicemen", "contributory health", "smart card", "cghs")),
+            ("Prescription",    Score("prescription", "rx ", "tablet", "capsule", " mg ", "dosage", "physician", "diagnosis")),
+            ("Lab Report",      Score("laboratory", "lab report", "haemoglobin", "hemoglobin", "wbc", "rbc", "reference range", "specimen", "pathology")),
+            ("Invoice / Bill",  Score("invoice", "tax invoice", "gstin", " gst ", "total amount", "grand total", "amount payable", "bill no", "receipt")),
+            ("Certificate",     Score("certificate", "this is to certify", "certified that", "hereby certify")),
+            ("Referral",        Score("referral", "referred to", "reference slip", "refer to")),
+            ("Agreement",       Score("agreement", "terms and conditions", "hereby agree", "party of the first")),
+        };
+        var best = cands.OrderByDescending(c => c.score).First();
+        if (best.score == 0) return ("Document", 0);
+        int conf = Math.Min(96, 55 + best.score * 12);
+        return (best.type, conf);
+    }
+
+    // OCR every scanned page and post a detected document type per page.
+    private async Task DetectTypesAsync()
+    {
+        if (_pages.Count == 0) { Status("Nothing to detect — scan a page first"); return; }
+        if (_ctx.OcrEngine == null) { Banner("OCR is not available for type detection", "warn"); return; }
+        Status("Detecting document types…");
+        int n = _pages.Count;
+        for (int i = 0; i < n && i < _pages.Count; i++)
+        {
+            try
+            {
+                var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_dt_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                _pages[i].Save(tmp);
+                var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+                try { File.Delete(tmp); } catch { }
+                var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
+                var (type, conf) = ClassifyDocType(text);
+                Post(new { type = "pageType", index = i, docType = type, conf });
+            }
+            catch { Post(new { type = "pageType", index = i, docType = "", conf = 0 }); }
+        }
+        Status("Document types detected");
+        Banner("Document types detected", "ok");
     }
 
     private sealed class AppSettings

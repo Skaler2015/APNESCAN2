@@ -348,6 +348,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .pg-card .pg-tools .pt{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#dfe2ee;font-size:13px;cursor:pointer;transition:background .12s}
 .pg-card .pg-tools .pt:hover{background:rgba(255,255,255,.18)}
 .pg-card .pg-tools .pt.del:hover{background:#ef4444;color:#fff}
+.pg-card .pg-type{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:800;padding:2px 9px;border-radius:20px;box-shadow:0 2px 6px rgba(20,20,50,.18);z-index:2;white-space:nowrap;max-width:82%;overflow:hidden;text-overflow:ellipsis}
+.grid-pages.listview .pg-card .pg-type{position:static;transform:none;margin-left:6px}
 .pg-card .pg-name{margin-top:8px;font-size:11px;font-weight:700;color:#3b4254;text-align:center;line-height:1.25;min-height:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .pg-card .pg-name.reading{color:var(--muted-2);font-weight:500;font-style:italic}
 .pg-card .pg-meta{font-size:9.5px;color:var(--muted-2);text-align:center;margin-top:2px;font-weight:600}
@@ -1122,6 +1124,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
               <div class="st-btn" data-op="reverse" title="Reverse page order"><svg><use href="#i-swap"/></svg>Reverse</div>
             </div>
             <div class="st-group">
+              <div class="st-btn" data-op="detectTypes" title="Auto-detect document type from the page text (OCR)">✨ Detect type</div>
               <div class="st-btn" data-op="redo" title="Redo (Ctrl+Y)"><svg><use href="#i-refresh"/></svg>Redo</div>
               <div class="st-btn" data-op="export" title="Export selected page(s) as image to Desktop"><svg><use href="#i-image"/></svg>Export</div>
               <div class="st-btn" data-op="del" title="Delete selected page(s)"><svg><use href="#i-delete"/></svg>Delete</div>
@@ -2584,7 +2587,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     for(var i=0;i<kids.length;i++){ kids[i].classList.toggle('sel', i===index); }
   }
   // Center gallery of scanned pages (fills the main area after a scan)
-  var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0, scannedThumbs=[], nameEntries=[];
+  var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0, scannedThumbs=[], nameEntries=[], pageTypes=[];
   var scanView='grid', thumbPx=122;
   function isSel(i){ return selSet.length ? (selSet.indexOf(i)>=0) : (i===scannedSel); }
   function selCurrent(){ return (selSet.length ? selSet.slice() : (scannedSel>=0 ? [scannedSel] : [])); }
@@ -2642,7 +2645,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(!grid) return;
     scannedNames=(names||[]).slice();
     scannedThumbs=(thumbs||[]).slice();
+    var _prevTotal=scannedTotal;
     scannedTotal=thumbs?thumbs.length:0; selSet=[];
+    if(scannedTotal!==_prevTotal) pageTypes=[];   // page added/removed → detection is stale
     if(typeof selected==='number') scannedSel=selected;
     // When scanned pages are shown, show ONLY them — hide the Scan card, hint,
     // Quick Actions and Recent Files. They return after Clear.
@@ -2717,8 +2722,25 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       });
       grid.appendChild(c);
     });
+    for(var ti=0; ti<pageTypes.length; ti++){ if(pageTypes[ti]) setPageTypeBadge(ti); }
     applyScanView();
     if(typeof updateBatchBar==='function') updateBatchBar();
+  }
+  var DOCTYPE_STYLE={
+    'Aadhaar':['#1d4ed8','#dbeafe'],'PAN Card':['#0f766e','#ccfbf1'],'Passport':['#7c3aed','#ede9fe'],
+    'Driving Licence':['#b45309','#fef3c7'],'ECHS Card':['#6d28d9','#ede9fe'],'Prescription':['#dc2626','#fee2e2'],
+    'Lab Report':['#0891b2','#cffafe'],'Invoice / Bill':['#16a34a','#dcfce7'],'Certificate':['#d97706','#ffedd5'],
+    'Referral':['#db2777','#fce7f3'],'Agreement':['#475569','#e2e8f0'],'Document':['#6b7280','#eef0f6']
+  };
+  function setPageTypeBadge(i){
+    var g=byId('scannedGrid'); if(!g||!g.children[i]) return; var card=g.children[i];
+    var wrap=card.querySelector('.pg-imgwrap'); if(!wrap) return;
+    var old=wrap.querySelector('.pg-type'); if(old) old.remove();
+    var pt=pageTypes[i]; if(!pt||!pt.t) return;
+    var st=DOCTYPE_STYLE[pt.t]||DOCTYPE_STYLE['Document'];
+    var b=document.createElement('div'); b.className='pg-type'; b.textContent=pt.t+(pt.c?(' · '+pt.c+'%'):'');
+    b.style.color=st[0]; b.style.background=st[1]; b.title='Detected from page text (OCR)';
+    wrap.appendChild(b);
   }
   var dragSrc=-1, dragSrcs=[];
   // Per-card hover-toolbar op → acts on that single page index.
@@ -2739,7 +2761,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     dup:function(){ pageOp('duplicate'); }, top:function(){ pageOp('top'); }, bottom:function(){ pageOp('bottom'); }, reverse:function(){ pageOp('reverse'); },
     redo:function(){ send({cmd:'redo'}); }, export:function(){ if(!scannedTotal){ setStatus('Nothing to export'); return; } send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); },
     del:function(){ if(!scannedTotal){ setStatus('No pages'); return; } send({cmd:'deletePage', indices:selCurrent()}); },
-    vgrid:function(){ scanView='grid'; applyScanView(); }, vlist:function(){ scanView='list'; applyScanView(); }
+    vgrid:function(){ scanView='grid'; applyScanView(); }, vlist:function(){ scanView='list'; applyScanView(); },
+    detectTypes:function(){ if(!scannedTotal){ setStatus('Scan a page first'); return; } setStatus('Detecting document types…'); if(bridge) send({cmd:'detectTypes'}); }
   };
   var scanToolsEl=byId('scanTools');
   if(scanToolsEl){ scanToolsEl.addEventListener('click', function(ev){ var b=ev.target.closest('.st-btn'); if(!b) return; var op=b.getAttribute('data-op'); if(scanToolsMap[op]) scanToolsMap[op](); }); }
@@ -2859,6 +2882,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         if(m.ok && m.pts && m.pts.length>=8){ var b=fsImgBox(); if(b){ for(var ci=0;ci<4;ci++){ perspPts[ci]={x:b.ix+m.pts[ci*2]*b.iw, y:b.iy+m.pts[ci*2+1]*b.ih}; } fsPerspDraw(); setStatus('Corners detected — adjust if needed, then Apply'); } }
         else setStatus('Could not auto-detect — drag the corners manually');
       }
+      else if(m.type==='pageType'){ if(typeof m.index==='number'){ pageTypes[m.index]={t:m.docType||'',c:m.conf||0}; setPageTypeBadge(m.index); } }
       else if(m.type==='scanBegin'){ sxBegin(m); }
       else if(m.type==='scanStage'){ sxStage(m); }
       else if(m.type==='scanPage'){ sxPage(m); }
