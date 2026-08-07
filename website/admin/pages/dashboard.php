@@ -12,6 +12,19 @@ $chips .= '</div>';
 
 echo '<div class="phead"><div><h1>Overview</h1><p>Anonymous usage across all ApneScan installs · ' . h($rg['label']) . '</p></div>' . $chips . '</div>';
 
+// Smart Insights
+$ins = insights();
+if ($ins) {
+    $tmap = ['good' => 'g', 'warn' => 'w', 'bad' => 'r', 'info' => ''];
+    echo '<div class="sec" style="margin-top:20px">' . icon('zap') . 'Smart insights</div><div class="grid g3">';
+    foreach ($ins as $x) {
+        echo '<div class="card pad" style="display:flex;gap:12px;align-items:flex-start">'
+           . '<span class="pill ' . ($tmap[$x['tone']] ?? '') . '" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none">' . icon($x['icon']) . '</span>'
+           . '<span style="font-size:13px;line-height:1.5;font-weight:500">' . h($x['text']) . '</span></div>';
+    }
+    echo '</div>';
+}
+
 // KPI grid
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('users', nf($m['installs']), 'Total installs')

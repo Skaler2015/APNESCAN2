@@ -69,3 +69,7 @@ profile endpoint. No document content or personal data is ever collected.
   date filters (presets + custom range) on Events, dedicated Feature Analytics
   page, Chart.js export-PNG + wheel-zoom/pan + monthly trend, and Slack/Discord/
   generic webhook alerts (throttled) with a test button.
+- **Phase 5 (done):** Smart Insights (auto week-over-week narrative on the
+  dashboard), a real-time events-per-minute chart on the Live page, and a PWA
+  (installable + offline shell) via `../admin-manifest.webmanifest`, `../sw.js`
+  and `icon.svg`.

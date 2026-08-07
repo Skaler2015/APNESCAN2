@@ -77,6 +77,8 @@ echo '</main></div></div>'; // content, main, app
 ?>
 <script>
 (function(){
+  // PWA: register the service worker (installable + offline shell)
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
   var root=document.documentElement, app=document.getElementById('app');
   // sidebar collapse (persisted)
   try{ if(localStorage.getItem('as_collapsed')==='1') app.classList.add('collapsed'); }catch(e){}

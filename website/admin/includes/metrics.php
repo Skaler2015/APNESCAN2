@@ -164,6 +164,76 @@ function events_page(array $f, int $page, int $per = 40): array {
     $rows = qa("SELECT ts,event,version,os,install,cnt FROM events WHERE $c ORDER BY id DESC LIMIT $per OFFSET $off", $a);
     return ['rows' => $rows, 'total' => $total, 'pages' => max(1, (int)ceil($total / $per)), 'page' => $page];
 }
+/** Feature usage totals between two timestamps (map event => uses). */
+function feature_usage_between(int $since, int $until): array {
+    $rows = qa('SELECT event, SUM(cnt) c FROM events WHERE ts>=? AND ts<?' . meta_filter() . ' GROUP BY event', [$since, $until]);
+    $m = []; foreach ($rows as $r) $m[$r['event']] = (int)$r['c'];
+    return $m;
+}
+
+/**
+ * Smart Insights — an auto-generated narrative of what's notable, from
+ * week-over-week comparisons. Returns [{tone,icon,text}] ready to render.
+ */
+function insights(): array {
+    return remember('insights', 180, function () {
+        $now = time(); $w = 7 * 86400;
+        $out = [];
+
+        $evThis = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=?' . meta_filter(), [$now - $w]);
+        $evPrev = (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=? AND ts<?' . meta_filter(), [$now - 2 * $w, $now - $w]);
+        if ($evThis > 0 || $evPrev > 0) {
+            $d = delta_pct($evThis, $evPrev);
+            $out[] = ['tone' => $d >= 0 ? 'good' : 'warn', 'icon' => 'activity',
+                'text' => 'Activity is ' . ($d >= 0 ? 'up' : 'down') . ' ' . abs($d) . '% this week (' . nf($evThis) . ' events vs ' . nf($evPrev) . ').'];
+        }
+
+        $nThis = (int) q1('SELECT COUNT(*) FROM (SELECT install,MIN(ts) f FROM events GROUP BY install HAVING f>=?) t', [$now - $w]);
+        $nPrev = (int) q1('SELECT COUNT(*) FROM (SELECT install,MIN(ts) f FROM events GROUP BY install HAVING f>=? AND f<?) t', [$now - 2 * $w, $now - $w]);
+        if ($nThis > 0 || $nPrev > 0) {
+            $d = delta_pct($nThis, $nPrev);
+            $out[] = ['tone' => $d >= 0 ? 'good' : 'info', 'icon' => 'trend',
+                'text' => nf($nThis) . ' new install' . ($nThis === 1 ? '' : 's') . ' this week' . ($nPrev > 0 ? ' (' . ($d >= 0 ? '+' : '') . $d . '% vs last week).' : '.')];
+        }
+
+        // fastest-growing feature (this week vs last)
+        $a = feature_usage_between($now - $w, $now);
+        $b = feature_usage_between($now - 2 * $w, $now - $w);
+        $bestK = null; $bestGain = 0;
+        foreach ($a as $k => $v) { $g = $v - ($b[$k] ?? 0); if ($g > $bestGain) { $bestGain = $g; $bestK = $k; } }
+        if ($bestK !== null && $bestGain > 0) {
+            $out[] = ['tone' => 'good', 'icon' => 'zap', 'text' => '“' . $bestK . '” is the fastest-growing feature (+' . nf($bestGain) . ' uses this week).'];
+        }
+
+        // latest version adoption
+        $latest = latest_version();
+        if ($latest !== '') {
+            $installs = (int) q1('SELECT COUNT(DISTINCT install) FROM events');
+            $onLatest = (int) q1('SELECT COUNT(DISTINCT install) FROM (SELECT install,MAX(version) mv FROM events GROUP BY install) t WHERE mv=?', [$latest]);
+            $pc = pct($onLatest, $installs);
+            $out[] = ['tone' => $pc >= 50 ? 'good' : 'info', 'icon' => 'layers', 'text' => $pc . '% of installs are on the latest version (' . h($latest) . ').'];
+        }
+
+        // crash movement
+        $cThis = (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event='crash' AND ts>=?", [$now - $w]);
+        $cPrev = (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event='crash' AND ts>=? AND ts<?", [$now - 2 * $w, $now - $w]);
+        if ($cThis > 0) {
+            $out[] = ['tone' => $cThis > $cPrev ? 'bad' : 'warn', 'icon' => 'alert',
+                'text' => nf($cThis) . ' crash' . ($cThis === 1 ? '' : 'es') . ' this week' . ($cPrev > 0 ? ' (' . ($cThis >= $cPrev ? '+' : '') . delta_pct($cThis, $cPrev) . '% vs last).' : '.')];
+        } elseif ($evThis > 0) {
+            $out[] = ['tone' => 'good', 'icon' => 'shield', 'text' => 'No crashes reported this week. 🎉'];
+        }
+
+        // top country + peak hour
+        $tc = qr("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 1");
+        if ($tc) $out[] = ['tone' => 'info', 'icon' => 'globe', 'text' => 'Most installs are in ' . flag($tc['country']) . ' ' . h($tc['country']) . ' (' . nf($tc['u']) . ').'];
+        $hrs = hours_dist($now - $w); $peak = array_keys($hrs, max($hrs))[0] ?? null;
+        if ($peak !== null && max($hrs) > 0) $out[] = ['tone' => 'info', 'icon' => 'clock', 'text' => 'Peak usage is around ' . str_pad((string)$peak, 2, '0', STR_PAD_LEFT) . ':00 UTC.'];
+
+        return $out;
+    });
+}
+
 /** Human-facing grouping of raw event names into feature categories. */
 function feature_catalog(): array {
     return [

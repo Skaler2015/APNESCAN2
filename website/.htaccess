@@ -1,6 +1,11 @@
 # Serve the ApneScan landing page first (over Hostinger's default.php placeholder)
 DirectoryIndex index.html index.php default.php
 
+# Correct MIME type for the PWA manifest
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 # Small caching + gzip for a snappier page
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml

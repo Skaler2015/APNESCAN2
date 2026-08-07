@@ -39,10 +39,18 @@ switch ($action) {
             'when' => gmdate('d M · H:i:s', (int)$r['ts']), 'event' => $r['event'],
             'version' => $r['version'], 'install' => $r['install'],
         ], $rows);
+        // last-30-minute per-minute buckets
+        $buckets = array_fill(0, 30, 0);
+        foreach (qa('SELECT ts,cnt FROM events WHERE ts>=?' . meta_filter(), [$now - 30 * 60]) as $r) {
+            $idx = intdiv($now - (int)$r['ts'], 60);
+            if ($idx >= 0 && $idx < 30) $buckets[29 - $idx] += (int)$r['cnt'];
+        }
+        $labels = [];
+        for ($i = 29; $i >= 0; $i--) $labels[] = $i === 0 ? 'now' : '-' . $i . 'm';
         echo json_encode(['ok' => true, 'kpis' => [
             'online' => $m['online'], 'sessions' => $m['sessions'],
             'active_today' => $m['active_today'], 'events' => $m['events'],
-        ], 'events' => $ev]);
+        ], 'events' => $ev, 'series' => ['labels' => $labels, 'values' => $buckets]]);
         break;
 
     case 'dashboard':
