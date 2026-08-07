@@ -1070,7 +1070,20 @@ public class MainForm : Form
         _scanCts = new CancellationTokenSource();
         var token = _scanCts.Token;
         ScanStatus("busy", "Busy · Scanning…");
-        Post(new { type = "scanProgress", count = 0, done = false });   // show progress UI + Cancel button
+        bool duplex = (source ?? "").IndexOf("duplex", StringComparison.OrdinalIgnoreCase) >= 0;
+        // Rich "scan begin" event drives the premium full-screen progress overlay.
+        Post(new
+        {
+            type = "scanBegin",
+            scanner = _devices[deviceIndex].Name,
+            dpi = dpi > 0 ? dpi : 200,
+            color = string.IsNullOrEmpty(color) ? "color" : color,
+            source = string.IsNullOrEmpty(source) ? "auto" : source,
+            duplex,
+            startCount = _pages.Count
+        });
+        Post(new { type = "scanProgress", count = 0, done = false });   // legacy hero progress (fallback)
+        Post(new { type = "scanStage", stage = "feeding", op = "Feeding paper…" });
         bool cancelled = false;
         int added = 0, skipped = 0;
         try
@@ -1092,26 +1105,33 @@ public class MainForm : Form
             var scanSw = Stopwatch.StartNew();
             await foreach (var image in controller.Scan(options, token))
             {
+                Post(new { type = "scanStage", stage = "capturing", op = "Capturing page…" });
+                Post(new { type = "scanStage", stage = "process", op = "Auto-crop · straighten · blank check…" });
                 var (proc, blank) = await PostProcessScanAsync(image);
                 if (blank && _skipBlank)
                 {
                     proc.Dispose();
                     skipped++;
                     Post(new { type = "scanProgress", count = added, skipped, done = false });
+                    Post(new { type = "scanPage", blank = true, skipped, index = added });
                     continue;
                 }
                 _pages.Add(proc);
                 added++;
                 // Show the page in the thumbnail strip immediately, and update
-                // the live progress counter shown in the scan hero.
+                // the live progress counter shown in the scan hero + overlay.
                 await RefreshAsync(true);
                 ScanStatus("busy", $"Busy · Scanning… {added} page(s)");
                 Post(new { type = "scanProgress", count = added, skipped, done = false });
+                var thumb = await PageThumbAsync(proc, 240);
+                Post(new { type = "scanPage", index = added - 1, page = added, thumb, blank = false, skipped });
+                Post(new { type = "scanStage", stage = "feeding", op = "Ready for next page…" });
             }
 
             if (added == 0)
             {
                 Status(skipped > 0 ? $"Only blank page(s) found — skipped {skipped}" : "Nothing was scanned");
+                Post(new { type = "scanDone", added = 0, skipped, ms = (int)scanSw.ElapsedMilliseconds, cancelled = false, empty = true });
                 return;
             }
             if (skipped > 0)
@@ -1120,6 +1140,7 @@ public class MainForm : Form
             }
 
             scanSw.Stop();
+            Post(new { type = "scanStage", stage = "saving", op = "Finishing…" });
             await RefreshAsync(true);
             _ = AutoNameAsync();
             Bump("scan", added);
@@ -1133,6 +1154,8 @@ public class MainForm : Form
             SendDeviceProfile();
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
             ScanStatus("ready", "Free · Ready");
+            int ppm = scanMs > 0 ? (int)Math.Round(added / (scanMs / 60000.0)) : 0;
+            Post(new { type = "scanDone", added, skipped, ms = scanMs, ppm, scanner = _devices[deviceIndex].Name, dpi = dpi > 0 ? dpi : 200, color = string.IsNullOrEmpty(color) ? "color" : color, duplex, cancelled = false, empty = false });
         }
         catch (OperationCanceledException)
         {
@@ -1141,11 +1164,13 @@ public class MainForm : Form
             await RefreshAsync(true);
             Status(added > 0 ? $"Scan cancelled — kept {added} page(s)" : "Scan cancelled");
             ScanStatus("ready", "Free · Ready");
+            Post(new { type = "scanDone", added, skipped, ms = 0, cancelled = true, empty = added == 0 });
         }
         catch (Exception ex)
         {
             Status("Scan error: " + ex.Message);
             ScanStatus("error", "Error: " + FriendlyScanError(ex));
+            Post(new { type = "scanFail", message = FriendlyScanError(ex), added, skipped });
         }
         finally
         {
@@ -1154,6 +1179,23 @@ public class MainForm : Form
             _scanCts?.Dispose();
             _scanCts = null;
         }
+    }
+
+    // Render a page to a small PNG data URL for the live scan-progress strip.
+    private async Task<string> PageThumbAsync(ProcessedImage p, int size)
+    {
+        try
+        {
+            var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+            using var thumb = await renderer.Render(p, size);
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "apnescan_pt_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            thumb.Save(tmp);
+            var bytes = await File.ReadAllBytesAsync(tmp);
+            try { File.Delete(tmp); } catch { /* best-effort */ }
+            return "data:image/png;base64," + Convert.ToBase64String(bytes);
+        }
+        catch { return ""; }
     }
 
     // Auto-crop blank borders and detect blank pages by analysing a small
