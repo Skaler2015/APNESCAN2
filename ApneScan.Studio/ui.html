@@ -424,25 +424,64 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .rp-view.cropping img{pointer-events:none;-webkit-user-drag:none;user-select:none}
 #previewImg{-webkit-user-drag:none;user-drag:none}
 /* Fullscreen "Open in Editor" */
-#fsEditor{width:100vw;height:100vh;display:flex;flex-direction:column}
-#fsBar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:#171a22;flex-wrap:wrap}
-#fsBar .fsb{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;color:#e7e9f2;background:#252a36;cursor:pointer;user-select:none;white-space:nowrap}
-#fsBar .fsb:hover{background:#333a4a}
-#fsBar .fsb svg{width:15px;height:15px;stroke:currentColor}
-#fsBar .fsb.primary{background:var(--accent);color:#fff}
+/* ===== Editor Studio (Fluent dark, 3-pane) ===== */
+#fsOverlay{background:#0e1017}
+#fsEditor{width:100vw;height:100vh;display:flex;flex-direction:column;color:#e7e9f2}
+#fsTop{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#171a22;border-bottom:1px solid rgba(255,255,255,.06);flex:none}
+.fs-brand{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;flex:none;padding-right:6px}
+.fs-brand svg{width:17px;height:17px;stroke:#a78bfa}
+.fs-dirty{color:#fbbf24;font-size:14px;display:none}
+.fs-dirty.on{display:inline}
+#fsBar{display:flex;align-items:center;gap:5px;flex:1;flex-wrap:wrap;min-width:0}
+.fsg{display:flex;align-items:center;gap:4px}
+#fsBar .fsb,.fs-zoom .fsb{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;color:#dfe2ee;background:#252a36;cursor:pointer;user-select:none;white-space:nowrap}
+#fsBar .fsb:hover,.fs-zoom .fsb:hover{background:#333a4a}
+#fsBar .fsb svg,.fs-zoom .fsb svg{width:14px;height:14px;stroke:currentColor}
+#fsBar .fsb.primary,.fs-zoom .fsb.primary{background:var(--accent);color:#fff}
+#fsBar .fsb.accent{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
 #fsBar .fsb.danger{background:#3a2530;color:#ff9aa5}
 #fsBar .fsb.danger:hover{background:#7f1d1d;color:#fff}
 #fsBar .fsb.on{background:var(--accent);color:#fff}
-#fsBar .fssep{width:1px;height:22px;background:#3a4152;margin:0 4px}
-#fsStage{position:relative;flex:1;display:grid;place-items:center;overflow:hidden;min-height:0}
+.fssep{width:1px;height:20px;background:#3a4152;margin:0 3px}
+.fs-zoom{display:flex;align-items:center;gap:5px;flex:none}
+.fs-zoom #fsZoomPct{font-size:11.5px;font-weight:700;min-width:38px;text-align:center;color:#aab2c6;font-variant-numeric:tabular-nums}
+#fsBody{flex:1;display:grid;grid-template-columns:132px 1fr 256px;min-height:0}
+#fsThumbs{background:#12151d;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:8px}
+.fs-th{border:2px solid transparent;border-radius:8px;overflow:hidden;background:#0d1017;cursor:pointer;position:relative;flex:none}
+.fs-th img{width:100%;display:block}
+.fs-th .n{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:800;padding:0 5px;border-radius:5px}
+.fs-th:hover{border-color:#3a4152}
+.fs-th.cur{border-color:#a78bfa;box-shadow:0 0 0 2px rgba(167,139,250,.25)}
+#fsStage{position:relative;overflow:hidden;min-height:0;background:
+  linear-gradient(45deg,#14171f 25%,transparent 25%,transparent 75%,#14171f 75%),
+  linear-gradient(45deg,#14171f 25%,#0e1017 25%,#0e1017 75%,#14171f 75%);
+  background-size:24px 24px;background-position:0 0,12px 12px;display:grid;place-items:center}
 #fsStage.cropping{cursor:crosshair;user-select:none}
-#fsImg{max-width:96vw;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#fsStage.panning{cursor:grab}
+#fsPan{will-change:transform;transition:transform .08s linear}
+#fsImg{max-width:88vw;max-height:82vh;object-fit:contain;border-radius:3px;box-shadow:0 12px 44px rgba(0,0,0,.55);background:#fff;display:block}
+#fsStage.zoomed #fsImg{max-width:none;max-height:none}
 #fsStage.cropping #fsImg{pointer-events:none;-webkit-user-drag:none}
 #fsCropBox{position:absolute;border:2px dashed #fff;background:rgba(124,58,237,.22);display:none;pointer-events:none;z-index:5}
 #fsCropBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:none;gap:8px;z-index:6}
 #fsCropBar .cb{padding:7px 16px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;border:0}
 #fsCropBar .cb.ok{background:var(--accent);color:#fff}
 #fsCropBar .cb.no{background:#fff;color:#222}
+#fsProps{background:#12151d;border-left:1px solid rgba(255,255,255,.06);overflow-y:auto;display:flex;flex-direction:column}
+.fsp-tabs{display:flex;gap:4px;padding:10px 10px 0}
+.fsp-tabs button{flex:1;font-size:12px;font-weight:700;padding:8px;border-radius:8px 8px 0 0;border:0;background:transparent;color:#8b93a7;cursor:pointer}
+.fsp-tabs button.on{background:#1b1f2b;color:#e7e9f2}
+.fsp-b{padding:14px;flex:1}
+.fsp-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+.fsp-row span{color:#8b93a7}.fsp-row b{font-weight:700;color:#e7e9f2;text-align:right;word-break:break-word}
+.fs-ocrbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--accent);color:#fff;font-weight:700;font-size:12.5px;padding:10px;border:0;border-radius:9px;cursor:pointer}
+.fs-ocrbtn svg{width:15px;height:15px;stroke:#fff}
+.fs-ocrbox{margin:10px 0;background:#0d1017;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:10px;font-size:12px;line-height:1.55;color:#c7ccdb;white-space:pre-wrap;max-height:46vh;overflow:auto;min-height:80px}
+.fs-ocrcopy{width:100%;background:#252a36;color:#dfe2ee;font-weight:700;font-size:12px;padding:8px;border:0;border-radius:8px;cursor:pointer}
+.fs-ocrcopy:hover{background:#333a4a}
+#fsStatus{height:28px;flex:none;background:#12151d;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:11px;color:#8b93a7}
+#fsStatus .dot{opacity:.5}
+@media (max-width:820px){#fsBody{grid-template-columns:0 1fr 0}#fsThumbs,#fsProps{display:none}}
 /* ============ PREMIUM SCAN PROGRESS OVERLAY ============ */
 #scanOverlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:26px;
   background:radial-gradient(120% 120% at 50% 0%,rgba(41,30,74,.62),rgba(8,10,18,.86));backdrop-filter:blur(9px) saturate(1.1);
@@ -1073,31 +1112,86 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   </div>
 </div>
 
-<div class="cam-overlay" id="fsOverlay" style="background:rgba(8,10,16,.93)">
+<div class="cam-overlay" id="fsOverlay">
   <div id="fsEditor">
-    <div id="fsBar">
-      <div class="fsb" data-fs="crop" title="Crop (drag on the page)"><svg class="ic"><use href="#i-crop"/></svg>Crop</div>
-      <div class="fsb" data-fs="rotL" title="Rotate left"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
-      <div class="fsb" data-fs="rotR" title="Rotate right"><svg class="ic"><use href="#i-rotate"/></svg></div>
-      <div class="fsb" data-fs="deskew" title="Deskew">Deskew</div>
-      <div class="fssep"></div>
-      <div class="fsb" data-fs="auto" title="Auto-enhance">Auto</div>
-      <div class="fsb" data-fs="bw" title="Black &amp; white">B&amp;W</div>
-      <div class="fsb" data-fs="gray" title="Grayscale">Gray</div>
-      <div class="fsb" data-fs="sharpen" title="Sharpen">Sharpen</div>
-      <div class="fsb" data-fs="brUp" title="Brighter">☀+</div>
-      <div class="fsb" data-fs="brDn" title="Darker">☀−</div>
-      <div class="fssep"></div>
-      <div class="fsb" data-fs="prev" title="Previous page">◀</div>
-      <div class="fsb" data-fs="next" title="Next page">▶</div>
-      <div class="fsb danger" data-fs="del" title="Delete this page"><svg class="ic"><use href="#i-delete"/></svg></div>
-      <div style="flex:1"></div>
-      <div class="fsb primary" data-fs="done" title="Close editor">Done</div>
+    <div id="fsTop">
+      <div class="fs-brand"><svg class="ic"><use href="#i-editor"/></svg><b id="fsDocName">Editor Studio</b><span id="fsDirty" class="fs-dirty" title="Unsaved changes">●</span></div>
+      <div id="fsBar">
+        <div class="fsg">
+          <div class="fsb" data-fs="undo" title="Undo (Ctrl+Z)"><svg class="ic"><use href="#i-undo"/></svg></div>
+          <div class="fsb" data-fs="redo" title="Redo (Ctrl+Y)"><svg class="ic"><use href="#i-refresh"/></svg></div>
+        </div>
+        <div class="fssep"></div>
+        <div class="fsg">
+          <div class="fsb" data-fs="crop" title="Crop — drag on the page"><svg class="ic"><use href="#i-crop"/></svg>Crop</div>
+          <div class="fsb" data-fs="rotL" title="Rotate left"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
+          <div class="fsb" data-fs="rotR" title="Rotate right"><svg class="ic"><use href="#i-rotate"/></svg></div>
+          <div class="fsb" data-fs="rot180" title="Rotate 180°">180°</div>
+          <div class="fsb" data-fs="deskew" title="Auto-straighten">Deskew</div>
+        </div>
+        <div class="fssep"></div>
+        <div class="fsg">
+          <div class="fsb accent" data-fs="auto" title="Auto-enhance (document)">✦ Auto</div>
+          <div class="fsb" data-fs="bw" title="Black &amp; white">B&amp;W</div>
+          <div class="fsb" data-fs="gray" title="Grayscale">Gray</div>
+          <div class="fsb" data-fs="sharpen" title="Sharpen">Sharpen</div>
+        </div>
+        <div class="fssep"></div>
+        <div class="fsg">
+          <div class="fsb" data-fs="brUp" title="Brighter">☀+</div>
+          <div class="fsb" data-fs="brDn" title="Darker">☀−</div>
+          <div class="fsb" data-fs="coUp" title="More contrast">◑+</div>
+          <div class="fsb" data-fs="coDn" title="Less contrast">◑−</div>
+        </div>
+        <div class="fssep"></div>
+        <div class="fsg">
+          <div class="fsb" data-fs="dup" title="Duplicate page"><svg class="ic"><use href="#i-files"/></svg></div>
+          <div class="fsb danger" data-fs="del" title="Delete page"><svg class="ic"><use href="#i-delete"/></svg></div>
+        </div>
+        <div class="fssep"></div>
+        <div class="fsg">
+          <div class="fsb" data-fs="savePdf" title="Save as PDF"><svg class="ic"><use href="#i-save"/></svg>Save</div>
+          <div class="fsb" data-fs="exportImg" title="Export page as image"><svg class="ic"><use href="#i-image"/></svg></div>
+          <div class="fsb" data-fs="print" title="Print"><svg class="ic"><use href="#i-print"/></svg></div>
+        </div>
+      </div>
+      <div class="fs-zoom">
+        <div class="fsb" data-fs="zoomOut" title="Zoom out">−</div>
+        <span id="fsZoomPct">Fit</span>
+        <div class="fsb" data-fs="zoomIn" title="Zoom in">+</div>
+        <div class="fsb" data-fs="fit" title="Fit to screen">Fit</div>
+        <div class="fsb" data-fs="actual" title="Actual size">1:1</div>
+        <div class="fsb primary" data-fs="done" title="Close editor (Esc)">Done</div>
+      </div>
     </div>
-    <div id="fsStage">
-      <img id="fsImg" alt="Preview" draggable="false">
-      <div id="fsCropBox"></div>
-      <div id="fsCropBar"><div class="cb ok" id="fsCropApply">Apply crop</div><div class="cb no" id="fsCropCancel">Cancel</div></div>
+    <div id="fsBody">
+      <aside id="fsThumbs"></aside>
+      <div id="fsStage">
+        <div id="fsPan"><img id="fsImg" alt="Preview" draggable="false"></div>
+        <div id="fsCropBox"></div>
+        <div id="fsCropBar"><div class="cb ok" id="fsCropApply">Apply crop</div><div class="cb no" id="fsCropCancel">Cancel</div></div>
+      </div>
+      <aside id="fsProps">
+        <div class="fsp-tabs">
+          <button type="button" class="on" data-pt="info">Information</button>
+          <button type="button" data-pt="ocr">Text · OCR</button>
+        </div>
+        <div class="fsp-b" id="fsPropInfo"></div>
+        <div class="fsp-b" id="fsPropOcr" style="display:none">
+          <button type="button" class="fs-ocrbtn" id="fsOcrRun"><svg class="ic"><use href="#i-ocr"/></svg>Extract text (English)</button>
+          <div class="fs-ocrbox" id="fsOcrText">Run OCR to read the text on this page.</div>
+          <button type="button" class="fs-ocrcopy" id="fsOcrCopy">Copy text</button>
+        </div>
+      </aside>
+    </div>
+    <div id="fsStatus">
+      <span id="fsStPage">Page 1 / 1</span>
+      <span class="dot">·</span>
+      <span id="fsStSize">–</span>
+      <span style="flex:1"></span>
+      <span id="fsStHint">Space+drag to pan · Ctrl+wheel to zoom</span>
+      <span class="dot">·</span>
+      <span id="fsStZoom">Fit</span>
     </div>
   </div>
 </div>
@@ -1612,33 +1706,112 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var zi=byId('zoomIn'); if(zi) zi.addEventListener('click', function(){ fitMode=false; zoom=Math.min(zoom*1.25,5); applyZoom(); });
   var zo=byId('zoomOut'); if(zo) zo.addEventListener('click', function(){ fitMode=false; zoom=Math.max(zoom/1.25,0.2); applyZoom(); });
   var zf=byId('zoomFit'); if(zf) zf.addEventListener('click', function(){ fitMode=true; zoom=1; applyZoom(); });
-  function openFs(){ var im=byId('previewImg'); if(!im||!im.getAttribute('src')){ setStatus('Scan or open a page first'); return; } var fi=byId('fsImg'); if(fi) fi.src=im.src; var ov=byId('fsOverlay'); if(ov) ov.classList.add('on'); fsEndCrop(); }
+  var fsZoom=0;              // 0 = Fit; otherwise a scale factor
+  var edThumbs=[];          // latest page thumbnails (mirrors the scanned strip)
+  var edLastDpi='', edLastColor='', edLastScanner='';   // from the last scan, for the Info panel
+  function openFs(){
+    var im=byId('previewImg'); if(!im||!im.getAttribute('src')){ setStatus('Scan or open a page first'); return; }
+    var fi=byId('fsImg'); if(fi){ fi.onload=function(){ fsUpdateInfo(); fsUpdateStatus(); }; fi.src=im.src; }
+    var ov=byId('fsOverlay'); if(ov) ov.classList.add('on');
+    fsEndCrop(); fsZoom=0; fsApplyZoom(); fsRenderThumbs(); fsUpdateInfo(); fsUpdateStatus();
+    var d=byId('fsDirty'); if(d) d.classList.toggle('on', scannedTotal>0);
+  }
   function fsClose(){ fsEndCrop(); var ov=byId('fsOverlay'); if(ov) ov.classList.remove('on'); }
-  function fsSync(url){ var fi=byId('fsImg'); if(fi){ if(url) fi.src=url; else { var im=byId('previewImg'); if(im&&im.getAttribute('src')) fi.src=im.src; } } }
-  // Fullscreen editor toolbar → reuse the existing page commands.
+  function fsSync(url){
+    var fi=byId('fsImg'); if(fi){ if(url) fi.src=url; else { var im=byId('previewImg'); if(im&&im.getAttribute('src')) fi.src=im.src; } }
+    if(fi){ fi.onload=function(){ fsUpdateInfo(); fsUpdateStatus(); }; }
+    fsRenderThumbs(); fsUpdateStatus();
+  }
+  function fsRenderThumbs(){
+    var host=byId('fsThumbs'); if(!host) return; host.innerHTML='';
+    (edThumbs||[]).forEach(function(src,i){
+      var d=document.createElement('div'); d.className='fs-th'+((i===scannedSel||(scannedSel<0&&i===edThumbs.length-1))?' cur':'');
+      d.innerHTML='<span class="n">'+(i+1)+'</span><img src="'+src+'">';
+      d.addEventListener('click', function(){ selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); });
+      host.appendChild(d);
+    });
+  }
+  function fsUpdateInfo(){
+    var host=byId('fsPropInfo'); if(!host) return;
+    var fi=byId('fsImg'); var w=fi?fi.naturalWidth:0, h=fi?fi.naturalHeight:0;
+    var total=scannedTotal||edThumbs.length||1, cur=(scannedSel>=0?scannedSel:total-1)+1;
+    function row(k,v){ return '<div class="fsp-row"><span>'+k+'</span><b>'+esc(String(v))+'</b></div>'; }
+    host.innerHTML=
+      row('Page', cur+' of '+total)+
+      row('Preview', w&&h?(w+' × '+h+' px'):'–')+
+      row('Aspect', (w&&h)?(Math.round((w/h)*100)/100):'–')+
+      (edLastDpi?row('Scan DPI', edLastDpi+' DPI'):'')+
+      (edLastColor?row('Color mode', edLastColor):'')+
+      (edLastScanner?row('Scanner', edLastScanner):'')+
+      '<div style="font-size:11px;color:#5b6479;margin-top:10px;line-height:1.5">Edits are non-destructive — Undo (Ctrl+Z) reverts any step. Final image is rendered on Save/Export.</div>';
+  }
+  function fsUpdateStatus(){
+    var total=scannedTotal||edThumbs.length||1, cur=(scannedSel>=0?scannedSel:total-1)+1;
+    var p=byId('fsStPage'); if(p) p.textContent='Page '+cur+' / '+total;
+    var fi=byId('fsImg'); var sz=byId('fsStSize'); if(sz) sz.textContent=fi&&fi.naturalWidth?(fi.naturalWidth+' × '+fi.naturalHeight+' px'):'–';
+    var z=byId('fsZoomPct'), z2=byId('fsStZoom'); var txt=fsZoom===0?'Fit':(Math.round(fsZoom*100)+'%');
+    if(z) z.textContent=txt; if(z2) z2.textContent=txt;
+  }
+  function fsApplyZoom(){
+    var pan=byId('fsPan'), stage=byId('fsStage'), fi=byId('fsImg'); if(!pan||!fi) return;
+    if(fsZoom===0){ if(stage) stage.classList.remove('zoomed'); pan.style.transform='translate(0,0)'; fi.style.transform='none'; fsPanX=0; fsPanY=0; }
+    else { if(stage) stage.classList.add('zoomed'); fi.style.transform='scale('+fsZoom+')'; pan.style.transform='translate('+fsPanX+'px,'+fsPanY+'px)'; }
+    fsUpdateStatus();
+  }
+  var fsPanX=0, fsPanY=0;
+  function fsZoomBy(f){ var base=fsZoom===0?1:fsZoom; fsZoom=Math.max(0.15, Math.min(8, base*f)); fsApplyZoom(); }
+  // Fullscreen editor toolbar → all real page commands.
   var fsBar=byId('fsBar');
   if(fsBar){ fsBar.addEventListener('click', function(ev){
     var b=ev.target.closest('.fsb'); if(!b) return; var op=b.getAttribute('data-fs');
     if(op==='done'){ fsClose(); return; }
     if(op==='crop'){ fsStartCrop(); return; }
+    if(op==='undo'){ if(bridge) send({cmd:'undo'}); return; }
+    if(op==='redo'){ if(bridge) send({cmd:'redo'}); return; }
     if(op==='rotL'){ if(bridge) send({cmd:'rotateLeft'}); return; }
     if(op==='rotR'){ if(bridge) send({cmd:'rotateRight'}); return; }
-    if(op==='prev'||op==='next'){
-      if(!scannedTotal) return; var cur=(scannedSel>=0?scannedSel:0);
-      var nx=Math.max(0, Math.min(scannedTotal-1, cur+(op==='next'?1:-1)));
-      selSet=[]; scannedSel=nx; applyMultiHighlight(); if(bridge) send({cmd:'select', index:nx}); return;
-    }
+    if(op==='rot180'){ pageOp('rotate',180); return; }
     if(op==='del'){ if(bridge) send({cmd:'deletePage', indices:selCurrent()}); if(scannedTotal<=1) fsClose(); return; }
+    if(op==='dup'){ pageOp('duplicate'); return; }
+    if(op==='savePdf'){ if(bridge) send({cmd:'savePdf'}); return; }
+    if(op==='exportImg'){ if(bridge) send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); return; }
+    if(op==='print'){ if(bridge) send({cmd:'print', op:'all'}); return; }
+    if(op==='zoomIn'){ fsZoomBy(1.25); return; }
+    if(op==='zoomOut'){ fsZoomBy(0.8); return; }
+    if(op==='fit'){ fsZoom=0; fsApplyZoom(); return; }
+    if(op==='actual'){ fsZoom=1; fsPanX=0; fsPanY=0; fsApplyZoom(); return; }
     var map={ deskew:'deskew', auto:'auto', bw:'bw', gray:'gray', sharpen:'sharpen' };
     if(map[op]){ pageOp(map[op]); return; }
     if(op==='brUp'){ pageOp('brightness',150); return; }
     if(op==='brDn'){ pageOp('brightness',-150); return; }
+    if(op==='coUp'){ pageOp('contrast',150); return; }
+    if(op==='coDn'){ pageOp('contrast',-150); return; }
   }); }
+  // right-panel tabs + OCR
+  (function(){
+    document.querySelectorAll('.fsp-tabs button').forEach(function(t){ t.addEventListener('click', function(){
+      document.querySelectorAll('.fsp-tabs button').forEach(function(x){ x.classList.remove('on'); }); t.classList.add('on');
+      var pt=t.getAttribute('data-pt');
+      byId('fsPropInfo').style.display=(pt==='info')?'block':'none';
+      byId('fsPropOcr').style.display=(pt==='ocr')?'block':'none';
+    }); });
+    var run=byId('fsOcrRun'); if(run) run.addEventListener('click', function(){ var box=byId('fsOcrText'); if(box) box.textContent='Reading text… (first run is slower)'; if(bridge) send({cmd:'getText'}); });
+    var cp=byId('fsOcrCopy'); if(cp) cp.addEventListener('click', function(){ var box=byId('fsOcrText'); if(box){ try{ navigator.clipboard.writeText(box.textContent||''); setStatus('Text copied'); }catch(e){} } });
+  })();
+  // zoom via Ctrl+wheel, pan by dragging when zoomed
+  (function(){
+    var stage=byId('fsStage'); if(!stage) return;
+    stage.addEventListener('wheel', function(e){ if(!byId('fsOverlay').classList.contains('on')) return; if(e.ctrlKey){ e.preventDefault(); fsZoomBy(e.deltaY<0?1.12:0.9); } }, {passive:false});
+    var dragging=false, sx=0, sy=0, px=0, py=0;
+    stage.addEventListener('mousedown', function(e){ if(fsCropping||fsZoom===0) return; dragging=true; sx=e.clientX; sy=e.clientY; px=fsPanX; py=fsPanY; stage.classList.add('panning'); });
+    window.addEventListener('mousemove', function(e){ if(!dragging) return; fsPanX=px+(e.clientX-sx); fsPanY=py+(e.clientY-sy); fsApplyZoom(); });
+    window.addEventListener('mouseup', function(){ dragging=false; stage.classList.remove('panning'); });
+  })();
   // Crop inside the fullscreen editor (drag a rectangle over the page).
   var fsCropping=false, fsStart=null, fsRect=null;
   function fsImgRect(){ var im=byId('fsImg'); return (im&&im.getAttribute('src'))?im.getBoundingClientRect():null; }
   function fsStageRect(){ var s=byId('fsStage'); return s?s.getBoundingClientRect():null; }
-  function fsStartCrop(){ if(!fsImgRect()){ setStatus('Nothing to crop'); return; } fsCropping=true; var s=byId('fsStage'); if(s) s.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
+  function fsStartCrop(){ if(!fsImgRect()){ setStatus('Nothing to crop'); return; } fsZoom=0; fsApplyZoom(); fsCropping=true; var s=byId('fsStage'); if(s) s.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
   function fsEndCrop(){ fsCropping=false; fsStart=null; fsRect=null; var s=byId('fsStage'); if(s) s.classList.remove('cropping'); var box=byId('fsCropBox'); if(box) box.style.display='none'; var bar=byId('fsCropBar'); if(bar) bar.style.display='none'; }
   var fsStage=byId('fsStage');
   if(fsStage){
@@ -1718,6 +1891,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function sxRestore(){ if(SX.done){ sxHideAll(); return; } var ov=byId('scanOverlay'); if(ov) ov.classList.add('on'); var mi=byId('scanMini'); if(mi) mi.classList.remove('on'); SX.min=false; }
   function sxBegin(m){
     SX.count=0; SX.skipped=0; SX.failed=0; SX.t0=Date.now(); SX.done=false;
+    edLastDpi=m.dpi||''; edLastColor=({color:'Color',gray:'Grayscale',bw:'Black & White'})[m.color]||'Color'; edLastScanner=m.scanner||'';
     var set=function(id,v){ var e=byId(id); if(e) e.textContent=v; };
     set('soScanner', m.scanner||'Scanner');
     set('soDpi', (m.dpi||300)+' DPI');
@@ -2076,7 +2250,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='scanFail'){ sxFail(m); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
-      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); }
+      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); edThumbs=m.thumbs||[]; if(byId('fsOverlay')&&byId('fsOverlay').classList.contains('on')){ fsRenderThumbs(); fsUpdateInfo(); fsUpdateStatus(); } }
       else if(m.type==='pageName'){ scannedNames[m.index]=m.name||''; var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv+'  (double-click or F2 to rename)'; } }
       else if(m.type==='names'){ nameEntries=m.items||[]; nameSuggestions=nameEntries.map(function(e){ return e.name; }); fillNameSuggest(); rebuildChips(); if(byId('mnOverlay') && byId('mnOverlay').classList.contains('on')) renderNames(); }
       else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; renderScanned(null); }
@@ -2091,7 +2265,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
-      else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
+      else if(m.type==='text'){ var tp=byId('textPanel'); if(tp) tp.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; var fo=byId('fsOcrText'); if(fo) fo.textContent=(m.text&&m.text.length)?m.text:'No text found on this page.'; }
       else if(m.type==='analytics'){ setTimeout(fetchWorldActivity, 2500); /* widget mirrors admin world data; re-pull after own action */ }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
       else if(m.type==='folder'){ if(m.ctx==='popup') renderPopup(m); else renderFolder(m); }
