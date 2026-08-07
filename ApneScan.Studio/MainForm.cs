@@ -495,6 +495,7 @@ public class MainForm : Form
         long target = 0;
         var indices = new List<int>();
         List<double>? pts = null;   // perspective corner points (8 normalized values)
+        int adjB = 0, adjC = 0, adjS = 0;   // live brightness / contrast / sharpen amounts
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -529,6 +530,9 @@ public class MainForm : Form
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
+            if (root.TryGetProperty("b", out var abEl) && abEl.ValueKind == JsonValueKind.Number) adjB = abEl.GetInt32();
+            if (root.TryGetProperty("c", out var acEl) && acEl.ValueKind == JsonValueKind.Number) adjC = acEl.GetInt32();
+            if (root.TryGetProperty("s", out var asEl) && asEl.ValueKind == JsonValueKind.Number) adjS = asEl.GetInt32();
             if (root.TryGetProperty("data", out var dtEl) && dtEl.ValueKind == JsonValueKind.String) data = dtEl.GetString() ?? "";
             if (root.TryGetProperty("ctx", out var cxEl) && cxEl.ValueKind == JsonValueKind.String) ctx = cxEl.GetString() ?? "";
             if (root.TryGetProperty("indices", out var ixArr) && ixArr.ValueKind == JsonValueKind.Array)
@@ -825,6 +829,12 @@ public class MainForm : Form
                 break;
             case "detectCorners":
                 await DetectCornersAsync();
+                break;
+            case "adjustPreview":
+                await AdjustPreviewAsync(adjB, adjC, adjS);
+                break;
+            case "adjustApply":
+                await AdjustApplyAsync(adjB, adjC, adjS);
                 break;
             case "pageOp":
                 await PageOpAsync(op, amount, indices);
@@ -2906,6 +2916,54 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         var renderer = new ThumbnailRenderer(_ctx.ImageContext);
         using var thumb = renderer.Render(p, size).GetAwaiter().GetResult();
         return ToBitmap24(thumb);
+    }
+
+    private volatile bool _adjBusy;   // drops overlapping live-preview requests
+    // Live brightness / contrast / sharpen — renders a scaled preview of the
+    // current page with the given amounts applied, WITHOUT modifying the page.
+    private async Task AdjustPreviewAsync(int b, int c, int s)
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count) return;
+        if (_adjBusy) return;
+        _adjBusy = true;
+        try
+        {
+            var temps = new List<ProcessedImage>();
+            var img = _pages[i];
+            if (b != 0) { img = img.WithTransform(new BrightnessTransform(b), disposeSelf: false); temps.Add(img); }
+            if (c != 0) { img = img.WithTransform(new TrueContrastTransform(c), disposeSelf: false); temps.Add(img); }
+            if (s != 0) { img = img.WithTransform(new SharpenTransform(s), disposeSelf: false); temps.Add(img); }
+            string dataUrl;
+            try
+            {
+                var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+                using var thumb = await renderer.Render(img, 1100);
+                var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_adj_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                thumb.Save(tmp);
+                dataUrl = "data:image/png;base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(tmp));
+                try { File.Delete(tmp); } catch { }
+            }
+            finally { foreach (var t in temps) t.Dispose(); }
+            Post(new { type = "adjustPreview", dataUrl });
+        }
+        catch { }
+        finally { _adjBusy = false; }
+    }
+
+    // Commit the live adjustments to the current page (undoable).
+    private async Task AdjustApplyAsync(int b, int c, int s)
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count) return;
+        if (b == 0 && c == 0 && s == 0) return;
+        PushUndo();
+        if (b != 0) _pages[i] = _pages[i].WithTransform(new BrightnessTransform(b), disposeSelf: true);
+        if (c != 0) _pages[i] = _pages[i].WithTransform(new TrueContrastTransform(c), disposeSelf: true);
+        if (s != 0) _pages[i] = _pages[i].WithTransform(new SharpenTransform(s), disposeSelf: true);
+        await RefreshAsync(false);
+        Banner("Adjustments applied", "ok");
+        Status("Adjustments applied");
     }
 
     // Resolve which pages an op should act on: the explicit selection if any,
