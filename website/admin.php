@@ -3,7 +3,10 @@
 // First run: a setup wizard writes config.php (MySQL details + admin password).
 // After that: log in with the admin password to view the dashboard.
 session_start();
-$CFG = __DIR__ . '/config.php';
+// Config lives inside api/ (protected by api/.htaccess) and is shared with
+// api/track.php so both the dashboard and the ingest use the same DB details.
+$CFG = __DIR__ . '/api/config.php';
+@is_dir(__DIR__ . '/api') || @mkdir(__DIR__ . '/api', 0755, true);
 $DEFAULTS = ['host' => 'localhost', 'name' => 'u246829578_apnescan', 'user' => 'u246829578_apnescan'];
 
 function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }

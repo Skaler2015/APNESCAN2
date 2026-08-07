@@ -274,6 +274,22 @@ public class MainForm : Form
         });
     }
 
+    // Commands that are passive UI reads / polling — not user actions worth
+    // tracking. Everything else that comes through the bridge is reported.
+    private static readonly HashSet<string> _noTrack = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "getDevices", "getSettings", "getStorage", "getProfiles", "getAnalytics",
+        "getHistory", "getNames", "getFavs", "getShortcuts", "getText", "getRecent",
+        "getThumb", "getSubfolders", "listFolder", "previewFile", "select",
+        "checkUpdate", "browseFolder"
+    };
+
+    private void TrackAction(string cmd)
+    {
+        if (string.IsNullOrEmpty(cmd) || _noTrack.Contains(cmd)) return;
+        SendTelemetry(cmd);
+    }
+
     private async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         string cmd;
@@ -350,6 +366,12 @@ public class MainForm : Form
         {
             return;
         }
+
+        // Report every real user action to the anonymous analytics endpoint so
+        // the admin dashboard reflects what people actually do. Passive UI
+        // queries / polling (reading settings, thumbnails, lists) are skipped so
+        // the stats stay meaningful and low-noise.
+        TrackAction(cmd);
 
         switch (cmd)
         {
@@ -2619,7 +2641,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AnalyticsFile)!);
             File.WriteAllText(AnalyticsFile, JsonSerializer.Serialize(a));
             SendAnalytics(a);
-            SendTelemetry(key, n);
+            // Server telemetry is sent centrally from TrackAction() for every
+            // bridge command, so Bump() only keeps the local in-app counters.
         }
         catch { /* best-effort */ }
     }
