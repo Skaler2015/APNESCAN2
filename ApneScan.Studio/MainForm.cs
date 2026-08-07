@@ -1108,21 +1108,23 @@ public class MainForm : Form
     // rendering of the scanned page.
     private async Task<(ProcessedImage img, bool blank)> PostProcessScanAsync(ProcessedImage p)
     {
-        double l = 0, t = 0, r = 1, b = 1, coverage = 1;
+        double l = 0, t = 0, r = 1, b = 1, coverage = 1, strong = 1;
         try
         {
             var renderer = new ThumbnailRenderer(_ctx.ImageContext);
             using var thumb = await renderer.Render(p, 500);
             using var bmp = ToBitmap24(thumb);
-            (l, t, r, b, coverage) = ContentBounds(bmp);
+            (l, t, r, b, coverage, strong) = ContentBounds(bmp);
         }
         catch
         {
             return (p, false);
         }
 
-        // Almost nothing on the page → blank.
-        if (coverage < 0.0035)
+        // Blank = almost no genuinely dark (content) pixels away from the edges.
+        // Using a strict darkness cut-off ignores paper tint, scanner noise and
+        // edge shadows that used to keep truly blank pages from being skipped.
+        if (strong < 0.004)
         {
             return (p, true);
         }
@@ -1165,7 +1167,7 @@ public class MainForm : Form
 
     // Returns the content bounding box as fractions (left, top, right, bottom)
     // plus the fraction of dark pixels (used for blank-page detection).
-    private static (double l, double t, double r, double b, double coverage) ContentBounds(System.Drawing.Bitmap bmp)
+    private static (double l, double t, double r, double b, double coverage, double strong) ContentBounds(System.Drawing.Bitmap bmp)
     {
         int w = bmp.Width, h = bmp.Height;
         var data = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h),
@@ -1175,12 +1177,18 @@ public class MainForm : Form
         System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buf, 0, buf.Length);
         bmp.UnlockBits(data);
 
+        // Ignore a 2% border when judging "blank" so scanner edge shadows /
+        // lid gaps don't register as content.
+        int mx = (int)(w * 0.02), my = (int)(h * 0.02);
+
         var rowCount = new int[h];
         var colCount = new int[w];
-        long dark = 0;
+        long dark = 0;   // light-ish content, for the crop bounding box
+        long strong = 0; // genuinely dark content, for blank detection
         for (int y = 0; y < h; y++)
         {
             int row = y * stride;
+            bool inY = y >= my && y < h - my;
             for (int x = 0; x < w; x++)
             {
                 int o = row + x * 3;
@@ -1191,6 +1199,7 @@ public class MainForm : Form
                     colCount[x]++;
                     dark++;
                 }
+                if (lum < 150 && inY && x >= mx && x < w - mx) strong++;
             }
         }
         int rowThresh = Math.Max(2, (int) (w * 0.004));
@@ -1199,11 +1208,13 @@ public class MainForm : Form
         for (int y = 0; y < h; y++) { if (rowCount[y] > rowThresh) { if (minY < 0) minY = y; maxY = y; } }
         for (int x = 0; x < w; x++) { if (colCount[x] > colThresh) { if (minX < 0) minX = x; maxX = x; } }
         double coverage = (double) dark / ((long) w * h);
+        long inner = Math.Max(1, (long)(w - 2 * mx) * (h - 2 * my));
+        double strongCov = (double) strong / inner;
         if (minX < 0 || minY < 0)
         {
-            return (0, 0, 1, 1, coverage);
+            return (0, 0, 1, 1, coverage, strongCov);
         }
-        return ((double) minX / w, (double) minY / h, (double) (maxX + 1) / w, (double) (maxY + 1) / h, coverage);
+        return ((double) minX / w, (double) minY / h, (double) (maxX + 1) / w, (double) (maxY + 1) / h, coverage, strongCov);
     }
 
     private async Task SavePdfAsync()
