@@ -58,11 +58,12 @@ fire_webhook_alerts($notifs);   // push crash/error/storage alerts (throttled)
 $badges = ['events' => (int)$ov['unread_fb'], 'notifications' => count(array_filter($notifs, fn($n) => ($n['sev'] ?? '') !== 'good'))];
 
 // ---- Render shell ---------------------------------------------------------
-page_head($title, true);
+$titleT = t($title);
+page_head($titleT, true);
 echo '<div class="app" id="app">';
 render_sidebar($page, $badges);
 echo '<div class="main">';
-render_topbar($title, (int)$ov['online'], $notifs);
+render_topbar($titleT, (int)$ov['online'], $notifs);
 echo '<main class="content" role="main">';
 
 try {

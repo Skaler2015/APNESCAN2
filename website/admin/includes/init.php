@@ -41,9 +41,22 @@ $GLOBALS['ROLE_LABELS'] = [
 ];
 
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/lang.php';
 require_once __DIR__ . '/cache.php';
 require_once __DIR__ . '/totp.php';
 require_once __DIR__ . '/backup.php';
+
+// Language switch (?lang=hi|en) — persisted in a cookie, then redirect clean.
+if (isset($_GET['lang'])) {
+    $l = $_GET['lang'] === 'hi' ? 'hi' : 'en';
+    setcookie('as_lang', $l, ['expires' => time() + 31536000, 'path' => '/', 'samesite' => 'Lax']);
+    $_COOKIE['as_lang'] = $l;
+    // Return to the same page — build a safe RELATIVE url (no open redirect).
+    $dest = 'admin.php';
+    $query = parse_url($_SERVER['HTTP_REFERER'] ?? '', PHP_URL_QUERY);
+    if ($query) { parse_str($query, $qs); if (!empty($qs['page']) && preg_match('/^[a-z]+$/', (string)$qs['page'])) $dest .= '?page=' . $qs['page']; }
+    header('Location: ' . $dest); exit;
+}
 
 // ---- First-run: config missing -> hand off to setup wizard ----------------
 if (!file_exists(CONFIG_FILE)) {

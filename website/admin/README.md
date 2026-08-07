@@ -73,3 +73,7 @@ profile endpoint. No document content or personal data is ever collected.
   dashboard), a real-time events-per-minute chart on the Live page, and a PWA
   (installable + offline shell) via `../admin-manifest.webmanifest`, `../sw.js`
   and `icon.svg`.
+- **Phase 6 (done):** Hindi/English localisation (`includes/lang.php`, `t()` +
+  cookie-persisted `?lang=` toggle in the top bar). Translates the shell
+  (sidebar, top bar, breadcrumb, tab title) and the dashboard (KPI labels,
+  section headers, ranges); add keys to `i18n_map()` to extend coverage.

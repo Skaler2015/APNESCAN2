@@ -35,15 +35,17 @@ function render_sidebar(string $active, array $badges = []): void
         ['settings', 'Settings', 'settings', 'settings'],
         ['help', 'Help', 'help', 'view'],
     ];
-    echo '<aside class="side"><div class="brand"><span class="logo">A</span><span>ApneScan<small>Admin Console</small></span></div><nav class="nav" aria-label="Primary navigation">';
+    $secKey = ['Dashboard' => 'nav_dashboard', 'Product' => 'nav_product', 'Audience' => 'nav_audience', 'System' => 'nav_system'];
+    echo '<aside class="side"><div class="brand"><span class="logo">A</span><span>ApneScan<small>' . h(t('admin_console')) . '</small></span></div><nav class="nav" aria-label="Primary navigation">';
     foreach ($nav as $it) {
-        if ($it[0] === '__') { echo '<div class="navsec">' . h($it[1]) . '</div>'; continue; }
+        if ($it[0] === '__') { echo '<div class="navsec">' . h(t($secKey[$it[1]] ?? $it[1])) . '</div>'; continue; }
         [$key, $label, $ic, $cap] = $it;
         if (!can($cap)) continue;
         $on = $key === $active ? ' on' : '';
+        $lbl = t($label);
         $bd = isset($badges[$key]) && $badges[$key] > 0 ? '<span class="badge">' . nf($badges[$key]) . '</span>' : '';
-        echo '<a class="navlink' . $on . '" href="?page=' . h($key) . '" title="' . h($label) . '">'
-           . icon($ic) . '<span class="txt">' . h($label) . '</span>' . $bd . '</a>';
+        echo '<a class="navlink' . $on . '" href="?page=' . h($key) . '" title="' . h($lbl) . '">'
+           . icon($ic) . '<span class="txt">' . h($lbl) . '</span>' . $bd . '</a>';
     }
     echo '</nav></aside>';
 }
