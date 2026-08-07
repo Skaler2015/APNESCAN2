@@ -1,0 +1,60 @@
+name: Deploy website (FTP → Hostinger)
+
+# Publishes the site in website/ to your Hostinger subdomain over FTP,
+# automatically on every push that touches the site (and on demand).
+#
+# One-time setup — add these in GitHub:
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     FTP_SERVER    e.g. ftp.apnesoft.com   (or the FTP host/IP from Hostinger hPanel → Files → FTP Accounts)
+#     FTP_USERNAME  your FTP account username (e.g. u246829578 or a subdomain FTP user)
+#     FTP_PASSWORD  your FTP account password
+#   (optional) Variables tab → New variable
+#     FTP_DIR       the server folder to upload into. Default below matches
+#                   /home/uXXXX/domains/apnesoft.com/public_html/apnescan/.
+#                   If your FTP account is already scoped to the subdomain
+#                   folder, set FTP_DIR to  ./
+
+on:
+  push:
+    branches: [ claude/share-41mb-file-j8ol4i, main ]
+    paths:
+      - 'website/**'
+      - '.github/workflows/deploy-website.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check FTP secrets are set
+        id: check
+        env:
+          S: ${{ secrets.FTP_SERVER }}
+        run: |
+          if [ -z "$S" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FTP secrets not set yet — skipping deploy. Add FTP_SERVER, FTP_USERNAME and FTP_PASSWORD in repo Settings → Secrets → Actions."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger via FTP
+        if: steps.check.outputs.configured == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./website/
+          server-dir: ${{ vars.FTP_DIR || 'domains/apnesoft.com/public_html/apnescan/' }}
+          # Keep FTP state so only changed files upload next time.
+          state-name: .ftp-deploy-sync-state.json

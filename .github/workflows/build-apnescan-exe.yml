@@ -11,6 +11,9 @@ on:
   push:
     branches:
       - claude/share-41mb-file-j8ol4i
+    paths-ignore:
+      - 'website/**'
+      - '.github/workflows/deploy-website.yml'
 
 permissions:
   contents: write
