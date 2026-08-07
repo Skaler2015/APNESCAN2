@@ -1991,34 +1991,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     sxTick();
   }
   function sxDone(m){
-    var wasMin=SX.min;
     SX.done=true;
-    if(m.empty){ sxHideAll(); if(wasMin) sxToast('No pages scanned','warn'); return; }
     if(SX.timer){ clearInterval(SX.timer); SX.timer=null; }
-    sxSetStage('done'); sxRing(1,false);
-    // If the user was working in the background, don't rudely pop the overlay —
-    // just notify and clear the mini widget.
-    if(wasMin){ sxHideAll(); sxToast((m.cancelled?'Scan cancelled — ':'Scan complete — ')+((m.added!=null?m.added:SX.count))+' page(s)', m.cancelled?'warn':'ok'); return; }
-    var secs=(m.ms||(Date.now()-SX.t0))/1000;
-    var set=function(id,v){ var e=byId(id); if(e) e.textContent=v; };
-    set('soSumPages', m.added!=null?m.added:SX.count);
-    set('soSumSkip', m.skipped!=null?m.skipped:SX.skipped);
-    set('soSumTime', sxFmt(secs));
-    var ppm=(m.ppm&&m.ppm>0)?m.ppm:((m.added>0&&secs>0)?Math.round(m.added/(secs/60)):0);
-    set('soSumPpm', ppm>0?ppm:'–');
-    var sc=byId('soSumScanner'); if(sc) sc.textContent=(m.scanner||'')+(m.dpi?('  ·  '+m.dpi+' DPI'):'')+(m.duplex?'  ·  Duplex':'');
-    var title=byId('soSucTitle'), sub=byId('soSucSub');
-    if(m.cancelled){ if(title) title.textContent='Scan cancelled'; if(sub) sub.textContent=(m.added||SX.count)+' page(s) kept.'; }
-    else { if(title) title.textContent='Scan complete'; if(sub) sub.textContent='Your '+(m.added||SX.count)+' page(s) are ready.'; }
-    var suc=byId('soSuccess'); if(suc){
-      suc.classList.add('on');
-      // Auto-close a few seconds after completion. Hovering the success card
-      // (to read the summary or click an action) cancels the auto-close.
-      if(SX.autoT){ clearTimeout(SX.autoT); SX.autoT=null; }
-      var secsLeft=(m.cancelled?4:5);
-      SX.autoT=setTimeout(function(){ sxHideAll(); }, secsLeft*1000);
-      if(!suc.__hoverWired){ suc.__hoverWired=true; suc.addEventListener('mouseenter', function(){ if(SX.autoT){ clearTimeout(SX.autoT); SX.autoT=null; } }); }
-    }
+    // Close the overlay the moment scanning finishes — straight back to work.
+    // A short toast confirms the result; pages are already in the thumbnail area.
+    sxHideAll();
+    if(m.empty){ sxToast('No pages scanned','warn'); return; }
+    var n=(m.added!=null?m.added:SX.count);
+    sxToast((m.cancelled?'Scan cancelled — ':'✓ Scan complete — ')+n+' page(s) ready', m.cancelled?'warn':'ok');
   }
   function sxFail(m){
     SX.done=true; if(SX.timer){ clearInterval(SX.timer); SX.timer=null; }
