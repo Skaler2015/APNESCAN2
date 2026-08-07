@@ -71,6 +71,16 @@ function i18n_map(): array {
         's_when' => 'When & where', 's_features_versions' => 'Features & versions', 's_topusers' => 'Top users & live feed',
         's_feedback_inbox' => 'Feedback inbox', 's_app_controls' => 'App controls', 's_perf' => 'Performance & settings',
         's_by_category' => 'By category', 's_snapshot' => 'Snapshot', 's_saved_backups' => 'Saved backups',
+        // live page
+        'lv_sessions' => 'Active sessions (30m)', 'lv_users_today' => 'Users today', 'lv_events_today' => 'Events today',
+        'lv_epm' => 'Events per minute', 'lv_epm_sub' => 'Rolling last 30 minutes · updates live',
+        'lv_feed' => 'Live event feed', 'lv_feed_sub' => 'Newest actions across all installs', 'lv_online' => 'online now',
+        // table headers + common buttons + presets
+        'th_when' => 'When (UTC)', 'th_feature' => 'Feature', 'th_version' => 'Version', 'th_os' => 'OS', 'th_install' => 'Install',
+        'p_today' => 'Today', 'p_yesterday' => 'Yesterday', 'p_this_week' => 'This week', 'p_last_week' => 'Last week',
+        'p_this_month' => 'This month', 'ev_search_ph' => 'Search feature…', 'ev_all_versions' => 'All versions',
+        'ev_all_os' => 'All OS', 'ev_no_match' => 'No matching events.', 'ev_total_match' => 'total events match.',
+        'tab_event_log' => 'Event log', 'tab_feedback' => 'Feedback',
     ];
     $hi = [
         'admin_console' => 'एडमिन कंसोल', 'usage_analytics' => 'उपयोग विश्लेषण और नियंत्रण',
@@ -115,6 +125,14 @@ function i18n_map(): array {
         's_when' => 'कब और कहाँ', 's_features_versions' => 'फ़ीचर और वर्शन', 's_topusers' => 'टॉप यूज़र और लाइव फ़ीड',
         's_feedback_inbox' => 'फ़ीडबैक इनबॉक्स', 's_app_controls' => 'ऐप नियंत्रण', 's_perf' => 'प्रदर्शन और सेटिंग्स',
         's_by_category' => 'श्रेणी अनुसार', 's_snapshot' => 'स्नैपशॉट', 's_saved_backups' => 'सेव्ड बैकअप',
+        'lv_sessions' => 'सक्रिय सेशन (30 मि)', 'lv_users_today' => 'आज के यूज़र', 'lv_events_today' => 'आज के इवेंट',
+        'lv_epm' => 'प्रति मिनट इवेंट', 'lv_epm_sub' => 'पिछले 30 मिनट · लाइव अपडेट',
+        'lv_feed' => 'लाइव इवेंट फ़ीड', 'lv_feed_sub' => 'सभी इंस्टॉल की नवीनतम गतिविधियाँ', 'lv_online' => 'अभी ऑनलाइन',
+        'th_when' => 'कब (UTC)', 'th_feature' => 'फ़ीचर', 'th_version' => 'वर्शन', 'th_os' => 'OS', 'th_install' => 'इंस्टॉल',
+        'p_today' => 'आज', 'p_yesterday' => 'कल', 'p_this_week' => 'इस हफ़्ते', 'p_last_week' => 'पिछले हफ़्ते',
+        'p_this_month' => 'इस महीने', 'ev_search_ph' => 'फ़ीचर खोजें…', 'ev_all_versions' => 'सभी वर्शन',
+        'ev_all_os' => 'सभी OS', 'ev_no_match' => 'कोई मेल खाता इवेंट नहीं।', 'ev_total_match' => 'कुल इवेंट मेल खाते हैं।',
+        'tab_event_log' => 'इवेंट लॉग', 'tab_feedback' => 'फ़ीडबैक',
     ];
     return ['en' => $en, 'hi' => $hi];
 }

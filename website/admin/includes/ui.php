@@ -45,7 +45,7 @@ function delta_badge(int $d): string {
     return '<span class="delta ' . $c . '">' . $ar . abs($d) . '%</span>';
 }
 function barlist(array $rows, string $nk, string $vk, int $total = 0, ?string $ak = null, string $prefix = ''): string {
-    if (!$rows) return empty_state('No data in this range yet.');
+    if (!$rows) return empty_state(t('c_nodata'));
     $max = 0; foreach ($rows as $r) $max = max($max, (int)$r[$vk]);
     $o = '<div class="blist">';
     foreach ($rows as $r) {

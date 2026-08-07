@@ -4,8 +4,8 @@ declare(strict_types=1);
 echo flash_html();
 $tab = $_GET['tab'] ?? 'events';
 echo '<div class="phead"><div><h1>' . h(t('Events & Feedback')) . '</h1><p>' . h(t('sub_events')) . '</p></div>'
-   . '<div class="chips"><a class="chip' . ($tab === 'events' ? ' on' : '') . '" href="?page=events&tab=events">Event log</a>'
-   . '<a class="chip' . ($tab === 'feedback' ? ' on' : '') . '" href="?page=events&tab=feedback">Feedback</a></div></div>';
+   . '<div class="chips"><a class="chip' . ($tab === 'events' ? ' on' : '') . '" href="?page=events&tab=events">' . h(t('tab_event_log')) . '</a>'
+   . '<a class="chip' . ($tab === 'feedback' ? ' on' : '') . '" href="?page=events&tab=feedback">' . h(t('tab_feedback')) . '</a></div></div>';
 
 if ($tab === 'feedback') {
     $rows = qa('SELECT id,ts,version,contact,message,seen FROM feedback ORDER BY id DESC LIMIT 60');
@@ -18,8 +18,8 @@ if ($tab === 'feedback') {
                . h(gmdate('d M Y · H:i', (int)$f['ts'])) . ' · v' . h($f['version']) . ($f['contact'] ? ' · ' . h($f['contact']) : '')
                . '<span style="flex:1"></span>'
                . '<form method="post" style="display:inline">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=events&tab=feedback"><input type="hidden" name="id" value="' . (int)$f['id'] . '">'
-               . ($f['seen'] ? '' : '<button class="btn ghost" style="padding:3px 9px;font-size:11px;margin-right:6px" name="action" value="fbseen">Mark read</button>')
-               . (can('controls') ? '<button class="btn ghost" style="padding:3px 9px;font-size:11px" name="action" value="fbdel" onclick="return confirm(\'Delete?\')">Delete</button>' : '')
+               . ($f['seen'] ? '' : '<button class="btn ghost" style="padding:3px 9px;font-size:11px;margin-right:6px" name="action" value="fbseen">' . h(t('c_markread')) . '</button>')
+               . (can('controls') ? '<button class="btn ghost" style="padding:3px 9px;font-size:11px" name="action" value="fbdel" onclick="return confirm(\'Delete?\')">' . h(t('c_delete')) . '</button>' : '')
                . '</form></div><div style="font-size:13.5px;line-height:1.5">' . nl2br(h($f['message'])) . '</div></div>';
         }
     } else echo empty_state('No feedback yet. It arrives when users tap “Send feedback” in the app.', 'msg');
@@ -28,7 +28,7 @@ if ($tab === 'feedback') {
 }
 
 // ---- Advanced date presets + custom range ----
-$presets = ['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'lastweek' => 'Last week', 'month' => 'This month', 'all' => 'All time'];
+$presets = ['today' => t('p_today'), 'yesterday' => t('p_yesterday'), 'week' => t('p_this_week'), 'lastweek' => t('p_last_week'), 'month' => t('p_this_month'), 'all' => t('range_all')];
 $p = $_GET['p'] ?? 'all'; if (!isset($presets[$p]) && $p !== 'custom') $p = 'all';
 $df = $_GET['df'] ?? ''; $dt = $_GET['dt'] ?? '';
 $since = 0; $until = 0;
@@ -54,25 +54,25 @@ foreach ($presets as $k => $l) {
 }
 $chips .= '</div>';
 
-$vopts = '<option value="">All versions</option>'; foreach (distinct_versions() as $v) { if ($v === '') continue; $vopts .= '<option value="' . h($v) . '"' . ($v === $f['version'] ? ' selected' : '') . '>' . h($v) . '</option>'; }
-$oopts = '<option value="">All OS</option>'; foreach (distinct_os() as $o) { if ($o === '') continue; $oopts .= '<option value="' . h($o) . '"' . ($o === $f['os'] ? ' selected' : '') . '>' . h($o) . '</option>'; }
+$vopts = '<option value="">' . h(t('ev_all_versions')) . '</option>'; foreach (distinct_versions() as $v) { if ($v === '') continue; $vopts .= '<option value="' . h($v) . '"' . ($v === $f['version'] ? ' selected' : '') . '>' . h($v) . '</option>'; }
+$oopts = '<option value="">' . h(t('ev_all_os')) . '</option>'; foreach (distinct_os() as $o) { if ($o === '') continue; $oopts .= '<option value="' . h($o) . '"' . ($o === $f['os'] ? ' selected' : '') . '>' . h($o) . '</option>'; }
 
 echo '<div style="margin-top:16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">' . $chips
    . '<form class="filters" method="get"><input type="hidden" name="page" value="events"><input type="hidden" name="p" value="custom">'
    . '<input class="inp" type="date" name="df" value="' . h($df) . '" aria-label="From date"><span class="faint">→</span><input class="inp" type="date" name="dt" value="' . h($dt) . '" aria-label="To date">'
-   . '<button class="btn ghost">Apply</button></form></div>';
+   . '<button class="btn ghost">' . h(t('c_apply')) . '</button></form></div>';
 
 echo '<div class="card" style="margin-top:12px"><div class="pad" style="padding-bottom:8px"><form class="filters" method="get"><input type="hidden" name="page" value="events"><input type="hidden" name="p" value="' . h($p) . '"><input type="hidden" name="df" value="' . h($df) . '"><input type="hidden" name="dt" value="' . h($dt) . '">'
-   . '<input class="inp" name="q" value="' . h($f['q']) . '" placeholder="Search feature…" style="min-width:180px">'
+   . '<input class="inp" name="q" value="' . h($f['q']) . '" placeholder="' . h(t('ev_search_ph')) . '" style="min-width:180px">'
    . '<select class="inp" name="fv">' . $vopts . '</select><select class="inp" name="fo">' . $oopts . '</select>'
-   . '<button class="btn">' . icon('search') . 'Filter</button>'
-   . '<a class="btn ghost" href="admin.php?do=csv">' . icon('download') . 'CSV</a></form></div>'
-   . '<table class="tbl"><thead><tr><th>When (UTC)</th><th>Feature</th><th>Version</th><th>OS</th><th>Install</th></tr></thead><tbody>';
+   . '<button class="btn">' . icon('search') . h(t('c_filter')) . '</button>'
+   . '<a class="btn ghost" href="admin.php?do=csv">' . icon('download') . h(t('c_csv')) . '</a></form></div>'
+   . '<table class="tbl"><thead><tr><th>' . h(t('th_when')) . '</th><th>' . h(t('th_feature')) . '</th><th>' . h(t('th_version')) . '</th><th>' . h(t('th_os')) . '</th><th>' . h(t('th_install')) . '</th></tr></thead><tbody>';
 foreach ($res['rows'] as $r) {
     echo '<tr><td class="mut">' . h(gmdate('d M Y · H:i', (int)$r['ts'])) . '</td><td><b>' . h($r['event']) . '</b></td>'
        . '<td class="mut">' . h($r['version']) . '</td><td class="mut">' . h($r['os']) . '</td>'
        . '<td><a class="mono" href="?page=install&install=' . h($r['install']) . '">' . h(substr($r['install'], 0, 8)) . '</a></td></tr>';
 }
-if (!$res['rows']) echo '<tr><td colspan="5" class="empty">No matching events.</td></tr>';
+if (!$res['rows']) echo '<tr><td colspan="5" class="empty">' . h(t('ev_no_match')) . '</td></tr>';
 echo '</tbody></table>' . pager($res['page'], $res['pages'], ['page' => 'events', 'p' => $p, 'df' => $df, 'dt' => $dt, 'q' => $f['q'], 'fv' => $f['version'], 'fo' => $f['os']]) . '</div>';
-echo '<p class="faint" style="font-size:12px;margin-top:10px">' . nf($res['total']) . ' total events match.</p>';
+echo '<p class="faint" style="font-size:12px;margin-top:10px">' . nf($res['total']) . ' ' . h(t('ev_total_match')) . '</p>';

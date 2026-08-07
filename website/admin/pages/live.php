@@ -3,20 +3,20 @@
 declare(strict_types=1);
 $m = metrics_overview(resolve_range('1'));
 echo '<div class="phead"><div><h1>' . h(t('Live Users')) . '</h1><p>' . h(t('sub_live')) . '</p></div>'
-   . '<span class="online"><span class="pulse"></span><span id="lvOnline">' . nf($m['online']) . '</span> online now</span></div>';
+   . '<span class="online"><span class="pulse"></span><span id="lvOnline">' . nf($m['online']) . '</span> ' . h(t('lv_online')) . '</span></div>';
 
 echo '<div class="grid kpis" id="lvKpis" style="margin-top:16px">'
-   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('activity') . '</span></div><div class="n" data-k="online">' . nf($m['online']) . '</div><div class="l">Online now</div></div>'
-   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('pulse') . '</span></div><div class="n" data-k="sessions">' . nf($m['sessions']) . '</div><div class="l">Active sessions (30m)</div></div>'
-   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('user') . '</span></div><div class="n" data-k="active_today">' . nf($m['active_today']) . '</div><div class="l">Users today</div></div>'
-   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('layers') . '</span></div><div class="n" data-k="events">' . nf($m['events']) . '</div><div class="l">Events today</div></div>'
+   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('activity') . '</span></div><div class="n" data-k="online">' . nf($m['online']) . '</div><div class="l">' . h(t('k_online_now')) . '</div></div>'
+   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('pulse') . '</span></div><div class="n" data-k="sessions">' . nf($m['sessions']) . '</div><div class="l">' . h(t('lv_sessions')) . '</div></div>'
+   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('user') . '</span></div><div class="n" data-k="active_today">' . nf($m['active_today']) . '</div><div class="l">' . h(t('lv_users_today')) . '</div></div>'
+   . '<div class="kpi"><div class="kr"><span class="bo">' . icon('layers') . '</span></div><div class="n" data-k="events">' . nf($m['events']) . '</div><div class="l">' . h(t('lv_events_today')) . '</div></div>'
    . '</div>';
 
-echo '<div class="card pad" style="margin-top:18px"><div class="ctitle">' . icon('activity') . 'Events per minute</div><div class="csub">Rolling last 30 minutes · updates live</div>'
+echo '<div class="card pad" style="margin-top:18px"><div class="ctitle">' . icon('activity') . h(t('lv_epm')) . '</div><div class="csub">' . h(t('lv_epm_sub')) . '</div>'
    . '<div class="chartbox"><canvas id="lvChart"></canvas></div></div>';
 
-echo '<div class="card" style="margin-top:16px"><div class="pad" style="padding-bottom:6px"><div class="ctitle">' . icon('pulse') . 'Live event feed</div><div class="csub">Newest actions across all installs</div></div>'
-   . '<table class="tbl"><thead><tr><th>When (UTC)</th><th>Feature</th><th>Version</th><th>Install</th></tr></thead><tbody id="lvFeed"><tr><td colspan="4"><div class="skel skelrow"></div><div class="skel skelrow"></div><div class="skel skelrow"></div></td></tr></tbody></table></div>';
+echo '<div class="card" style="margin-top:16px"><div class="pad" style="padding-bottom:6px"><div class="ctitle">' . icon('pulse') . h(t('lv_feed')) . '</div><div class="csub">' . h(t('lv_feed_sub')) . '</div></div>'
+   . '<table class="tbl"><thead><tr><th>' . h(t('th_when')) . '</th><th>' . h(t('th_feature')) . '</th><th>' . h(t('th_version')) . '</th><th>' . h(t('th_install')) . '</th></tr></thead><tbody id="lvFeed"><tr><td colspan="4"><div class="skel skelrow"></div><div class="skel skelrow"></div><div class="skel skelrow"></div></td></tr></tbody></table></div>';
 ?>
 <script>
 (function(){
