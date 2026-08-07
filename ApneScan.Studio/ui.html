@@ -363,6 +363,23 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 #batchBar .bb:hover{background:rgba(255,255,255,.14)}
 #batchBar .bb.del:hover{background:#ef4444;color:#fff}
 #batchBar .bb-sep{width:1px;height:20px;background:rgba(255,255,255,.14);margin:0 2px}
+/* view-size segmented control */
+.st-views{gap:2px;background:var(--panel-2,#f4f5f9);border-radius:9px;padding:2px}
+.st-views .vseg{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.st-views .vseg svg{width:13px;height:13px;stroke:currentColor}
+.st-views .vseg.on{background:var(--accent);color:#fff}
+.st-views .vseg.on svg{stroke:#fff}
+/* film strip (single horizontal row) */
+.grid-pages.filmview{display:flex!important;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:12px;padding-bottom:8px}
+.grid-pages.filmview .pg-card{flex:0 0 168px;width:168px}
+.grid-pages.filmview .pg-card img{height:200px}
+/* bottom status bar for the scanned area */
+#scanStatusBar{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px;padding:9px 14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(20,20,50,.04);font-size:11.5px;color:var(--muted)}
+#scanStatusBar .ss{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:var(--panel-2,#f4f5f9)}
+#scanStatusBar .ss b{color:var(--text);font-weight:800}
+#scanStatusBar .ss.hi{background:var(--accent-soft);color:var(--accent-ink)}
+#scanStatusBar .ss.hi b{color:var(--accent-ink)}
+#scanStatusBar .ss.ok{background:#dcfce7;color:#166534}
 /* Scanned-pages toolbar */
 .scan-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 12px}
 .st-group{display:flex;gap:3px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px}
@@ -1109,13 +1126,17 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
               <div class="st-btn" data-op="export" title="Export selected page(s) as image to Desktop"><svg><use href="#i-image"/></svg>Export</div>
               <div class="st-btn" data-op="del" title="Delete selected page(s)"><svg><use href="#i-delete"/></svg>Delete</div>
             </div>
-            <div class="st-group">
-              <div class="st-btn" id="viewGrid" data-op="vgrid" title="Grid view"><svg><use href="#i-grid"/></svg></div>
-              <div class="st-btn" id="viewList" data-op="vlist" title="List view"><svg><use href="#i-list"/></svg></div>
-              <div class="st-sz"><svg style="width:13px;height:13px;stroke:currentColor"><use href="#i-image"/></svg><input type="range" id="thumbSize" min="90" max="200" step="10" value="122"></div>
+            <div class="st-group st-views">
+              <div class="st-btn vseg" data-vw="large" title="Large thumbnails">Large</div>
+              <div class="st-btn vseg on" data-vw="medium" title="Medium thumbnails" id="viewGrid">Medium</div>
+              <div class="st-btn vseg" data-vw="compact" title="Compact thumbnails">Compact</div>
+              <div class="st-btn vseg" data-vw="film" title="Film strip (single row)">Film</div>
+              <div class="st-btn vseg" data-vw="list" title="List view" id="viewList"><svg><use href="#i-list"/></svg>List</div>
+              <div class="st-sz"><svg style="width:13px;height:13px;stroke:currentColor"><use href="#i-image"/></svg><input type="range" id="thumbSize" min="90" max="220" step="10" value="140"></div>
             </div>
           </div>
           <div class="grid-pages" id="scannedGrid" style="display:none"></div>
+          <div id="scanStatusBar"></div>
           <div class="h3" id="qaHead">Quick Actions</div>
           <div class="grid-q" id="qaGrid">
             <div class="qc" id="qcScan"><div class="qi" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
@@ -2571,13 +2592,34 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function selectNone(){ selSet=[]; applyMultiHighlight(); setStatus('Selection cleared'); }
   // Send a page operation for the current selection to the host.
   function pageOp(op, amount){ if(!scannedTotal){ setStatus('Scan or import a page first'); return; } send({cmd:'pageOp', op:op, amount:(amount||0), indices:selCurrent()}); }
-  function applyScanView(){ var g=byId('scannedGrid'); if(!g) return; g.classList.toggle('listview', scanView==='list'); g.style.gridTemplateColumns = scanView==='list' ? '' : ('repeat(auto-fill,minmax('+thumbPx+'px,1fr))'); var vg=byId('viewGrid'), vl=byId('viewList'); if(vg) vg.classList.toggle('on', scanView==='grid'); if(vl) vl.classList.toggle('on', scanView==='list'); }
+  function applyScanView(){
+    var g=byId('scannedGrid'); if(!g) return;
+    g.classList.toggle('listview', scanView==='list');
+    g.classList.toggle('filmview', scanView==='film');
+    if(scanView==='grid'){ g.style.display='grid'; g.style.gridTemplateColumns='repeat(auto-fill,minmax('+thumbPx+'px,1fr))'; }
+    else { g.style.display='flex'; g.style.gridTemplateColumns=''; }
+    var vw = scanView==='list' ? 'list' : scanView==='film' ? 'film' : (thumbPx>=180?'large':(thumbPx<=110?'compact':'medium'));
+    document.querySelectorAll('.st-views .vseg').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-vw')===vw); });
+    if(typeof updateScanStatus==='function') updateScanStatus();
+  }
+  function updateScanStatus(){
+    var bar=byId('scanStatusBar'); if(!bar) return;
+    if(!scannedTotal){ bar.style.display='none'; bar.innerHTML=''; return; }
+    bar.style.display='flex';
+    var parts=['<span class="ss"><b>'+scannedTotal+'</b> page'+(scannedTotal===1?'':'s')+'</span>'];
+    if(selSet.length>1) parts.push('<span class="ss hi"><b>'+selSet.length+'</b> selected</span>');
+    if(edLastDpi) parts.push('<span class="ss">'+edLastDpi+' DPI</span>');
+    if(edLastColor) parts.push('<span class="ss">'+edLastColor+'</span>');
+    parts.push('<span class="ss ok">● Scanner ready</span>');
+    bar.innerHTML=parts.join('');
+  }
   function applyMultiHighlight(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.toggle('sel', isSel(i)); } var cnt=byId('scannedCount'); if(cnt) cnt.textContent = selSet.length>1 ? (scannedTotal+' · '+selSet.length+' selected') : scannedTotal; updateBatchBar(); }
   function updateBatchBar(){
     var bar=byId('batchBar'); if(!bar) return;
     var n=selSet.length;
     if(n>1){ bar.classList.add('on'); var c=byId('bbCount'); if(c) c.textContent=n+' selected'; }
     else bar.classList.remove('on');
+    if(typeof updateScanStatus==='function') updateScanStatus();
   }
   (function(){
     var bar=byId('batchBar'); if(!bar) return;
@@ -2616,7 +2658,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       return;
     }
     if(head) head.style.display='flex';
-    grid.style.display=(scanView==='list')?'flex':'grid';
+    grid.style.display=(scanView==='list'||scanView==='film')?'flex':'grid';
     if(cnt) cnt.textContent=thumbs.length;
     thumbs.forEach(function(src,i){
       var c=document.createElement('div'); c.className='pg-card'+(i===selected?' sel':'');
@@ -2745,7 +2787,17 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   document.addEventListener('click', function(e){ if(editMenu && editMenu.classList.contains('on') && !editMenu.contains(e.target) && !(editMenu.__anchor && editMenu.__anchor.contains(e.target))){ closeEditMenu(); } });
   var bEdit=byId('btnEditTr'); if(bEdit) bEdit.addEventListener('click', function(e){ e.stopPropagation(); openEditMenu(bEdit); });
-  var thumbSize=byId('thumbSize'); if(thumbSize) thumbSize.addEventListener('input', function(){ thumbPx=parseInt(thumbSize.value,10)||122; if(scanView==='list'){ scanView='grid'; } applyScanView(); });
+  var thumbSize=byId('thumbSize'); if(thumbSize) thumbSize.addEventListener('input', function(){ thumbPx=parseInt(thumbSize.value,10)||140; if(scanView==='list'||scanView==='film'){ scanView='grid'; } applyScanView(); });
+  document.querySelectorAll('.st-views .vseg').forEach(function(b){ b.addEventListener('click', function(){
+    var vw=b.getAttribute('data-vw');
+    if(vw==='large'){ scanView='grid'; thumbPx=200; }
+    else if(vw==='medium'){ scanView='grid'; thumbPx=140; }
+    else if(vw==='compact'){ scanView='grid'; thumbPx=100; }
+    else if(vw==='film'){ scanView='film'; }
+    else if(vw==='list'){ scanView='list'; }
+    var ts=byId('thumbSize'); if(ts&&scanView==='grid') ts.value=thumbPx;
+    applyScanView();
+  }); });
   function highlightScanned(index){
     if(selSet.length) return; // keep multi-selection highlight
     var g=byId('scannedGrid'); if(!g) return;
