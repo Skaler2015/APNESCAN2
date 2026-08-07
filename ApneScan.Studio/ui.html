@@ -467,6 +467,17 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 #fsCropBar .cb{padding:7px 16px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;border:0}
 #fsCropBar .cb.ok{background:var(--accent);color:#fff}
 #fsCropBar .cb.no{background:#fff;color:#222}
+/* perspective 4-corner tool */
+#fsPersp{position:absolute;inset:0;display:none;z-index:7}
+#fsPersp.on{display:block}
+#fsPerspSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#fsPerspPoly{fill:rgba(124,58,237,.16);stroke:#a78bfa;stroke-width:2;stroke-dasharray:6 4}
+#fsPersp .ph{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:rgba(167,139,250,.35);border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:grab;touch-action:none}
+#fsPersp .ph:active{cursor:grabbing;background:#a78bfa}
+#fsPerspBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:8}
+#fsPerspBar .cb2{padding:8px 16px;border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;background:#252a36;color:#e7e9f2;border:1px solid rgba(255,255,255,.12)}
+#fsPerspBar .cb2.ok{background:var(--accent);color:#fff;border-color:transparent}
+#fsPerspBar .cb2.no{background:#fff;color:#222;border-color:transparent}
 #fsProps{background:#12151d;border-left:1px solid rgba(255,255,255,.06);overflow-y:auto;display:flex;flex-direction:column}
 .fsp-tabs{display:flex;gap:4px;padding:10px 10px 0}
 .fsp-tabs button{flex:1;font-size:12px;font-weight:700;padding:8px;border-radius:8px 8px 0 0;border:0;background:transparent;color:#8b93a7;cursor:pointer}
@@ -1128,6 +1139,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <div class="fsb" data-fs="rotR" title="Rotate right"><svg class="ic"><use href="#i-rotate"/></svg></div>
           <div class="fsb" data-fs="rot180" title="Rotate 180°">180°</div>
           <div class="fsb" data-fs="deskew" title="Auto-straighten">Deskew</div>
+          <div class="fsb" data-fs="persp" title="Perspective correct — drag the 4 corners onto the document">⧉ Perspective</div>
         </div>
         <div class="fssep"></div>
         <div class="fsg">
@@ -1170,6 +1182,15 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <div id="fsPan"><img id="fsImg" alt="Preview" draggable="false"></div>
         <div id="fsCropBox"></div>
         <div id="fsCropBar"><div class="cb ok" id="fsCropApply">Apply crop</div><div class="cb no" id="fsCropCancel">Cancel</div></div>
+        <div id="fsPersp">
+          <svg id="fsPerspSvg"><polygon id="fsPerspPoly" points=""></polygon></svg>
+          <div class="ph" data-c="0"></div><div class="ph" data-c="1"></div><div class="ph" data-c="2"></div><div class="ph" data-c="3"></div>
+          <div id="fsPerspBar">
+            <div class="cb2" id="fsPerspAuto">✦ Auto-detect</div>
+            <div class="cb2 ok" id="fsPerspApply">Apply</div>
+            <div class="cb2 no" id="fsPerspCancel">Cancel</div>
+          </div>
+        </div>
       </div>
       <aside id="fsProps">
         <div class="fsp-tabs">
@@ -1766,6 +1787,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var b=ev.target.closest('.fsb'); if(!b) return; var op=b.getAttribute('data-fs');
     if(op==='done'){ fsClose(); return; }
     if(op==='crop'){ fsStartCrop(); return; }
+    if(op==='persp'){ fsPerspStart(); return; }
     if(op==='undo'){ if(bridge) send({cmd:'undo'}); return; }
     if(op==='redo'){ if(bridge) send({cmd:'redo'}); return; }
     if(op==='rotL'){ if(bridge) send({cmd:'rotateLeft'}); return; }
@@ -1822,6 +1844,40 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   var fsCropApply=byId('fsCropApply'); if(fsCropApply) fsCropApply.addEventListener('click', function(){ var ir=fsImgRect(); if(!ir||!fsRect){ fsEndCrop(); return; } var x0=(fsRect.x-ir.left)/ir.width, y0=(fsRect.y-ir.top)/ir.height; var x1=(fsRect.x+fsRect.w-ir.left)/ir.width, y1=(fsRect.y+fsRect.h-ir.top)/ir.height; if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1}); fsEndCrop(); });
   var fsCropCancel=byId('fsCropCancel'); if(fsCropCancel) fsCropCancel.addEventListener('click', fsEndCrop);
+
+  /* ===== Perspective 4-corner tool ===== */
+  var perspPts=[null,null,null,null], perspDrag=-1;
+  function fsImgBox(){ var st=byId('fsStage'), im=byId('fsImg'); if(!st||!im||!im.getAttribute('src')) return null; var sr=st.getBoundingClientRect(), ir=im.getBoundingClientRect(); return {ix:ir.left-sr.left, iy:ir.top-sr.top, iw:ir.width, ih:ir.height}; }
+  function fsPerspStart(){
+    var box=fsImgBox(); if(!box){ setStatus('Open a page first'); return; }
+    fsZoom=0; fsApplyZoom(); fsEndCrop();
+    var b=fsImgBox();   // recompute after zoom reset
+    perspPts=[ {x:b.ix+b.iw*0.08,y:b.iy+b.ih*0.08}, {x:b.ix+b.iw*0.92,y:b.iy+b.ih*0.08}, {x:b.ix+b.iw*0.92,y:b.iy+b.ih*0.92}, {x:b.ix+b.iw*0.08,y:b.iy+b.ih*0.92} ];
+    fsPerspDraw(); var p=byId('fsPersp'); if(p) p.classList.add('on');
+    setStatus('Drag the 4 corners onto the document, then Apply — or Auto-detect');
+  }
+  function fsPerspEnd(){ var p=byId('fsPersp'); if(p) p.classList.remove('on'); perspDrag=-1; }
+  function fsPerspDraw(){
+    var poly=byId('fsPerspPoly'); if(poly) poly.setAttribute('points', perspPts.map(function(p){ return p.x+','+p.y; }).join(' '));
+    document.querySelectorAll('#fsPersp .ph').forEach(function(h){ var c=+h.getAttribute('data-c'); var p=perspPts[c]; if(p){ h.style.left=p.x+'px'; h.style.top=p.y+'px'; } });
+  }
+  (function(){
+    var stage=byId('fsStage'); if(!stage) return;
+    document.querySelectorAll('#fsPersp .ph').forEach(function(h){ h.addEventListener('mousedown', function(e){ e.preventDefault(); e.stopPropagation(); perspDrag=+h.getAttribute('data-c'); }); });
+    window.addEventListener('mousemove', function(e){
+      if(perspDrag<0) return; var sr=stage.getBoundingClientRect();
+      var x=Math.max(0,Math.min(sr.width, e.clientX-sr.left)), y=Math.max(0,Math.min(sr.height, e.clientY-sr.top));
+      perspPts[perspDrag]={x:x,y:y}; fsPerspDraw();
+    });
+    window.addEventListener('mouseup', function(){ perspDrag=-1; });
+    var au=byId('fsPerspAuto'); if(au) au.addEventListener('click', function(){ setStatus('Detecting document corners…'); if(bridge) send({cmd:'detectCorners'}); });
+    var ap=byId('fsPerspApply'); if(ap) ap.addEventListener('click', function(){
+      var b=fsImgBox(); if(!b){ fsPerspEnd(); return; }
+      var flat=[]; perspPts.forEach(function(p){ flat.push(Math.max(0,Math.min(1,(p.x-b.ix)/b.iw))); flat.push(Math.max(0,Math.min(1,(p.y-b.iy)/b.ih))); });
+      if(bridge) send({cmd:'perspective', pts:flat}); fsPerspEnd();
+    });
+    var cn=byId('fsPerspCancel'); if(cn) cn.addEventListener('click', fsPerspEnd);
+  })();
 
   // Paste an image or PDF copied from anywhere (browser, Explorer) straight into
   // the scanned thumbnail area.
@@ -2242,6 +2298,10 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='scanProgress'){
         if(m.done){ scanUI(false); }
         else { scanUI(true, m.count||0, m.skipped||0); }
+      }
+      else if(m.type==='corners'){
+        if(m.ok && m.pts && m.pts.length>=8){ var b=fsImgBox(); if(b){ for(var ci=0;ci<4;ci++){ perspPts[ci]={x:b.ix+m.pts[ci*2]*b.iw, y:b.iy+m.pts[ci*2+1]*b.ih}; } fsPerspDraw(); setStatus('Corners detected — adjust if needed, then Apply'); } }
+        else setStatus('Could not auto-detect — drag the corners manually');
       }
       else if(m.type==='scanBegin'){ sxBegin(m); }
       else if(m.type==='scanStage'){ sxStage(m); }

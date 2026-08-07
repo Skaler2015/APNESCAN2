@@ -494,6 +494,7 @@ public class MainForm : Form
         int amount = 0;
         long target = 0;
         var indices = new List<int>();
+        List<double>? pts = null;   // perspective corner points (8 normalized values)
         try
         {
             using var doc = JsonDocument.Parse(e.TryGetWebMessageAsString() ?? "{}");
@@ -538,6 +539,12 @@ public class MainForm : Form
                 }
             }
             if (root.TryGetProperty("dataUrl", out var du) && du.ValueKind == JsonValueKind.String) dataUrl = du.GetString() ?? "";
+            if (root.TryGetProperty("pts", out var ptArr) && ptArr.ValueKind == JsonValueKind.Array)
+            {
+                pts = new List<double>();
+                foreach (var el in ptArr.EnumerateArray())
+                    if (el.ValueKind == JsonValueKind.Number) pts.Add(el.GetDouble());
+            }
         }
         catch
         {
@@ -812,6 +819,12 @@ public class MainForm : Form
             case "crop":
                 PushUndo();
                 await CropPageAsync(x0, y0, x1, y1);
+                break;
+            case "perspective":
+                await PerspectiveWarpAsync(pts);
+                break;
+            case "detectCorners":
+                await DetectCornersAsync();
                 break;
             case "pageOp":
                 await PageOpAsync(op, amount, indices);
@@ -2733,6 +2746,164 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _pages[i] = _pages[i].WithTransform(new CropTransform(left, right, top, bottom, w, h), disposeSelf: true);
         await RefreshAsync(false);
         Status("Cropped");
+    }
+
+    // Perspective-correct the current page: warp the quad given by 4 normalized
+    // corner points (TL,TR,BR,BL as x0,y0,…,x3,y3) into a flat rectangle.
+    private async Task PerspectiveWarpAsync(List<double>? pts)
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count) return;
+        if (pts == null || pts.Count < 8) { Status("Set 4 corners first"); return; }
+        Status("Correcting perspective…");
+        try
+        {
+            PushUndo();
+            string outPath = await Task.Run(() =>
+            {
+                using var src = ToBitmap24Render(_pages[i]);
+                int sw = src.Width, sh = src.Height;
+                // Corner pixel coords.
+                double[] px = new double[4], py = new double[4];
+                for (int k = 0; k < 4; k++) { px[k] = Math.Clamp(pts[k * 2], 0, 1) * sw; py[k] = Math.Clamp(pts[k * 2 + 1], 0, 1) * sh; }
+                double Dist(int a, int b) => Math.Sqrt((px[a] - px[b]) * (px[a] - px[b]) + (py[a] - py[b]) * (py[a] - py[b]));
+                int outW = (int)Math.Round(Math.Max(Dist(0, 1), Dist(3, 2)));
+                int outH = (int)Math.Round(Math.Max(Dist(0, 3), Dist(1, 2)));
+                outW = Math.Clamp(outW, 16, 6000); outH = Math.Clamp(outH, 16, 8000);
+                // Projective map: unit square (0,0)(1,0)(1,1)(0,1) -> quad.
+                double x0 = px[0], y0 = py[0], x1 = px[1], y1 = py[1], x2 = px[2], y2 = py[2], x3 = px[3], y3 = py[3];
+                double dx1 = x1 - x2, dx2 = x3 - x2, sx = x0 - x1 + x2 - x3;
+                double dy1 = y1 - y2, dy2 = y3 - y2, sy = y0 - y1 + y2 - y3;
+                double a, b, c, d, e, f, g, hh;
+                double den = dx1 * dy2 - dx2 * dy1;
+                if (Math.Abs(sx) < 1e-6 && Math.Abs(sy) < 1e-6)
+                { a = x1 - x0; b = x2 - x1; c = x0; d = y1 - y0; e = y2 - y1; f = y0; g = 0; hh = 0; }
+                else
+                {
+                    g = (sx * dy2 - dx2 * sy) / den;
+                    hh = (dx1 * sy - sx * dy1) / den;
+                    a = x1 - x0 + g * x1; b = x3 - x0 + hh * x3; c = x0;
+                    d = y1 - y0 + g * y1; e = y3 - y0 + hh * y3; f = y0;
+                }
+                var outBmp = new System.Drawing.Bitmap(outW, outH, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                var sd = src.LockBits(new System.Drawing.Rectangle(0, 0, sw, sh), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                var od = outBmp.LockBits(new System.Drawing.Rectangle(0, 0, outW, outH), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                try
+                {
+                    int ss = sd.Stride, os = od.Stride;
+                    var sbuf = new byte[ss * sh]; System.Runtime.InteropServices.Marshal.Copy(sd.Scan0, sbuf, 0, sbuf.Length);
+                    var obuf = new byte[os * outH];
+                    for (int oy = 0; oy < outH; oy++)
+                    {
+                        double v = (oy + 0.5) / outH;
+                        int orow = oy * os;
+                        for (int ox = 0; ox < outW; ox++)
+                        {
+                            double u = (ox + 0.5) / outW;
+                            double denom = g * u + hh * v + 1.0;
+                            double fx = (a * u + b * v + c) / denom;
+                            double fy = (d * u + e * v + f) / denom;
+                            // Bilinear sample.
+                            int xi = (int)Math.Floor(fx), yi = (int)Math.Floor(fy);
+                            int o = orow + ox * 3;
+                            if (xi < 0 || yi < 0 || xi >= sw - 1 || yi >= sh - 1)
+                            {
+                                if (xi >= 0 && yi >= 0 && xi < sw && yi < sh)
+                                { int so = yi * ss + xi * 3; obuf[o] = sbuf[so]; obuf[o + 1] = sbuf[so + 1]; obuf[o + 2] = sbuf[so + 2]; }
+                                else { obuf[o] = obuf[o + 1] = obuf[o + 2] = 255; }
+                                continue;
+                            }
+                            double tx = fx - xi, ty2 = fy - yi;
+                            int p00 = yi * ss + xi * 3, p10 = p00 + 3, p01 = p00 + ss, p11 = p01 + 3;
+                            for (int ch = 0; ch < 3; ch++)
+                            {
+                                double top = sbuf[p00 + ch] * (1 - tx) + sbuf[p10 + ch] * tx;
+                                double bot = sbuf[p01 + ch] * (1 - tx) + sbuf[p11 + ch] * tx;
+                                obuf[o + ch] = (byte)Math.Clamp(top * (1 - ty2) + bot * ty2, 0, 255);
+                            }
+                        }
+                    }
+                    System.Runtime.InteropServices.Marshal.Copy(obuf, 0, od.Scan0, obuf.Length);
+                }
+                finally { src.UnlockBits(sd); outBmp.UnlockBits(od); }
+                var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_pw_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                outBmp.Save(tmp, System.Drawing.Imaging.ImageFormat.Png);
+                outBmp.Dispose();
+                return tmp;
+            });
+
+            ProcessedImage? newImg = null;
+            await foreach (var im in new ImageImporter(_ctx).Import(outPath)) { newImg = im; break; }
+            try { File.Delete(outPath); } catch { }
+            if (newImg != null)
+            {
+                _pages[i].Dispose();
+                _pages[i] = newImg;
+                await RefreshAsync(false);
+                Banner("Perspective corrected", "ok");
+                Status("Perspective corrected");
+            }
+            else { PopUndo(); Status("Could not correct perspective"); }
+        }
+        catch (Exception ex) { PopUndo(); Status("Perspective error: " + ex.Message); }
+    }
+
+    // Best-effort auto document-corner detection: extreme points of the content
+    // mask (min/max of x+y and x−y). Returns 4 normalized points to the editor.
+    private async Task DetectCornersAsync()
+    {
+        int i = Sel();
+        if (i < 0 || i >= _pages.Count) { Post(new { type = "corners", ok = false }); return; }
+        try
+        {
+            var (tl, tr, br, bl) = await Task.Run(() =>
+            {
+                using var bmp = ScaledBitmap24(_pages[i], 700);
+                int w = bmp.Width, h = bmp.Height;
+                var data = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                int stride = data.Stride; var buf = new byte[stride * h];
+                System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buf, 0, buf.Length);
+                bmp.UnlockBits(data);
+                // Foreground = pixels that differ from the border (background) colour.
+                long bl0 = 0, cnt = 0;
+                for (int x = 0; x < w; x++) { int t = x * 3, bo = (h - 1) * stride + x * 3; bl0 += (buf[t] + buf[t + 1] + buf[t + 2]) / 3 + (buf[bo] + buf[bo + 1] + buf[bo + 2]) / 3; cnt += 2; }
+                int bg = (int)(bl0 / Math.Max(1, cnt));
+                double sumTL = double.MaxValue, sumBR = double.MinValue, difTR = double.MinValue, difBL = double.MaxValue;
+                int[] pTL = { 0, 0 }, pBR = { w - 1, h - 1 }, pTR = { w - 1, 0 }, pBL = { 0, h - 1 };
+                for (int y = 0; y < h; y++)
+                {
+                    int row = y * stride;
+                    for (int x = 0; x < w; x++)
+                    {
+                        int o = row + x * 3; int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
+                        if (Math.Abs(lum - bg) < 28) continue;   // background-like → skip
+                        double s = x + y, dfp = x - y;
+                        if (s < sumTL) { sumTL = s; pTL = new[] { x, y }; }
+                        if (s > sumBR) { sumBR = s; pBR = new[] { x, y }; }
+                        if (dfp > difTR) { difTR = dfp; pTR = new[] { x, y }; }
+                        if (dfp < difBL) { difBL = dfp; pBL = new[] { x, y }; }
+                    }
+                }
+                (double, double) N(int[] p) => ((double)p[0] / w, (double)p[1] / h);
+                return (N(pTL), N(pTR), N(pBR), N(pBL));
+            });
+            Post(new { type = "corners", ok = true, pts = new[] { tl.Item1, tl.Item2, tr.Item1, tr.Item2, br.Item1, br.Item2, bl.Item1, bl.Item2 } });
+        }
+        catch { Post(new { type = "corners", ok = false }); }
+    }
+
+    // Render a ProcessedImage to a 24bpp bitmap (full resolution).
+    private static System.Drawing.Bitmap ToBitmap24Render(ProcessedImage p)
+    {
+        using var rendered = p.Render();
+        return ToBitmap24(rendered);
+    }
+    // Render a ProcessedImage to a 24bpp bitmap scaled so the long side ~= size.
+    private System.Drawing.Bitmap ScaledBitmap24(ProcessedImage p, int size)
+    {
+        var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+        using var thumb = renderer.Render(p, size).GetAwaiter().GetResult();
+        return ToBitmap24(thumb);
     }
 
     // Resolve which pages an op should act on: the explicit selection if any,
