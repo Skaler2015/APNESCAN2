@@ -396,6 +396,21 @@ public class MainForm : Form
             case "copyPath":
                 CopyPathToClipboard(filePath);
                 break;
+            case "mergePdfs":
+                await MergePdfsAsync(PathsFrom(data, filePath));
+                break;
+            case "splitPdf":
+                await SplitPdfAsync(filePath);
+                break;
+            case "pdfToImages":
+                await PdfToImagesAsync(filePath);
+                break;
+            case "imagesToPdf":
+                await ImagesToPdfAsync(PathsFrom(data, filePath));
+                break;
+            case "addScanned":
+                await AddScannedToPdfAsync(filePath);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -2842,6 +2857,142 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             File.Copy(file, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(file)), false);
         foreach (var sub in Directory.GetDirectories(src))
             CopyDirectory(sub, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(sub)));
+    }
+
+    // ---- PDF tools (from the My Documents right-click menu) ----
+    private static bool IsImageExt(string p)
+    {
+        var e = System.IO.Path.GetExtension(p).ToLowerInvariant();
+        return e is ".jpg" or ".jpeg" or ".png" or ".tif" or ".tiff" or ".bmp";
+    }
+
+    private async Task<List<ProcessedImage>> ImportPagesAsync(string path)
+    {
+        var list = new List<ProcessedImage>();
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        var importer = ext == ".pdf" ? new PdfImporter(_ctx).Import(path) : new ImageImporter(_ctx).Import(path);
+        await foreach (var img in importer) list.Add(img);
+        return list;
+    }
+
+    private string? AskSavePath(string dir, string suggested)
+    {
+        try
+        {
+            using var sfd = new SaveFileDialog { Filter = "PDF (*.pdf)|*.pdf", FileName = suggested };
+            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir)) sfd.InitialDirectory = dir;
+            return sfd.ShowDialog(this) == DialogResult.OK ? sfd.FileName : null;
+        }
+        catch { return null; }
+    }
+
+    private async Task MergePdfsAsync(List<string> paths)
+    {
+        var pdfs = paths.Where(p => System.IO.Path.GetExtension(p).Equals(".pdf", StringComparison.OrdinalIgnoreCase) && File.Exists(p)).ToList();
+        if (pdfs.Count < 2) { Status("Select 2 or more PDFs to merge"); return; }
+        var dir = System.IO.Path.GetDirectoryName(pdfs[0])!;
+        var outFile = AskSavePath(dir, "Merged.pdf");
+        if (outFile == null) return;
+        var all = new List<ProcessedImage>();
+        try
+        {
+            Status("Merging PDFs…");
+            foreach (var p in pdfs) all.AddRange(await ImportPagesAsync(p));
+            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            AddHistory(outFile, all.Count);
+            SendFolder(System.IO.Path.GetDirectoryName(outFile)!);
+            Status($"Merged {pdfs.Count} PDFs → {System.IO.Path.GetFileName(outFile)}");
+        }
+        catch (Exception ex) { Status("Merge error: " + ex.Message); }
+        finally { foreach (var p in all) p.Dispose(); }
+    }
+
+    private async Task SplitPdfAsync(string path)
+    {
+        if (!File.Exists(path)) { Status("File not found"); return; }
+        var pages = await ImportPagesAsync(path);
+        try
+        {
+            if (pages.Count <= 1) { Status("This PDF has only one page"); return; }
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = System.IO.Path.GetFileNameWithoutExtension(path);
+            Status("Splitting…");
+            for (int i = 0; i < pages.Count; i++)
+            {
+                var outFile = UniquePath(System.IO.Path.Combine(dir, $"{stem}_{i + 1}.pdf"), false);
+                await ExportPdf(outFile, new[] { pages[i] }, null);
+            }
+            SendFolder(dir);
+            Status($"Split into {pages.Count} PDF files");
+        }
+        catch (Exception ex) { Status("Split error: " + ex.Message); }
+        finally { foreach (var p in pages) p.Dispose(); }
+    }
+
+    private async Task PdfToImagesAsync(string path)
+    {
+        if (!File.Exists(path)) { Status("File not found"); return; }
+        var pages = await ImportPagesAsync(path);
+        try
+        {
+            if (pages.Count == 0) { Status("Nothing to export"); return; }
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = System.IO.Path.GetFileNameWithoutExtension(path);
+            Status("Exporting images…");
+            for (int i = 0; i < pages.Count; i++)
+            {
+                var outFile = UniquePath(System.IO.Path.Combine(dir, $"{stem}_{i + 1}.jpg"), false);
+                await Task.Run(() => pages[i].Save(outFile, ImageFileFormat.Jpeg));
+            }
+            SendFolder(dir);
+            Status($"Saved {pages.Count} image(s)");
+        }
+        catch (Exception ex) { Status("Export error: " + ex.Message); }
+        finally { foreach (var p in pages) p.Dispose(); }
+    }
+
+    private async Task ImagesToPdfAsync(List<string> paths)
+    {
+        var imgs = paths.Where(p => IsImageExt(p) && File.Exists(p)).ToList();
+        if (imgs.Count == 0) { Status("Select image files to combine"); return; }
+        var dir = System.IO.Path.GetDirectoryName(imgs[0])!;
+        var outFile = AskSavePath(dir, "Images.pdf");
+        if (outFile == null) return;
+        var all = new List<ProcessedImage>();
+        try
+        {
+            Status("Making PDF…");
+            foreach (var p in imgs) all.AddRange(await ImportPagesAsync(p));
+            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            AddHistory(outFile, all.Count);
+            SendFolder(System.IO.Path.GetDirectoryName(outFile)!);
+            Status($"Made a PDF from {imgs.Count} image(s)");
+        }
+        catch (Exception ex) { Status("Convert error: " + ex.Message); }
+        finally { foreach (var p in all) p.Dispose(); }
+    }
+
+    // Append the currently-scanned pages to an existing PDF, saved as a new file.
+    private async Task AddScannedToPdfAsync(string path)
+    {
+        if (!File.Exists(path)) { Status("File not found"); return; }
+        if (_pages.Count == 0) { Status("No scanned pages to add — scan or import first"); return; }
+        var all = new List<ProcessedImage>();
+        try
+        {
+            Status("Adding pages…");
+            all.AddRange(await ImportPagesAsync(path));
+            all.AddRange(_pages.Select(p => p.Clone()));
+            var dir = System.IO.Path.GetDirectoryName(path)!;
+            var stem = System.IO.Path.GetFileNameWithoutExtension(path);
+            var outFile = UniquePath(System.IO.Path.Combine(dir, $"{stem} (updated).pdf"), false);
+            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            AddHistory(outFile, all.Count);
+            SendFolder(dir);
+            Status($"Added {_pages.Count} page(s) → {System.IO.Path.GetFileName(outFile)}");
+        }
+        catch (Exception ex) { Status("Add pages error: " + ex.Message); }
+        finally { foreach (var p in all) p.Dispose(); }
     }
 
     private async Task PreviewFileAsync(string path)

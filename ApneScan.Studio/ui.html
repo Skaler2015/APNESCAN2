@@ -1718,6 +1718,24 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     item('Rename (F2)','i-editor', function(){ openFileRename(en.path, en.name); });
     if(ext==='pdf') item('Compress PDF','i-save', function(){ setStatus('Compressing PDF…'); if(bridge) send({cmd:'compressPdf', path:en.path}); });
     if(!en.dir) item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); if(bridge) send({cmd:'shareWhatsapp', path:en.path}); });
+    // PDF / image tools
+    var isImg2=['jpg','jpeg','png','tif','tiff','bmp'].indexOf(ext)>=0;
+    function hasExt(ps,exts){ return ps.some(function(p){ return exts.indexOf(p.split('.').pop().toLowerCase())>=0; }); }
+    if(!en.dir && (many || ext==='pdf' || isImg2)){
+      sep();
+      if(many){
+        if(hasExt(sel,['pdf'])) item('Merge to one PDF','i-files', function(){ setStatus('Merging…'); send({cmd:'mergePdfs', data:JSON.stringify(sel)}); });
+        if(hasExt(sel,['jpg','jpeg','png','tif','tiff','bmp'])) item('Combine images → PDF','i-pdf', function(){ setStatus('Making PDF…'); send({cmd:'imagesToPdf', data:JSON.stringify(sel)}); });
+      } else {
+        item('Open in editor (edit pages)','i-editor', function(){ setStatus('Opening…'); send({cmd:'importPath', path:en.path}); });
+        if(ext==='pdf'){
+          item('Split into pages','i-files', function(){ setStatus('Splitting…'); send({cmd:'splitPdf', path:en.path}); });
+          item('Export as images','i-image', function(){ setStatus('Exporting…'); send({cmd:'pdfToImages', path:en.path}); });
+          if(scannedTotal>0) item('Add current scanned pages','i-plus', function(){ setStatus('Adding pages…'); send({cmd:'addScanned', path:en.path}); });
+        }
+        if(isImg2) item('Convert to PDF','i-pdf', function(){ setStatus('Making PDF…'); send({cmd:'imagesToPdf', path:en.path}); });
+      }
+    }
     sep();
     item(many?('Move '+sel.length+' items…'):'Move to folder…','i-folder', function(){ setStatus('Choose a destination folder…'); send(Object.assign({cmd:'moveFile'}, payload)); });
     item(many?('Copy '+sel.length+' items…'):'Copy to folder…','i-files', function(){ setStatus('Choose a destination folder…'); send(Object.assign({cmd:'copyFile'}, payload)); });
@@ -1727,7 +1745,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     sep();
     item(many?('Delete '+sel.length+' items'):'Delete','i-delete', function(){ send(Object.assign({cmd:'deleteFile'}, payload)); });
     m.style.left=Math.min(x, window.innerWidth-200)+'px';
-    m.style.top=Math.max(6, Math.min(y, window.innerHeight-360))+'px';
+    m.style.top=Math.max(6, Math.min(y, window.innerHeight-520))+'px';
     m.classList.add('on');
   }
   // Right-click menu for scanned pages.
