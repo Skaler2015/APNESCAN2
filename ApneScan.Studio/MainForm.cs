@@ -1229,42 +1229,64 @@ public class MainForm : Form
         System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buf, 0, buf.Length);
         bmp.UnlockBits(data);
 
-        // Ignore a 2% border when judging "blank" so scanner edge shadows /
-        // lid gaps don't register as content.
-        int mx = (int)(w * 0.02), my = (int)(h * 0.02);
-
-        var rowCount = new int[h];
+        var rowCount = new int[h];   // pixels lum<215 per row (light-ish content)
         var colCount = new int[w];
-        long dark = 0;   // light-ish content, for the crop bounding box
-        long strong = 0; // genuinely dark content, for blank detection
+        var rowVeryDark = new int[h]; // pixels lum<95 per row (for dark-band detection)
+        var colVeryDark = new int[w];
+        long dark = 0;
         for (int y = 0; y < h; y++)
         {
             int row = y * stride;
-            bool inY = y >= my && y < h - my;
             for (int x = 0; x < w; x++)
             {
                 int o = row + x * 3;
                 int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
-                if (lum < 215)
-                {
-                    rowCount[y]++;
-                    colCount[x]++;
-                    dark++;
-                }
-                if (lum < 150 && inY && x >= mx && x < w - mx) strong++;
+                if (lum < 215) { rowCount[y]++; colCount[x]++; dark++; }
+                if (lum < 95) { rowVeryDark[y]++; colVeryDark[x]++; }
             }
         }
-        int rowThresh = Math.Max(2, (int) (w * 0.004));
-        int colThresh = Math.Max(2, (int) (h * 0.004));
+
+        // Detect solid dark "bands" at each edge — the black strips a duplex ADF
+        // leaves when the sheet is shorter than the scan window, or edge shadows.
+        // A band row/col is ≥75% near-black and contiguous from the very edge.
+        int maxBandY = (int)(h * 0.30), maxBandX = (int)(w * 0.30);
+        int rowBandMin = (int)(w * 0.75), colBandMin = (int)(h * 0.75);
+        int topB = 0;    for (int y = 0; y < maxBandY; y++) { if (rowVeryDark[y] >= rowBandMin) topB = y + 1; else break; }
+        int botB = 0;    for (int y = h - 1; y >= h - maxBandY && y >= 0; y--) { if (rowVeryDark[y] >= rowBandMin) botB = h - y; else break; }
+        int leftB = 0;   for (int x = 0; x < maxBandX; x++) { if (colVeryDark[x] >= colBandMin) leftB = x + 1; else break; }
+        int rightB = 0;  for (int x = w - 1; x >= w - maxBandX && x >= 0; x--) { if (colVeryDark[x] >= colBandMin) rightB = w - x; else break; }
+
+        // Analysis region excludes the detected bands.
+        int y0 = topB, y1 = h - botB, x0 = leftB, x1 = w - rightB;
+        if (y1 - y0 < 8 || x1 - x0 < 8) { y0 = 0; y1 = h; x0 = 0; x1 = w; topB = botB = leftB = rightB = 0; }
+
+        // Ignore a 2% border (relative to the region) when judging "blank".
+        int rw = x1 - x0, rh = y1 - y0;
+        int mx = (int)(rw * 0.02), my = (int)(rh * 0.02);
+        long strong = 0; // genuinely dark content inside the region, for blank detection
+        for (int y = y0 + my; y < y1 - my; y++)
+        {
+            int row = y * stride;
+            for (int x = x0 + mx; x < x1 - mx; x++)
+            {
+                int o = row + x * 3;
+                int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
+                if (lum < 150) strong++;
+            }
+        }
+
+        int rowThresh = Math.Max(2, (int) (rw * 0.004));
+        int colThresh = Math.Max(2, (int) (rh * 0.004));
         int minX = -1, maxX = -1, minY = -1, maxY = -1;
-        for (int y = 0; y < h; y++) { if (rowCount[y] > rowThresh) { if (minY < 0) minY = y; maxY = y; } }
-        for (int x = 0; x < w; x++) { if (colCount[x] > colThresh) { if (minX < 0) minX = x; maxX = x; } }
+        for (int y = y0; y < y1; y++) { if (rowCount[y] > rowThresh) { if (minY < 0) minY = y; maxY = y; } }
+        for (int x = x0; x < x1; x++) { if (colCount[x] > colThresh) { if (minX < 0) minX = x; maxX = x; } }
         double coverage = (double) dark / ((long) w * h);
-        long inner = Math.Max(1, (long)(w - 2 * mx) * (h - 2 * my));
+        long inner = Math.Max(1, (long)(rw - 2 * mx) * (rh - 2 * my));
         double strongCov = (double) strong / inner;
         if (minX < 0 || minY < 0)
         {
-            return (0, 0, 1, 1, coverage, strongCov);
+            // No light content in the region → treat the region (sans bands) as the crop box.
+            return ((double) x0 / w, (double) y0 / h, (double) x1 / w, (double) y1 / h, coverage, strongCov);
         }
         return ((double) minX / w, (double) minY / h, (double) (maxX + 1) / w, (double) (maxY + 1) / h, coverage, strongCov);
     }
