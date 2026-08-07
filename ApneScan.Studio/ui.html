@@ -1937,7 +1937,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     // Rename (F2) also works while the My Documents panel is open (to rename a
     // selected file); other bare keys don't fire while any overlay/panel is open.
     if(actId==='rename'){ if(!modalOverlayOpen()){ e.preventDefault(); runAction(actId); } return; }
-    if(bare && anyOverlayOpen()) return;
+    // Only a real modal blocks shortcuts. The docked My Documents panel does not,
+    // so the thumbnail area stays fully usable while browsing folders.
+    if(bare && modalOverlayOpen()) return;
     runAction(actId);
     function runAction(id){ for(var i=0;i<ACTIONS.length;i++){ if(ACTIONS[i].id===id){ e.preventDefault(); ACTIONS[i].run(); return; } } }
   }, true);
