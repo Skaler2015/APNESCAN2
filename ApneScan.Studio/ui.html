@@ -1985,6 +1985,13 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function renderFolder(m){
     docsData=m||{entries:[]}; docsSelected=''; docsMultiSel=[];
     treeState={}; treeExpanded={}; treeReq={};
+    // Navigating into a real folder clears the search box so every file in that
+    // folder shows. Search / Recent results (m.search) keep the query visible.
+    if(!(m && m.search)){
+      docsQuery=''; var s=byId('docsSearch'); if(s) s.value='';
+      var sa=byId('dpSearchAll'); if(sa) sa.style.display='none';
+      var cs=byId('dpContentSearch'); if(cs) cs.style.display='none';
+    }
     renderDocsBar(); renderDocsList();
   }
   function renderDocsBar(){
