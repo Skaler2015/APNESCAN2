@@ -3,7 +3,7 @@
 declare(strict_types=1);
 echo flash_html();
 $tab = $_GET['tab'] ?? 'events';
-echo '<div class="phead"><div><h1>Events &amp; Feedback</h1><p>Every action across all installs, plus messages from users</p></div>'
+echo '<div class="phead"><div><h1>' . h(t('Events & Feedback')) . '</h1><p>' . h(t('sub_events')) . '</p></div>'
    . '<div class="chips"><a class="chip' . ($tab === 'events' ? ' on' : '') . '" href="?page=events&tab=events">Event log</a>'
    . '<a class="chip' . ($tab === 'feedback' ? ' on' : '') . '" href="?page=events&tab=feedback">Feedback</a></div></div>';
 

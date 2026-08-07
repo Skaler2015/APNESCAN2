@@ -6,7 +6,7 @@ $installs = (int) q1('SELECT COUNT(DISTINCT install) FROM events');
 $onLatest = $latest !== '' ? (int) q1('SELECT COUNT(DISTINCT install) FROM (SELECT install,MAX(version) mv FROM events GROUP BY install) t WHERE mv=?', [$latest]) : 0;
 $outdated = max(0, $installs - $onLatest);
 
-echo '<div class="phead"><div><h1>Versions</h1><p>Which builds are in the field · latest is <b>' . h($latest ?: '—') . '</b></p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Versions')) . '</h1><p>' . h(t('sub_versions')) . ' · latest is <b>' . h($latest ?: '—') . '</b></p></div></div>';
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('layers', h($latest ?: '—'), 'Latest version')
    . kpi('check', pct($onLatest, $installs) . '%', 'On latest')

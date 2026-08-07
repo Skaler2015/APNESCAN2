@@ -2,7 +2,7 @@
 /** Device Analytics — hardware/environment profiles (populated in Phase 2). */
 declare(strict_types=1);
 $count = devices_count();
-echo '<div class="phead"><div><h1>Devices</h1><p>Hardware &amp; environment of installs · ' . nf($count) . ' profiles</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Devices')) . '</h1><p>' . h(t('sub_devices')) . ' · ' . nf($count) . ' profiles</p></div></div>';
 if ($count === 0) {
     echo '<div class="card pad" style="margin-top:16px">' . empty_state('Device profiles are collected from ApneScan 1.0.73+ (Phase 2). This panel fills in automatically as users update — architecture, CPU cores, RAM, screen resolution, monitors, language, timezone and scanner driver.', 'monitor') . '</div>';
     return;

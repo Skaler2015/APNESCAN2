@@ -3,9 +3,9 @@
 declare(strict_types=1);
 $rg = resolve_range($_GET['r'] ?? '30');
 $chips = '<div class="chips">';
-foreach (ranges() as $k => $l) $chips .= '<a class="chip' . ($k === $rg['key'] ? ' on' : '') . '" href="?page=features&r=' . $k . '">' . h($l) . '</a>';
+foreach (ranges() as $k => $l) $chips .= '<a class="chip' . ($k === $rg['key'] ? ' on' : '') . '" href="?page=features&r=' . $k . '">' . h(t('range_' . $k)) . '</a>';
 $chips .= '</div>';
-echo '<div class="phead"><div><h1>Feature Analytics</h1><p>What people actually use · ' . h($rg['label']) . '</p></div>' . $chips . '</div>';
+echo '<div class="phead"><div><h1>' . h(t('Feature Analytics')) . '</h1><p>' . h(t('sub_features')) . ' · ' . h(t('range_' . $rg['key'])) . '</p></div>' . $chips . '</div>';
 
 $use = feature_usage_map($rg['since']);
 $adopt = feature_adoption_map($rg['since']);
@@ -38,7 +38,7 @@ echo '<div class="grid g2" style="margin-top:16px">'
    . '</div>';
 
 // Per-category breakdown
-echo '<div class="sec">' . icon('layers') . 'By category</div><div class="grid g3">';
+echo '<div class="sec">' . icon('layers') . h(t('s_by_category')) . '</div><div class="grid g3">';
 foreach ($catalog as $cat => $evs) {
     $rows = [];
     foreach ($evs as $e) if (($use[$e] ?? 0) > 0) $rows[] = ['name' => $e, 'c' => $use[$e]];

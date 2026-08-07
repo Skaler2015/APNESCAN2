@@ -4,7 +4,7 @@ declare(strict_types=1);
 echo flash_html();
 $token = setting('cron_token', '');
 $files = list_backups();
-echo '<div class="phead"><div><h1>Backup</h1><p>Protect your analytics data with on-demand, saved and scheduled backups</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Backup')) . '</h1><p>' . h(t('sub_backup')) . '</p></div></div>';
 
 echo '<div class="grid g2" style="margin-top:16px">'
    . '<div class="card pad"><div class="ctitle">' . icon('backup') . 'Create a backup</div><div class="csub">Download now, or save a copy on the server</div>'

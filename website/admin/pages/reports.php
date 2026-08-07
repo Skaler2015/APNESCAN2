@@ -3,7 +3,7 @@
 declare(strict_types=1);
 $now = time();
 $daily = fn($sec) => (int) q1('SELECT COALESCE(SUM(cnt),0) FROM events WHERE ts>=?', [$now - $sec]);
-echo '<div class="phead"><div><h1>Reports</h1><p>Download ready-made reports or preview key numbers</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Reports')) . '</h1><p>' . h(t('sub_reports')) . '</p></div></div>';
 
 $cards = [
     ['Daily report', 'Last 24 hours', 'daily'], ['Weekly report', 'Last 7 days', 'weekly'],

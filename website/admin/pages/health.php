@@ -15,7 +15,7 @@ try {
         $tables[] = $t;
 } catch (Throwable $e) {}
 
-echo '<div class="phead"><div><h1>System Health</h1><p>Database, performance and environment status</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('System Health')) . '</h1><p>' . h(t('sub_health')) . '</p></div></div>';
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('db', human_bytes($dbBytes), 'Database size')
    . kpi('layers', nf($rowsTotal), 'Event rows')

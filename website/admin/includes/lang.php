@@ -51,6 +51,26 @@ function i18n_map(): array {
         'daily_activity' => 'Daily activity', 'install_growth' => 'Install growth',
         'feature_usage' => 'Feature usage', 'adoption_funnel' => 'Adoption funnel',
         'version_adoption' => 'Version adoption', 'operating_systems' => 'Operating systems',
+        // common
+        'c_download' => 'Download', 'c_export' => 'Export', 'c_save' => 'Save', 'c_cancel' => 'Cancel',
+        'c_apply' => 'Apply', 'c_filter' => 'Filter', 'c_delete' => 'Delete', 'c_markread' => 'Mark read',
+        'c_csv' => 'CSV', 'c_none' => 'None', 'c_nodata' => 'No data in this range yet.', 'c_nodata2' => 'No data yet.',
+        // page subtitles
+        'sub_analytics' => 'Interactive trends, retention and geography', 'sub_live' => 'Real-time activity, refreshing every 5 seconds',
+        'sub_scanner' => 'How documents are being captured', 'sub_ocr' => 'Text-recognition usage across installs',
+        'sub_features' => 'What people actually use', 'sub_events' => 'Every action across all installs, plus messages from users',
+        'sub_reports' => 'Download ready-made reports or preview key numbers', 'sub_versions' => 'Which builds are in the field',
+        'sub_devices' => 'Hardware & environment of installs', 'sub_os' => 'Windows builds ApneScan runs on',
+        'sub_users' => 'Who can access this dashboard, and what they can do', 'sub_notifications' => 'Automatic alerts about crashes, feedback, storage and errors',
+        'sub_backup' => 'Protect your analytics data with on-demand, saved and scheduled backups',
+        'sub_export' => 'Download the full event dataset in your preferred format',
+        'sub_audit' => 'Logins, exports, deletions, settings & password changes', 'sub_health' => 'Database, performance and environment status',
+        'sub_settings' => 'Control the app remotely and manage this dashboard', 'sub_help' => 'How this dashboard works',
+        // section headers
+        's_activity' => 'Activity', 's_retention' => 'Retention & features', 's_timing' => 'Timing & geography',
+        's_when' => 'When & where', 's_features_versions' => 'Features & versions', 's_topusers' => 'Top users & live feed',
+        's_feedback_inbox' => 'Feedback inbox', 's_app_controls' => 'App controls', 's_perf' => 'Performance & settings',
+        's_by_category' => 'By category', 's_snapshot' => 'Snapshot', 's_saved_backups' => 'Saved backups',
     ];
     $hi = [
         'admin_console' => 'एडमिन कंसोल', 'usage_analytics' => 'उपयोग विश्लेषण और नियंत्रण',
@@ -78,6 +98,23 @@ function i18n_map(): array {
         'daily_activity' => 'दैनिक गतिविधि', 'install_growth' => 'इंस्टॉल वृद्धि',
         'feature_usage' => 'फ़ीचर उपयोग', 'adoption_funnel' => 'अपनाने का फ़नल',
         'version_adoption' => 'वर्शन अपनाना', 'operating_systems' => 'ऑपरेटिंग सिस्टम',
+        'c_download' => 'डाउनलोड', 'c_export' => 'एक्सपोर्ट', 'c_save' => 'सेव', 'c_cancel' => 'रद्द करें',
+        'c_apply' => 'लागू करें', 'c_filter' => 'फ़िल्टर', 'c_delete' => 'हटाएँ', 'c_markread' => 'पढ़ा हुआ',
+        'c_csv' => 'CSV', 'c_none' => 'कोई नहीं', 'c_nodata' => 'इस अवधि में अभी कोई डेटा नहीं।', 'c_nodata2' => 'अभी कोई डेटा नहीं।',
+        'sub_analytics' => 'इंटरैक्टिव रुझान, रिटेंशन और भूगोल', 'sub_live' => 'रियल-टाइम गतिविधि, हर 5 सेकंड में रिफ्रेश',
+        'sub_scanner' => 'दस्तावेज़ कैसे कैप्चर हो रहे हैं', 'sub_ocr' => 'सभी इंस्टॉल में टेक्स्ट-पहचान का उपयोग',
+        'sub_features' => 'लोग असल में क्या उपयोग करते हैं', 'sub_events' => 'सभी इंस्टॉल की हर गतिविधि, और यूज़र के संदेश',
+        'sub_reports' => 'तैयार रिपोर्ट डाउनलोड करें या मुख्य आँकड़े देखें', 'sub_versions' => 'फ़ील्ड में कौन-से बिल्ड हैं',
+        'sub_devices' => 'इंस्टॉल का हार्डवेयर और वातावरण', 'sub_os' => 'ApneScan किन Windows बिल्ड पर चलता है',
+        'sub_users' => 'इस डैशबोर्ड तक किसकी पहुँच है, और वे क्या कर सकते हैं', 'sub_notifications' => 'क्रैश, फ़ीडबैक, स्टोरेज और त्रुटियों की स्वचालित सूचनाएँ',
+        'sub_backup' => 'ऑन-डिमांड, सेव्ड और शेड्यूल्ड बैकअप से अपना डेटा सुरक्षित रखें',
+        'sub_export' => 'पूरा इवेंट डेटा अपने पसंदीदा फ़ॉर्मेट में डाउनलोड करें',
+        'sub_audit' => 'लॉगिन, एक्सपोर्ट, डिलीट, सेटिंग्स और पासवर्ड बदलाव', 'sub_health' => 'डेटाबेस, प्रदर्शन और वातावरण की स्थिति',
+        'sub_settings' => 'ऐप को दूर से नियंत्रित करें और इस डैशबोर्ड को प्रबंधित करें', 'sub_help' => 'यह डैशबोर्ड कैसे काम करता है',
+        's_activity' => 'गतिविधि', 's_retention' => 'रिटेंशन और फ़ीचर', 's_timing' => 'समय और भूगोल',
+        's_when' => 'कब और कहाँ', 's_features_versions' => 'फ़ीचर और वर्शन', 's_topusers' => 'टॉप यूज़र और लाइव फ़ीड',
+        's_feedback_inbox' => 'फ़ीडबैक इनबॉक्स', 's_app_controls' => 'ऐप नियंत्रण', 's_perf' => 'प्रदर्शन और सेटिंग्स',
+        's_by_category' => 'श्रेणी अनुसार', 's_snapshot' => 'स्नैपशॉट', 's_saved_backups' => 'सेव्ड बैकअप',
     ];
     return ['en' => $en, 'hi' => $hi];
 }

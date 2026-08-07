@@ -4,9 +4,9 @@ declare(strict_types=1);
 $rg = resolve_range($_GET['r'] ?? '30');
 $span = min($rg['days'], 30);
 $chips = '<div class="chips">';
-foreach (ranges() as $k => $l) $chips .= '<a class="chip' . ($k === $rg['key'] ? ' on' : '') . '" href="?page=analytics&r=' . $k . '">' . h($l) . '</a>';
+foreach (ranges() as $k => $l) $chips .= '<a class="chip' . ($k === $rg['key'] ? ' on' : '') . '" href="?page=analytics&r=' . $k . '">' . h(t('range_' . $k)) . '</a>';
 $chips .= '</div>';
-echo '<div class="phead"><div><h1>Analytics</h1><p>Interactive trends, retention and geography · ' . h($rg['label']) . '</p></div>' . $chips . '</div>';
+echo '<div class="phead"><div><h1>' . h(t('Analytics')) . '</h1><p>' . h(t('sub_analytics')) . ' · ' . h(t('range_' . $rg['key'])) . '</p></div>' . $chips . '</div>';
 
 echo '<div class="grid g2" style="margin-top:16px">'
    . '<div class="card pad"><div class="ctitle">' . icon('pulse') . 'Daily events</div><div class="csub">Last ' . $span . ' days</div>' . chartjs('aEvt', line_config(daily_series($span), 'Events', '#8b5cf6')) . '</div>'
@@ -29,7 +29,7 @@ echo '<div class="card pad" style="margin-top:16px"><div class="ctitle">' . icon
    . chartjs('aMonth', line_config(monthly_series(12), 'Events', '#7c3aed')) . '</div>';
 
 // features + cohorts
-echo '<div class="sec">' . icon('repeat') . 'Retention &amp; features</div>';
+echo '<div class="sec">' . icon('repeat') . h(t('s_retention')) . '</div>';
 $coh = cohorts();
 $cohHtml = '<table class="tbl"><thead><tr><th>Cohort week</th><th class="num">New</th><th class="num">Retained</th><th class="num">Rate</th></tr></thead><tbody>';
 foreach ($coh as $c) { $rate = pct((int)$c['ret'], (int)$c['n']); $cohHtml .= '<tr><td>' . h(gmdate('d M Y', (int)$c['wkstart'])) . '</td><td class="num">' . nf($c['n']) . '</td><td class="num">' . nf($c['ret']) . '</td><td class="num"><span class="pill">' . $rate . '%</span></td></tr>'; }
@@ -41,7 +41,7 @@ echo '<div class="grid g2">'
    . '</div>';
 
 // hours + country
-echo '<div class="sec">' . icon('globe') . 'Timing &amp; geography</div>';
+echo '<div class="sec">' . icon('globe') . h(t('s_timing')) . '</div>';
 $cc = country_dist(); $ccRows = array_map(fn($r) => ['name' => flag($r['country']) . ' ' . $r['country'], 'u' => $r['u']], $cc);
 echo '<div class="grid g2">'
    . '<div class="card pad"><div class="ctitle">' . icon('clock') . 'Active hours (UTC)</div><div class="csub">Events by hour of day</div>' . heatmap(hours_dist($rg['since'])) . '</div>'

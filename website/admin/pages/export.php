@@ -1,7 +1,7 @@
 <?php
 /** Export — download raw data in multiple formats. */
 declare(strict_types=1);
-echo '<div class="phead"><div><h1>Export</h1><p>Download the full event dataset in your preferred format</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Export')) . '</h1><p>' . h(t('sub_export')) . '</p></div></div>';
 $fmts = [
     ['CSV', 'Spreadsheet-ready', 'csv'], ['JSON', 'For scripts & APIs', 'json'], ['XML', 'Structured markup', 'xml'],
 ];

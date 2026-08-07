@@ -1,7 +1,7 @@
 <?php
 /** Help — quick documentation for the dashboard. */
 declare(strict_types=1);
-echo '<div class="phead"><div><h1>Help</h1><p>How this dashboard works</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Help')) . '</h1><p>' . h(t('sub_help')) . '</p></div></div>';
 $items = [
     ['grid', 'Overview & Analytics', 'KPI cards and interactive charts summarise installs, activity, retention and geography. Use the range chips (Today … All time) to change the window.'],
     ['scan', 'Scanner & OCR', 'Track how documents are captured and how OCR is used. Deeper hardware/timing metrics fill in as users update the app.'],

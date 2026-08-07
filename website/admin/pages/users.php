@@ -3,7 +3,7 @@
 declare(strict_types=1);
 echo flash_html();
 $rows = qa('SELECT username,role,created,last_login FROM admin_users ORDER BY created DESC');
-echo '<div class="phead"><div><h1>Admins &amp; Roles</h1><p>Who can access this dashboard, and what they can do</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Admins & Roles')) . '</h1><p>' . h(t('sub_users')) . '</p></div></div>';
 
 echo '<div class="card" style="margin-top:16px"><div class="pad" style="padding-bottom:6px"><div class="ctitle">' . icon('role') . 'Admin users</div><div class="csub">The bootstrap “admin” (super admin) always has full access</div></div>'
    . '<table class="tbl"><thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Last login</th><th></th></tr></thead><tbody>';

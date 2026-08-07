@@ -8,7 +8,7 @@ $scanTotal = (int) q1("SELECT COALESCE(SUM(cnt),0) FROM events WHERE event='scan
 $avgPages = $scanTotal > 0 ? round($pages / max(1, $scanTotal), 1) : 0;
 $scanners = device_field('scanner');
 
-echo '<div class="phead"><div><h1>Scanner Analytics</h1><p>How documents are being captured</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Scanner Analytics')) . '</h1><p>' . h(t('sub_scanner')) . '</p></div></div>';
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('scan', nf($scanTotal), 'Scan operations')
    . kpi('layers', nf($pages), 'Pages scanned')
@@ -31,7 +31,7 @@ $colorLabel = ['color' => 'Color', 'gray' => 'Grayscale', 'bw' => 'Black & White
 $colorRows = array_map(fn($r) => ['name' => $colorLabel[$r['name']] ?? $r['name'], 'c' => $r['c']], $colors);
 $scanTime = event_stats('scan_ms');
 
-echo '<div class="sec">' . icon('zap') . 'Performance &amp; settings</div>';
+echo '<div class="sec">' . icon('zap') . h(t('s_perf')) . '</div>';
 echo '<div class="grid kpis">'
    . kpi('clock', human_ms($scanTime['avg']), 'Average scan time')
    . kpi('layers', avg_pages_per_scan(), 'Avg pages / scan')

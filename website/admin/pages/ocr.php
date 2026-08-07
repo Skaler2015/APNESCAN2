@@ -10,7 +10,7 @@ $langs = prefixed_events('ocr_lang_');
 $langLabel = ['eng' => 'English', 'hin' => 'Hindi'];
 $langRows = array_map(fn($r) => ['name' => $langLabel[$r['name']] ?? strtoupper($r['name']), 'c' => $r['c']], $langs);
 
-echo '<div class="phead"><div><h1>OCR Analytics</h1><p>Text-recognition usage across installs</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('OCR Analytics')) . '</h1><p>' . h(t('sub_ocr')) . '</p></div></div>';
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('text', nf($o['runs']), 'OCR actions')
    . kpi('users', nf($o['onusers']), 'Installs using OCR')

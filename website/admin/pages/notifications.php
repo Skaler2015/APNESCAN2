@@ -2,7 +2,7 @@
 /** Notification Center — derived alerts about the fleet + system. */
 declare(strict_types=1);
 $ns = notifications();
-echo '<div class="phead"><div><h1>Notifications</h1><p>Automatic alerts about crashes, feedback, storage and errors</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Notifications')) . '</h1><p>' . h(t('sub_notifications')) . '</p></div></div>';
 echo '<div class="grid" style="margin-top:16px;gap:12px">';
 $cmap = ['bad' => 'r', 'warn' => 'w', 'good' => 'g', 'info' => ''];
 foreach ($ns as $x) {

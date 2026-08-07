@@ -2,7 +2,7 @@
 /** Global Search — cross-entity results (features, installs, versions, OS, feedback). */
 declare(strict_types=1);
 $q = trim($_GET['q'] ?? '');
-echo '<div class="phead"><div><h1>Search</h1><p>' . ($q !== '' ? 'Results for “' . h($q) . '”' : 'Type a query in the top bar to search across everything') . '</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Search')) . '</h1><p>' . ($q !== '' ? 'Results for “' . h($q) . '”' : 'Type a query in the top bar to search across everything') . '</p></div></div>';
 if ($q === '') { echo '<div class="card pad" style="margin-top:16px">' . empty_state('Search events, features, versions, OS, installs and feedback.', 'search') . '</div>'; return; }
 
 $r = global_search($q);

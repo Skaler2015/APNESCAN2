@@ -77,3 +77,6 @@ profile endpoint. No document content or personal data is ever collected.
   cookie-persisted `?lang=` toggle in the top bar). Translates the shell
   (sidebar, top bar, breadcrumb, tab title) and the dashboard (KPI labels,
   section headers, ranges); add keys to `i18n_map()` to extend coverage.
+- **Phase 7 (done):** extended i18n across every page — headers, subtitles,
+  key section titles and range chips now translate. Remaining deep-body labels
+  (card titles, table headers) are English and extendable via `i18n_map()`.

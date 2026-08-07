@@ -27,7 +27,7 @@ function twofa_section(): string {
     return $o . '<p class="mut" style="font-size:12.5px;margin:0 0 10px"><span class="pill">OFF</span> Add a second layer of security with an authenticator app.</p>'
          . '<form method="post">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=settings"><button class="btn ghost" name="action" value="2fa_begin">' . icon('key') . 'Enable 2FA</button></form>';
 }
-echo '<div class="phead"><div><h1>Settings</h1><p>Control the app remotely and manage this dashboard</p></div></div>';
+echo '<div class="phead"><div><h1>' . h(t('Settings')) . '</h1><p>' . h(t('sub_settings')) . '</p></div></div>';
 
 echo '<div class="grid g2" style="margin-top:16px">';
 

@@ -2,7 +2,7 @@
 /** Live Users — real-time KPIs + event feed via AJAX polling (no reload). */
 declare(strict_types=1);
 $m = metrics_overview(resolve_range('1'));
-echo '<div class="phead"><div><h1>Live Users</h1><p>Real-time activity, refreshing every 5 seconds</p></div>'
+echo '<div class="phead"><div><h1>' . h(t('Live Users')) . '</h1><p>' . h(t('sub_live')) . '</p></div>'
    . '<span class="online"><span class="pulse"></span><span id="lvOnline">' . nf($m['online']) . '</span> online now</span></div>';
 
 echo '<div class="grid kpis" id="lvKpis" style="margin-top:16px">'
