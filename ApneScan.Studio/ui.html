@@ -1119,12 +1119,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       var im=document.createElement('img'); im.src=src; im.alt='Page '+(i+1); im.draggable=false; c.appendChild(im);
       c.draggable=true;
       c.addEventListener('dragstart', function(ev){
-        var idxs=(selSet.length && selSet.indexOf(i)>=0) ? selSet.slice() : [i];
-        dragSrc=i;
+        var idxs=(selSet.length && selSet.indexOf(i)>=0) ? selSet.slice().sort(function(a,b){return a-b;}) : [i];
+        dragSrc=i; dragSrcs=idxs;
         c.classList.add('dragging');
         try{ ev.dataTransfer.setData('text/apnescan-pages', JSON.stringify(idxs)); ev.dataTransfer.effectAllowed='copyMove'; }catch(_){}
       });
-      c.addEventListener('dragend', function(){ dragSrc=-1; c.classList.remove('dragging'); clearDropMarks(); });
+      c.addEventListener('dragend', function(){ dragSrc=-1; dragSrcs=[]; c.classList.remove('dragging'); clearDropMarks(); });
       c.addEventListener('dragover', function(ev){
         if(dragSrc<0) return; ev.preventDefault();
         var r=c.getBoundingClientRect(), after=(ev.clientX-r.left)>r.width/2;
@@ -1133,10 +1133,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
       c.addEventListener('drop', function(ev){
         if(dragSrc<0) return; ev.preventDefault(); ev.stopPropagation();
         var r=c.getBoundingClientRect(), after=(ev.clientX-r.left)>r.width/2;
-        var to=i+(after?1:0); if(dragSrc<to) to--;
+        var insertAt=i+(after?1:0);
         clearDropMarks();
-        if(to!==dragSrc && dragSrc>=0){ send({cmd:'pageOp', op:'reorder', indices:[dragSrc], amount:to}); }
-        dragSrc=-1;
+        var srcs=(dragSrcs&&dragSrcs.length)?dragSrcs.slice():[dragSrc];
+        send({cmd:'pageOp', op:'reorderMulti', indices:srcs, amount:insertAt});
+        dragSrc=-1; dragSrcs=[];
       });
       var pn=document.createElement('div'); pn.className='pn'; pn.textContent=(i+1); c.appendChild(pn);
       var nm=document.createElement('div'); nm.id='pgname-'+i;
@@ -1158,7 +1159,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     });
     applyScanView();
   }
-  var dragSrc=-1;
+  var dragSrc=-1, dragSrcs=[];
   function clearDropMarks(){ var g=byId('scannedGrid'); if(!g) return; var k=g.children; for(var i=0;i<k.length;i++){ k[i].classList.remove('drop-before','drop-after'); } }
   // Scanned-pages toolbar
   var scanToolsMap={
@@ -1662,6 +1663,9 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     function sep(){ var s=document.createElement('div'); s.style.cssText='height:1px;background:var(--border);margin:4px 0'; m.appendChild(s); }
     item((n>1?'Rename '+n+' pages':'Rename')+' (F2)','i-editor', function(){ openRename(scannedSel); });
     sep();
+    item((n>1?'Copy '+n+' pages':'Copy')+' (Ctrl+C)','i-files', function(){ send({cmd:'copyPages', indices:selCurrent()}); });
+    item('Paste (Ctrl+V)','i-import', function(){ send({cmd:'pastePages'}); });
+    sep();
     item('Rotate left','i-rotate', function(){ pageOp('rotate',-90); });
     item('Rotate right','i-rotate', function(){ pageOp('rotate',90); });
     item('Rotate 180°','i-rotate', function(){ pageOp('rotate',180); });
@@ -1679,7 +1683,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     item('Export as image','i-image', function(){ send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); });
     item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); });
     m.style.left=Math.min(x, window.innerWidth-210)+'px';
-    m.style.top=Math.min(y, window.innerHeight-430)+'px';
+    m.style.top=Math.max(6, Math.min(y, window.innerHeight-490))+'px';
     m.classList.add('on');
   }
   document.addEventListener('click', function(){ var m=byId('ctxMenu'); if(m) m.classList.remove('on'); });
@@ -1977,6 +1981,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     {id:'phone', sec:'Capture', label:'Phone to PC', def:'Ctrl+G', run:function(){ openPhone(); }},
     {id:'undo', sec:'Edit page', label:'Undo', def:'Ctrl+Z', run:function(){ send({cmd:'undo'}); }},
     {id:'redo', sec:'Edit page', label:'Redo', def:'Ctrl+Y', run:function(){ send({cmd:'redo'}); }},
+    {id:'copy', sec:'Edit page', label:'Copy selected page(s)', def:'Ctrl+C', run:function(){ send({cmd:'copyPages', indices:selCurrent()}); }},
+    {id:'paste', sec:'Edit page', label:'Paste page(s) / image', def:'Ctrl+V', run:function(){ send({cmd:'pastePages'}); }},
     {id:'selectAll', sec:'Edit page', label:'Select all pages', def:'Ctrl+A', run:function(){ selectAllPages(); }},
     {id:'del', sec:'Edit page', label:'Delete selected page(s)', def:'Delete', run:function(){ send({cmd:'deletePage', indices:selSet.slice()}); }},
     {id:'rotR', sec:'Edit page', label:'Rotate right', def:'Ctrl+R', run:function(){ pageOp('rotate',90); }},

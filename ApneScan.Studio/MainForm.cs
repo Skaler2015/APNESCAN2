@@ -40,6 +40,8 @@ public class MainForm : Form
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
     private readonly List<List<ProcessedImage>> _redo = new();
+    // Internal page clipboard for copy/paste within the Scanned Pages area.
+    private List<ProcessedImage> _copiedPages = new();
     // Auto-detected document name per page (from OCR of the page's top area).
     private readonly List<string> _pageNames = new();
     private bool _naming;
@@ -167,6 +169,7 @@ public class MainForm : Form
         {
             StopPhoneServer();
             foreach (var p in _pages) p.Dispose();
+            foreach (var p in _copiedPages) p.Dispose();
             _ctx.Dispose();
         };
     }
@@ -472,6 +475,12 @@ public class MainForm : Form
                 break;
             case "exportPageImage":
                 await ExportPagesImageAsync(indices, format);
+                break;
+            case "copyPages":
+                CopyPages(indices);
+                break;
+            case "pastePages":
+                await PastePagesAsync();
                 break;
             case "setOcr":
                 _ocr = on;
@@ -1886,6 +1895,36 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 Status($"Moved page to position {to + 1}");
                 return;
             }
+            case "reorderMulti":
+            {
+                // Drag any number of selected pages to a new spot.
+                // indices = source page indices; amount = insertion point in
+                // the ORIGINAL index space (0..count, "before element N").
+                var srcs = indices.Where(x => x >= 0 && x < _pages.Count).Distinct().OrderBy(x => x).ToList();
+                if (srcs.Count == 0) return;
+                int insertAt = Math.Clamp(amount, 0, _pages.Count);
+                // No-op: dropping the block back exactly where it already is.
+                bool contiguous = srcs[srcs.Count - 1] - srcs[0] == srcs.Count - 1;
+                if (contiguous && (insertAt == srcs[0] || insertAt == srcs[srcs.Count - 1] + 1)) return;
+                PushUndo();
+                SyncNames();
+                var movedPages = srcs.Select(x => _pages[x]).ToList();
+                var movedNames = srcs.Select(x => x < _pageNames.Count ? _pageNames[x] : "").ToList();
+                int beforeCount = srcs.Count(x => x < insertAt);
+                int adj = Math.Clamp(insertAt - beforeCount, 0, _pages.Count - srcs.Count);
+                foreach (var x in srcs.OrderByDescending(v => v))
+                {
+                    _pages.RemoveAt(x);
+                    if (x < _pageNames.Count) _pageNames.RemoveAt(x);
+                }
+                adj = Math.Clamp(adj, 0, _pages.Count);
+                _pages.InsertRange(adj, movedPages);
+                _pageNames.InsertRange(Math.Min(adj, _pageNames.Count), movedNames);
+                _selected = adj;
+                await RefreshAsync(false);
+                Status($"Moved {srcs.Count} page(s)");
+                return;
+            }
         }
 
         // Image-transform ops applied to each target page.
@@ -1980,6 +2019,70 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             Status("Export error: " + ex.Message);
         }
+    }
+
+    // Copy the selected pages into the internal page clipboard.
+    private void CopyPages(List<int> indices)
+    {
+        if (_pages.Count == 0) { Status("Nothing to copy"); return; }
+        var t = Targets(indices);
+        if (t.Count == 0) { Status("Select a page to copy"); return; }
+        foreach (var p in _copiedPages) p.Dispose();
+        _copiedPages = t.Select(i => _pages[i].Clone()).ToList();
+        Status($"Copied {_copiedPages.Count} page(s) — Ctrl+V to paste");
+    }
+
+    // Paste: prefer pages copied inside the app; otherwise pull an image or
+    // files from the Windows clipboard (so you can copy from anywhere and
+    // paste into the Scanned Pages area).
+    private async Task PastePagesAsync()
+    {
+        // 1. Pages copied within ApneScan.
+        if (_copiedPages.Count > 0)
+        {
+            PushUndo();
+            SyncNames();
+            int at = Sel();
+            int insert = (at >= 0 ? at + 1 : _pages.Count);
+            insert = Math.Clamp(insert, 0, _pages.Count);
+            var clones = _copiedPages.Select(p => p.Clone()).ToList();
+            _pages.InsertRange(insert, clones);
+            for (int k = 0; k < clones.Count; k++)
+                _pageNames.Insert(Math.Min(insert + k, _pageNames.Count), "");
+            _selected = insert + clones.Count - 1;
+            await RefreshAsync(false);
+            _ = AutoNameAsync();
+            Status($"Pasted {clones.Count} page(s)");
+            return;
+        }
+        // 2. Windows clipboard — image, then file list.
+        try
+        {
+            if (Clipboard.ContainsImage())
+            {
+                using var img = Clipboard.GetImage();
+                if (img != null)
+                {
+                    var tmp = Path.Combine(Path.GetTempPath(), "apnescan_paste_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                    img.Save(tmp, System.Drawing.Imaging.ImageFormat.Png);
+                    await ImportPathAsync(tmp);
+                    try { File.Delete(tmp); } catch { }
+                    return;
+                }
+            }
+            if (Clipboard.ContainsFileDropList())
+            {
+                var files = Clipboard.GetFileDropList();
+                int done = 0;
+                foreach (var f in files)
+                {
+                    if (!string.IsNullOrWhiteSpace(f) && File.Exists(f)) { await ImportPathAsync(f); done++; }
+                }
+                if (done > 0) return;
+            }
+        }
+        catch (Exception ex) { Status("Paste error: " + ex.Message); return; }
+        Status("Clipboard is empty — copy a page or image first");
     }
 
     private sealed class AnalyticsData
