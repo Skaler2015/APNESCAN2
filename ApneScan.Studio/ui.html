@@ -128,6 +128,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .dp-view{display:flex;gap:4px;align-items:center;padding:0 12px 8px}
 .dp-view .dv{width:30px;height:26px;display:grid;place-items:center;border-radius:7px;background:#f4f5f9;color:#5b6376;cursor:pointer;font-size:14px}
 .dp-view .dv.on{background:var(--accent);color:#fff}
+.dp-pinned{display:flex;gap:6px;padding:0 12px 6px;overflow-x:auto;white-space:nowrap}
+.dp-pinned:empty{display:none}
+.dp-pin{display:inline-flex;align-items:center;gap:5px;flex:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--amber-soft,#fff6e0);color:#9a6a00;cursor:pointer;border:1px solid #f0dca0}
+.dp-pin:hover{background:#ffefc4}
+.dp-pin svg{width:12px;height:12px}
+:root[data-theme="dark"] .dp-pin{background:#3a3320;color:#e7c977;border-color:#5a4d28}
 .docs-list.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;align-content:start}
 .dg-card{position:relative;border:1px solid var(--border-2);border-radius:10px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(20,20,50,.05)}
 .dg-card:hover{border-color:#dcd6f5}
@@ -544,8 +550,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
             <div class="dp-chip" data-f="fav">&#9733; Fav</div>
             <div class="dp-chip" data-f="recent">Recent</div>
             <div class="dp-chip" data-f="today">Today</div>
+            <div class="dp-chip" data-f="pdf">PDF</div>
+            <div class="dp-chip" data-f="img">Images</div>
             <div class="dp-chip on" data-f="all">All</div>
           </div>
+          <div class="dp-pinned" id="dpPinned"></div>
           <div class="dp-sort">
             <div class="dp-sortbtn" data-s="name">Name</div>
             <div class="dp-sortbtn on" data-s="date">Date &#8595;</div>
@@ -555,6 +564,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
           <div class="dp-view">
             <span id="dvList" class="dv on" title="List view">&#9776;</span>
             <span id="dvGrid" class="dv" title="Grid / thumbnail view">&#9638;</span>
+            <span id="dpStorage" style="margin-left:auto;font-size:10.5px;color:var(--muted)"></span>
           </div>
           <div class="docs-list" id="docsList"></div>
           <div class="dp-actions">
@@ -1671,6 +1681,10 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(docsFilter==='fav') arr=arr.filter(function(e){ return e.fav; });
     else if(docsFilter==='today') arr=arr.filter(function(e){ return e.ms && new Date(e.ms).toDateString()===new Date().toDateString(); });
     else if(docsFilter==='recent') arr=arr.filter(function(e){ return e.ms && (Date.now()-e.ms)<7*86400000; });
+    else if(docsFilter==='pdf') arr=arr.filter(function(e){ return e.dir || /\.pdf$/i.test(e.name||''); });
+    else if(docsFilter==='img') arr=arr.filter(function(e){ return e.dir || /\.(jpe?g|png|tiff?|bmp)$/i.test(e.name||''); });
+    // Storage total for the files currently shown.
+    (function(){ var st=byId('dpStorage'); if(!st) return; var n=0,sz=0; arr.forEach(function(e){ if(!e.dir){ n++; sz+=(e.size||0); } }); st.textContent=n?(n+' files · '+fmtBytes(sz)):''; })();
     arr.sort(function(a,b){
       if(a.dir!==b.dir) return a.dir?-1:1;
       var r=0;
@@ -1740,7 +1754,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function setDocsView(v){ docsView=v; var l=byId('dvList'), g=byId('dvGrid'); if(l) l.classList.toggle('on', v==='list'); if(g) g.classList.toggle('on', v==='grid'); renderDocsList(); }
   var dvList=byId('dvList'); if(dvList) dvList.addEventListener('click', function(){ setDocsView('list'); });
   var dvGrid=byId('dvGrid'); if(dvGrid) dvGrid.addEventListener('click', function(){ setDocsView('grid'); });
-  function openDocs(){ var p=byId('docsPanel'); if(!p) return; p.classList.add('on'); if(bridge) send({cmd:'listFolder'}); }
+  function openDocs(){ var p=byId('docsPanel'); if(!p) return; p.classList.add('on'); renderPinned(); if(bridge){ send({cmd:'listFolder'}); send({cmd:'getFavs'}); } }
   function closeDocs(){ var p=byId('docsPanel'); if(p) p.classList.remove('on'); }
   var navDocs=byId('navDocs'); if(navDocs) navDocs.addEventListener('click', function(e){ e.stopPropagation(); openDocs(); });
   var docsClose=byId('docsClose'); if(docsClose) docsClose.addEventListener('click', function(e){ e.stopPropagation(); closeDocs(); });
@@ -1948,15 +1962,30 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   }
   // Favorites pinned in the sidebar (whatever you ★ in My Documents shows here)
   function renderFavs(items){
-    var box=byId('favList'); if(!box) return; box.innerHTML='';
-    (items||[]).forEach(function(it){
-      var el=document.createElement('div'); el.className='item'; el.title=it.path||'';
-      el.innerHTML='<span class="star">&#9733;</span><span class="lbl">'+esc(it.name||it.path||'')+'</span>';
-      el.addEventListener('click', function(){
-        if(!bridge) return;
-        if(it.dir){ var p=byId('docsPanel'); if(p) p.classList.add('on'); send({cmd:'listFolder', path:it.path}); }
-        else { send({cmd:'openFile', path:it.path}); }
+    lastFavs=items||[];
+    var box=byId('favList');
+    if(box){ box.innerHTML='';
+      lastFavs.forEach(function(it){
+        var el=document.createElement('div'); el.className='item'; el.title=it.path||'';
+        el.innerHTML='<span class="star">&#9733;</span><span class="lbl">'+esc(it.name||it.path||'')+'</span>';
+        el.addEventListener('click', function(){
+          if(!bridge) return;
+          if(it.dir){ var p=byId('docsPanel'); if(p) p.classList.add('on'); send({cmd:'listFolder', path:it.path}); }
+          else { send({cmd:'openFile', path:it.path}); }
+        });
+        box.appendChild(el);
       });
+    }
+    renderPinned();
+  }
+  var lastFavs=[];
+  // Pinned folders: quick-access chips inside My Documents (favorited folders).
+  function renderPinned(){
+    var box=byId('dpPinned'); if(!box) return; box.innerHTML='';
+    lastFavs.filter(function(it){ return it.dir; }).forEach(function(it){
+      var el=document.createElement('span'); el.className='dp-pin'; el.title=it.path||'';
+      el.innerHTML='<svg><use href="#i-folder"/></svg>'+esc(it.name||'folder');
+      el.addEventListener('click', function(){ if(bridge) send({cmd:'listFolder', path:it.path}); });
       box.appendChild(el);
     });
   }
