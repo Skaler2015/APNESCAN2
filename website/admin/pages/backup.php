@@ -17,9 +17,9 @@ echo '<div class="grid g2" style="margin-top:16px">'
    . '<p class="csub" style="margin-top:12px">Restore from Hostinger → phpMyAdmin → Import (gunzip first).</p></div>'
    . '</div>';
 
-echo '<div class="sec">' . icon('db') . 'Saved backups</div><div class="card"><table class="tbl"><thead><tr><th>File</th><th>Created (UTC)</th><th class="num">Size</th><th></th></tr></thead><tbody>';
+echo '<div class="sec">' . icon('db') . 'Saved backups</div><div class="card"><table class="tbl"><thead><tr><th>File</th><th>Created (IST)</th><th class="num">Size</th><th></th></tr></thead><tbody>';
 foreach ($files as $f) {
-    echo '<tr><td class="mono">' . h($f['name']) . '</td><td class="mut">' . h(gmdate('d M Y · H:i', $f['mtime'])) . '</td>'
+    echo '<tr><td class="mono">' . h($f['name']) . '</td><td class="mut">' . h(dt($f['mtime'], 'd M Y · H:i')) . '</td>'
        . '<td class="num">' . human_bytes($f['size']) . '</td>'
        . '<td><a class="btn ghost" style="padding:3px 10px;font-size:11px" href="admin.php?do=backupfile&f=' . h(rawurlencode($f['name'])) . '">Download</a></td></tr>';
 }

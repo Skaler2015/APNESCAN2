@@ -36,7 +36,7 @@ switch ($action) {
         $m = metrics_overview(resolve_range('1'));
         $rows = qa('SELECT ts,event,version,install FROM events WHERE 1=1' . meta_filter() . ' ORDER BY id DESC LIMIT 25');
         $ev = array_map(fn($r) => [
-            'when' => gmdate('d M · H:i:s', (int)$r['ts']), 'event' => $r['event'],
+            'when' => dt((int)$r['ts'], 'd M · H:i:s'), 'event' => $r['event'],
             'version' => $r['version'], 'install' => $r['install'],
         ], $rows);
         // last-30-minute per-minute buckets

@@ -28,7 +28,7 @@ echo '</div><div class="grid g3" style="margin-top:16px">';
 $vh = '<div class="card pad"><div class="ctitle">' . icon('layers') . 'Versions</div>' . ($r['versions'] ? barlist($r['versions'], 'version', 'u') : empty_state('None')) . '</div>';
 $oh = '<div class="card pad"><div class="ctitle">' . icon('monitor') . 'Operating systems</div>' . ($r['os'] ? barlist($r['os'], 'os', 'u') : empty_state('None')) . '</div>';
 $feh = '<div class="card pad"><div class="ctitle">' . icon('msg') . 'Feedback</div>';
-if ($r['feedback']) { foreach ($r['feedback'] as $f) $feh .= '<div style="padding:8px 0;border-bottom:1px solid var(--line2)"><div class="faint" style="font-size:11px">' . h(gmdate('d M Y', (int)$f['ts'])) . ' · v' . h($f['version']) . '</div><div style="font-size:12.5px">' . h(mb_strimwidth($f['message'], 0, 90, '…')) . '</div></div>'; }
+if ($r['feedback']) { foreach ($r['feedback'] as $f) $feh .= '<div style="padding:8px 0;border-bottom:1px solid var(--line2)"><div class="faint" style="font-size:11px">' . h(dt((int)$f['ts'], 'd M Y')) . ' · v' . h($f['version']) . '</div><div style="font-size:12.5px">' . h(mb_strimwidth($f['message'], 0, 90, '…')) . '</div></div>'; }
 else $feh .= empty_state('None');
 $feh .= '</div>';
 echo $vh . $oh . $feh . '</div>';

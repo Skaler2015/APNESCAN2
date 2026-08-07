@@ -130,7 +130,7 @@ function latest_version(): string {
 function os_dist(): array { return remember('os_dist', 90, fn() => qa('SELECT os, COUNT(DISTINCT install) u FROM events GROUP BY os ORDER BY u DESC LIMIT 12')); }
 function country_dist(): array { return remember('country_dist', 90, fn() => qa("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 15")); }
 function hours_dist(int $since): array {
-    $rows = qa('SELECT HOUR(FROM_UNIXTIME(ts)) hr, SUM(cnt) c FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY hr', [$since]);
+    $rows = qa('SELECT HOUR(FROM_UNIXTIME(ts + 19800)) hr, SUM(cnt) c FROM events WHERE ts>=?' . meta_filter() . ' GROUP BY hr', [$since]);
     $h = array_fill(0, 24, 0); foreach ($rows as $r) $h[(int)$r['hr']] = (int)$r['c'];
     return $h;
 }
@@ -256,7 +256,7 @@ function insights(): array {
         $tc = qr("SELECT country, COUNT(*) u FROM geo WHERE country<>'' AND country<>'??' GROUP BY country ORDER BY u DESC LIMIT 1");
         if ($tc) $out[] = ['tone' => 'info', 'icon' => 'globe', 'text' => 'Most installs are in ' . flag($tc['country']) . ' ' . h($tc['country']) . ' (' . nf($tc['u']) . ').'];
         $hrs = hours_dist($now - $w); $peak = array_keys($hrs, max($hrs))[0] ?? null;
-        if ($peak !== null && max($hrs) > 0) $out[] = ['tone' => 'info', 'icon' => 'clock', 'text' => 'Peak usage is around ' . str_pad((string)$peak, 2, '0', STR_PAD_LEFT) . ':00 UTC.'];
+        if ($peak !== null && max($hrs) > 0) $out[] = ['tone' => 'info', 'icon' => 'clock', 'text' => 'Peak usage is around ' . str_pad((string)$peak, 2, '0', STR_PAD_LEFT) . ':00 IST.'];
 
         return $out;
     });

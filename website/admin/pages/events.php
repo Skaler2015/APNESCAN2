@@ -15,7 +15,7 @@ if ($tab === 'feedback') {
             echo '<div style="padding:14px 18px;border-bottom:1px solid var(--line2)">'
                . '<div style="display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--faint);margin-bottom:5px;flex-wrap:wrap">'
                . ($f['seen'] ? '' : '<span style="width:7px;height:7px;border-radius:50%;background:var(--brand);display:inline-block"></span> ')
-               . h(gmdate('d M Y · H:i', (int)$f['ts'])) . ' · v' . h($f['version']) . ($f['contact'] ? ' · ' . h($f['contact']) : '')
+               . h(dt((int)$f['ts'], 'd M Y · H:i')) . ' · v' . h($f['version']) . ($f['contact'] ? ' · ' . h($f['contact']) : '')
                . '<span style="flex:1"></span>'
                . '<form method="post" style="display:inline">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=events&tab=feedback"><input type="hidden" name="id" value="' . (int)$f['id'] . '">'
                . ($f['seen'] ? '' : '<button class="btn ghost" style="padding:3px 9px;font-size:11px;margin-right:6px" name="action" value="fbseen">' . h(t('c_markread')) . '</button>')
@@ -69,7 +69,7 @@ echo '<div class="card" style="margin-top:12px"><div class="pad" style="padding-
    . '<a class="btn ghost" href="admin.php?do=csv">' . icon('download') . h(t('c_csv')) . '</a></form></div>'
    . '<table class="tbl"><thead><tr><th>' . h(t('th_when')) . '</th><th>' . h(t('th_feature')) . '</th><th>' . h(t('th_version')) . '</th><th>' . h(t('th_os')) . '</th><th>' . h(t('th_install')) . '</th></tr></thead><tbody>';
 foreach ($res['rows'] as $r) {
-    echo '<tr><td class="mut">' . h(gmdate('d M Y · H:i', (int)$r['ts'])) . '</td><td><b>' . h($r['event']) . '</b></td>'
+    echo '<tr><td class="mut">' . h(dt((int)$r['ts'], 'd M Y · H:i')) . '</td><td><b>' . h($r['event']) . '</b></td>'
        . '<td class="mut">' . h($r['version']) . '</td><td class="mut">' . h($r['os']) . '</td>'
        . '<td><a class="mono" href="?page=install&install=' . h($r['install']) . '">' . h(substr($r['install'], 0, 8)) . '</a></td></tr>';
 }

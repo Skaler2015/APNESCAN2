@@ -38,7 +38,7 @@ echo '<div class="card" style="margin-top:16px"><div class="pad" style="padding-
       if(!d.ok) return;
       var on=document.getElementById('lvOnline'); if(on) on.textContent=d.kpis.online;
       document.querySelectorAll('#lvKpis .n[data-k]').forEach(function(el){ var k=el.getAttribute('data-k'); if(d.kpis[k]!=null) el.textContent=Number(d.kpis[k]).toLocaleString(); });
-      var st=document.getElementById('syncTime'); if(st) st.textContent='synced '+new Date().toISOString().substr(11,5)+' UTC';
+      var st=document.getElementById('syncTime'); if(st) st.textContent='synced '+new Date(Date.now()+19800000).toISOString().substr(11,5)+' IST';
       if(d.series && window.__lvChartUpdate) window.__lvChartUpdate(d.series);
       var tb=document.getElementById('lvFeed');
       if(tb && d.events){ tb.innerHTML = d.events.length? d.events.map(function(e){

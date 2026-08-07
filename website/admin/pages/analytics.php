@@ -32,7 +32,7 @@ echo '<div class="card pad" style="margin-top:16px"><div class="ctitle">' . icon
 echo '<div class="sec">' . icon('repeat') . h(t('s_retention')) . '</div>';
 $coh = cohorts();
 $cohHtml = '<table class="tbl"><thead><tr><th>Cohort week</th><th class="num">New</th><th class="num">Retained</th><th class="num">Rate</th></tr></thead><tbody>';
-foreach ($coh as $c) { $rate = pct((int)$c['ret'], (int)$c['n']); $cohHtml .= '<tr><td>' . h(gmdate('d M Y', (int)$c['wkstart'])) . '</td><td class="num">' . nf($c['n']) . '</td><td class="num">' . nf($c['ret']) . '</td><td class="num"><span class="pill">' . $rate . '%</span></td></tr>'; }
+foreach ($coh as $c) { $rate = pct((int)$c['ret'], (int)$c['n']); $cohHtml .= '<tr><td>' . h(dt((int)$c['wkstart'], 'd M Y')) . '</td><td class="num">' . nf($c['n']) . '</td><td class="num">' . nf($c['ret']) . '</td><td class="num"><span class="pill">' . $rate . '%</span></td></tr>'; }
 if (!$coh) $cohHtml .= '<tr><td colspan="4" class="empty">No cohort data yet.</td></tr>';
 $cohHtml .= '</tbody></table>';
 echo '<div class="grid g2">'
@@ -44,6 +44,6 @@ echo '<div class="grid g2">'
 echo '<div class="sec">' . icon('globe') . h(t('s_timing')) . '</div>';
 $cc = country_dist(); $ccRows = array_map(fn($r) => ['name' => flag($r['country']) . ' ' . $r['country'], 'u' => $r['u']], $cc);
 echo '<div class="grid g2">'
-   . '<div class="card pad"><div class="ctitle">' . icon('clock') . 'Active hours (UTC)</div><div class="csub">Events by hour of day</div>' . heatmap(hours_dist($rg['since'])) . '</div>'
+   . '<div class="card pad"><div class="ctitle">' . icon('clock') . 'Active hours (IST)</div><div class="csub">Events by hour of day</div>' . heatmap(hours_dist($rg['since'])) . '</div>'
    . '<div class="card pad"><div class="ctitle">' . icon('globe') . 'Countries</div><div class="csub">Coarse location from IP</div>' . ($ccRows ? barlist($ccRows, 'name', 'u') : empty_state('Country data appears as clients update.', 'globe')) . '</div>'
    . '</div>';

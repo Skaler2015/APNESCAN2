@@ -24,7 +24,7 @@ function render_topbar(string $title, int $online, array $notifs): void
 
     echo '<div class="tspacer"></div>';
     if ($online > 0) echo '<span class="online"><span class="pulse"></span>' . nf($online) . ' ' . h(t('online')) . '</span>';
-    echo '<span class="sync" id="syncTime">' . h(t('synced')) . ' ' . gmdate('H:i') . ' UTC</span>';
+    echo '<span class="sync" id="syncTime">' . h(t('synced')) . ' ' . dt(time(), 'H:i') . ' IST</span>';
     // language toggle
     echo '<div class="chips" style="padding:3px"><a class="chip' . ($lang === 'en' ? ' on' : '') . '" href="?lang=en" style="padding:5px 9px" title="English">EN</a>'
        . '<a class="chip' . ($lang === 'hi' ? ' on' : '') . '" href="?lang=hi" style="padding:5px 9px" title="हिन्दी">हि</a></div>';

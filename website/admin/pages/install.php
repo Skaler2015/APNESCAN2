@@ -14,8 +14,8 @@ echo '<div class="phead"><div><h1>Install ' . h(substr($inst, 0, 12)) . ' ' . fl
 echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('layers', nf($s['events'] ?? 0), 'Total events')
    . kpi('clock', ($s['days'] ?? 0), 'Active days')
-   . kpi('user', !empty($s['first']) ? gmdate('d M Y', (int)$s['first']) : '—', 'First seen')
-   . kpi('pulse', !empty($s['last']) ? gmdate('d M H:i', (int)$s['last']) : '—', 'Last seen')
+   . kpi('user', !empty($s['first']) ? dt((int)$s['first'], 'd M Y') : '—', 'First seen')
+   . kpi('pulse', !empty($s['last']) ? dt((int)$s['last'], 'd M H:i') : '—', 'Last seen')
    . kpi('tag', h($s['ver'] ?? '—'), 'Version')
    . kpi('globe', ($cc && $cc !== '??') ? flag($cc) . ' ' . h($cc) : '—', 'Country')
    . '</div>';
@@ -34,7 +34,7 @@ if ($dev) {
 echo '<div class="grid g2" style="margin-top:8px">'
    . '<div class="card pad"><div class="ctitle">' . icon('tag') . 'Feature usage</div>' . barlist($feat, 'event', 'c') . '</div>'
    . '<div class="card"><div class="pad" style="padding-bottom:6px"><div class="ctitle">' . icon('pulse') . 'Activity timeline</div><div class="csub">Last 120 actions</div></div>'
-   . '<table class="tbl"><thead><tr><th>When (UTC)</th><th>Feature</th><th>Ver</th></tr></thead><tbody>';
-foreach ($hist as $r) echo '<tr><td class="mut">' . h(gmdate('d M · H:i', (int)$r['ts'])) . '</td><td><b>' . h($r['event']) . '</b></td><td class="mut">' . h($r['version']) . '</td></tr>';
+   . '<table class="tbl"><thead><tr><th>When (IST)</th><th>Feature</th><th>Ver</th></tr></thead><tbody>';
+foreach ($hist as $r) echo '<tr><td class="mut">' . h(dt((int)$r['ts'], 'd M · H:i')) . '</td><td><b>' . h($r['event']) . '</b></td><td class="mut">' . h($r['version']) . '</td></tr>';
 if (!$hist) echo '<tr><td colspan="3" class="empty">No activity.</td></tr>';
 echo '</tbody></table></div></div>';

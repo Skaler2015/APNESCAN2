@@ -16,6 +16,10 @@ function human_bytes($b): string {
     while ($b >= 1024 && $i < 4) { $b /= 1024; $i++; }
     return round($b, $b < 10 && $i > 0 ? 1 : 0) . ' ' . $u[$i];
 }
+// India Standard Time (UTC+5:30, no DST). Format a UTC epoch for display in IST.
+const IST_OFFSET = 19800;
+function dt($ts, string $fmt = 'd M Y · H:i'): string { return gmdate($fmt, (int)$ts + IST_OFFSET); }
+
 function human_ms($ms): string {
     $ms = (float)$ms; if ($ms <= 0) return '—';
     return $ms < 1000 ? round($ms) . ' ms' : round($ms / 1000, 1) . ' s';

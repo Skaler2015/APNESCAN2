@@ -10,7 +10,7 @@ echo '<div class="card" style="margin-top:16px"><div class="pad" style="padding-
 echo '<tr><td><b>admin</b></td><td><span class="pill">Super Admin</span></td><td class="mut">bootstrap</td><td class="mut">—</td><td></td></tr>';
 foreach ($rows as $r) {
     echo '<tr><td><b>' . h($r['username']) . '</b></td><td><span class="pill">' . h($GLOBALS['ROLE_LABELS'][$r['role']] ?? $r['role']) . '</span></td>'
-       . '<td class="mut">' . ($r['created'] ? h(gmdate('d M Y', (int)$r['created'])) : '—') . '</td>'
+       . '<td class="mut">' . ($r['created'] ? h(dt((int)$r['created'], 'd M Y')) : '—') . '</td>'
        . '<td class="mut">' . ($r['last_login'] ? ago($r['last_login']) : 'never') . '</td>'
        . '<td>' . (can('users') ? '<form method="post" style="display:inline">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=users"><input type="hidden" name="username" value="' . h($r['username']) . '"><button class="btn ghost" style="padding:3px 9px;font-size:11px" name="action" value="user_del" onclick="return confirm(\'Remove this admin?\')">Remove</button></form>' : '') . '</td></tr>';
 }
