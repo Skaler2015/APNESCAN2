@@ -81,6 +81,11 @@ function i18n_map(): array {
         'p_this_month' => 'This month', 'ev_search_ph' => 'Search feature…', 'ev_all_versions' => 'All versions',
         'ev_all_os' => 'All OS', 'ev_no_match' => 'No matching events.', 'ev_total_match' => 'total events match.',
         'tab_event_log' => 'Event log', 'tab_feedback' => 'Feedback',
+        // activity widget (mirrors the in-app one)
+        'act_title' => 'Activity', 'col_total' => 'Total', 'col_today' => 'Today',
+        'act_scan' => 'Scan', 'act_pdf' => 'PDF Save', 'act_image' => 'Image Save',
+        'act_print' => 'Print', 'act_import' => 'Import', 'act_camera' => 'Camera',
+        'act_sub' => 'Combined across all installs',
     ];
     $hi = [
         'admin_console' => 'एडमिन कंसोल', 'usage_analytics' => 'उपयोग विश्लेषण और नियंत्रण',
@@ -133,6 +138,10 @@ function i18n_map(): array {
         'p_this_month' => 'इस महीने', 'ev_search_ph' => 'फ़ीचर खोजें…', 'ev_all_versions' => 'सभी वर्शन',
         'ev_all_os' => 'सभी OS', 'ev_no_match' => 'कोई मेल खाता इवेंट नहीं।', 'ev_total_match' => 'कुल इवेंट मेल खाते हैं।',
         'tab_event_log' => 'इवेंट लॉग', 'tab_feedback' => 'फ़ीडबैक',
+        'act_title' => 'गतिविधि', 'col_total' => 'कुल', 'col_today' => 'आज',
+        'act_scan' => 'स्कैन', 'act_pdf' => 'PDF सेव', 'act_image' => 'इमेज सेव',
+        'act_print' => 'प्रिंट', 'act_import' => 'इम्पोर्ट', 'act_camera' => 'कैमरा',
+        'act_sub' => 'सभी इंस्टॉल का संयुक्त',
     ];
     return ['en' => $en, 'hi' => $hi];
 }

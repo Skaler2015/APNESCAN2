@@ -49,6 +49,19 @@ echo '<div class="grid kpis" style="margin-top:16px">'
    . kpi('db', human_bytes($m['db_bytes']), t('k_db_size'))
    . '</div>';
 
+// Activity breakdown (mirrors the in-app widget)
+$act = activity_breakdown();
+$arows = '';
+foreach ($act as $a) {
+    $arows .= '<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' . $a['color'] . ';margin-right:9px;vertical-align:middle"></span>' . h(t($a['key'])) . '</td>'
+            . '<td class="num">' . nf($a['total']) . '</td>'
+            . '<td class="num" style="color:var(--good);font-weight:700">' . nf($a['today']) . '</td></tr>';
+}
+echo '<div class="sec">' . icon('activity') . h(t('act_title')) . '</div>'
+   . '<div class="card" style="max-width:560px"><div class="pad" style="padding-bottom:4px"><div class="csub" style="margin:0">' . h(t('act_sub')) . '</div></div>'
+   . '<table class="tbl"><thead><tr><th>' . h(t('act_title')) . '</th><th class="num">' . h(t('col_total')) . '</th><th class="num">' . h(t('col_today')) . '</th></tr></thead><tbody>'
+   . $arows . '</tbody></table></div>';
+
 // Charts row
 echo '<div class="sec">' . icon('chart') . h(t('activity_growth')) . '</div>';
 echo '<div class="grid g2">'

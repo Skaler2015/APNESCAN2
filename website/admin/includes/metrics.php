@@ -164,6 +164,32 @@ function events_page(array $f, int $page, int $per = 40): array {
     $rows = qa("SELECT ts,event,version,os,install,cnt FROM events WHERE $c ORDER BY id DESC LIMIT $per OFFSET $off", $a);
     return ['rows' => $rows, 'total' => $total, 'pages' => max(1, (int)ceil($total / $per)), 'page' => $page];
 }
+/**
+ * Activity breakdown mirroring the in-app "Activity" widget: friendly groups
+ * (Scan, PDF Save, …) with all-time Total and last-24h Today, summed across
+ * every install.
+ */
+function activity_breakdown(): array {
+    $now = time();
+    $all = []; foreach (qa('SELECT event, SUM(cnt) c FROM events GROUP BY event') as $r) $all[$r['event']] = (int)$r['c'];
+    $tod = []; foreach (qa('SELECT event, SUM(cnt) c FROM events WHERE ts>=? GROUP BY event', [$now - 86400]) as $r) $tod[$r['event']] = (int)$r['c'];
+    $groups = [
+        ['act_scan',   ['scan'], '#16a34a'],
+        ['act_pdf',    ['savePdf', 'savePdfSelected', 'savePdfHere'], '#2563eb'],
+        ['act_image',  ['saveImages', 'savePagesToFolder', 'imagesToPdf'], '#dc2626'],
+        ['act_print',  ['print', 'printFile'], '#d97706'],
+        ['act_import', ['import', 'importPath', 'importDropped'], '#7c3aed'],
+        ['act_camera', ['addPhoto', 'camera'], '#0891b2'],
+    ];
+    $out = [];
+    foreach ($groups as $g) {
+        $tt = 0; $td = 0;
+        foreach ($g[1] as $e) { $tt += $all[$e] ?? 0; $td += $tod[$e] ?? 0; }
+        $out[] = ['key' => $g[0], 'total' => $tt, 'today' => $td, 'color' => $g[2]];
+    }
+    return $out;
+}
+
 /** Feature usage totals between two timestamps (map event => uses). */
 function feature_usage_between(int $since, int $until): array {
     $rows = qa('SELECT event, SUM(cnt) c FROM events WHERE ts>=? AND ts<?' . meta_filter() . ' GROUP BY event', [$since, $until]);
