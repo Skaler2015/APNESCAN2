@@ -9,10 +9,9 @@ name: Deploy website (FTP → Hostinger)
 #     FTP_USERNAME  your FTP account username (e.g. u246829578 or a subdomain FTP user)
 #     FTP_PASSWORD  your FTP account password
 #   (optional) Variables tab → New variable
-#     FTP_DIR       the server folder to upload into. Default below matches
-#                   /home/uXXXX/domains/apnesoft.com/public_html/apnescan/.
-#                   If your FTP account is already scoped to the subdomain
-#                   folder, set FTP_DIR to  ./
+#     FTP_DIR       the server folder to upload into. Default is
+#                   public_html/apnescan/  (the apnescan.apnesoft.com root,
+#                   reached from the FTP account's home directory).
 
 on:
   push:
@@ -55,6 +54,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./website/
-          server-dir: ${{ vars.FTP_DIR || 'domains/apnesoft.com/public_html/apnescan/' }}
+          server-dir: ${{ vars.FTP_DIR || 'public_html/apnescan/' }}
           # Keep FTP state so only changed files upload next time.
           state-name: .ftp-deploy-sync-state.json
