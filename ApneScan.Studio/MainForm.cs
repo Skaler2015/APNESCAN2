@@ -3420,32 +3420,57 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             if (string.IsNullOrWhiteSpace(path) || newName == null) return;
             newName = newName.Trim();
-            if (newName.Length == 0) { Status("Give it a name"); return; }
+            if (newName.Length == 0) { Banner("Give the file a name", "warn"); return; }
             var dir = System.IO.Path.GetDirectoryName(path);
             if (dir == null) return;
             bool isDir = Directory.Exists(path);
+            if (!isDir && !File.Exists(path)) { Banner("That file no longer exists", "warn"); return; }
             var safe = SanitizeFileName(newName);
             if (!isDir && string.IsNullOrEmpty(System.IO.Path.GetExtension(safe)))
             {
                 safe += System.IO.Path.GetExtension(path); // keep original extension
             }
             var target = System.IO.Path.Combine(dir, safe);
-            if (string.Equals(target, path, StringComparison.OrdinalIgnoreCase)) return;
+            // Same name (or only case changed) — nothing to do.
+            if (string.Equals(target, path, StringComparison.OrdinalIgnoreCase)) { SendFolder(dir); return; }
             if (isDir)
             {
-                if (Directory.Exists(target)) { Status("A folder with that name exists"); return; }
+                if (Directory.Exists(target)) { Banner("A folder named “" + safe + "” already exists", "warn"); return; }
                 Directory.Move(path, target);
             }
             else
             {
-                if (File.Exists(target)) { Status("A file with that name exists"); return; }
-                File.Move(path, target);
+                if (File.Exists(target)) { Banner("A file named “" + safe + "” already exists", "warn"); return; }
+                // The file may be momentarily locked (e.g. it is the page shown in
+                // the preview). Retry briefly, then fall back to copy + delete.
+                Exception? last = null;
+                bool moved = false;
+                for (int attempt = 0; attempt < 4 && !moved; attempt++)
+                {
+                    try { File.Move(path, target); moved = true; }
+                    catch (IOException ex) { last = ex; System.Threading.Thread.Sleep(150); }
+                    catch (UnauthorizedAccessException ex) { last = ex; System.Threading.Thread.Sleep(150); }
+                }
+                if (!moved)
+                {
+                    try { File.Copy(path, target, false); File.Delete(path); moved = true; }
+                    catch (Exception ex) { last = ex; }
+                }
+                if (!moved)
+                {
+                    Banner("Couldn’t rename — the file is open elsewhere. Close it and try again.", "error");
+                    Status("Rename failed: " + (last?.Message ?? "file in use"));
+                    return;
+                }
             }
             SendFolder(dir);
+            Post(new { type = "renamed", path = target, name = safe });   // re-select the renamed item
+            Banner("Renamed to “" + safe + "”", "ok");
             Status("Renamed to " + safe);
         }
         catch (Exception ex)
         {
+            Banner("Rename error: " + ex.Message, "error");
             Status("Rename error: " + ex.Message);
         }
     }
@@ -4658,6 +4683,9 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
     }
 
     private void Status(string text) => Post(new { type = "status", text, pages = _pages.Count });
+
+    // A prominent, self-dismissing banner (style: "ok" | "warn" | "error" | "info").
+    private void Banner(string text, string style = "info") => Post(new { type = "banner", style, text });
 
     // Scanner state for the top bar: "ready" (free) | "busy" | "error" | "offline".
     private void ScanStatus(string state, string text) => Post(new { type = "scanStatus", state, text });

@@ -1517,6 +1517,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='favs'){ renderFavs(m.items); }
       else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
       else if(m.type==='banner'){ showBanner(m.text, m.style, m.id); }
+      else if(m.type==='renamed'){ docsSelectedFile=m.path||''; docsSelected=''; docsMultiSel=[]; renderDocsList(); var rl=byId('docsList'); if(rl){ var rs=rl.querySelector('.sel'); if(rs&&rs.scrollIntoView) rs.scrollIntoView({block:'nearest'}); } }
       else if(m.type==='forceUpdate'){ showForceUpdate(m.url, m.min, m.force); }
       else if(m.type==='flags'){ try{ window.appFlags = m.flags ? JSON.parse(m.flags) : {}; }catch(e){ window.appFlags={}; } }
     });
@@ -1805,13 +1806,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function showBanner(text, style, id){
     if(!text) return;
     try{ if(id && localStorage.getItem('as_banner_seen')===String(id)) return; }catch(e){}
-    var colors={info:'#6d28d9', success:'#16a34a', warning:'#d97706'};
+    var colors={info:'#6d28d9', success:'#16a34a', ok:'#16a34a', warning:'#d97706', warn:'#d97706', error:'#dc2626'};
     var bg=colors[style]||colors.info;
     var b=byId('appBanner');
     if(!b){ b=document.createElement('div'); b.id='appBanner';
       b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;padding:11px 46px 11px 18px;color:#fff;font-size:13.5px;font-weight:600;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.18);font-family:inherit';
       document.body.appendChild(b);
     }
+    if(b.__t){ clearTimeout(b.__t); b.__t=null; }
     b.style.background=bg;
     b.innerHTML='';
     var span=document.createElement('span'); span.textContent=text; b.appendChild(span);
@@ -1819,6 +1821,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     x.style.cssText='position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;opacity:.85;font-weight:700';
     x.onclick=function(){ b.remove(); try{ if(id) localStorage.setItem('as_banner_seen', String(id)); }catch(e){} };
     b.appendChild(x);
+    // Transient action feedback (no server id) clears itself after a few seconds.
+    if(!id){ b.__t=setTimeout(function(){ if(b) b.remove(); }, style==='error'?6000:3200); }
   }
   // Force / recommended update prompt from the server
   function showForceUpdate(url, min, force){
