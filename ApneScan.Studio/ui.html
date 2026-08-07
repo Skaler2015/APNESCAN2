@@ -848,6 +848,45 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .mn-bar .bf{height:100%;border-radius:99px;background:linear-gradient(90deg,#8b5cf6,#6d28d9)}
 .mn-bar .bv{width:24px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:640px){.rn-body{grid-template-columns:1fr}.rn-left{flex-direction:row}.rn-preview{width:120px;flex:none}}
+/* ===== Premium Settings ===== */
+#setBox{width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 30px 90px rgba(20,20,50,.32);text-align:left;animation:rnPop .2s cubic-bezier(.2,.9,.25,1)}
+.set-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border-2);background:linear-gradient(90deg,var(--accent-soft),transparent)}
+.set-h-ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:grid;place-items:center;flex:none}
+.set-h-ic svg{width:19px;height:19px;stroke:#fff}
+.set-h-t{flex:1;min-width:0}.set-h-t b{font-size:15px;font-weight:800;display:block}.set-h-t small{font-size:12px;color:var(--muted)}
+.set-h-x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:16px}
+.set-h-x:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.set-body{display:grid;grid-template-columns:180px 1fr;min-height:0;flex:1}
+.set-nav{border-right:1px solid var(--border-2);padding:12px 10px;display:flex;flex-direction:column;gap:3px;background:var(--panel-2,#fafbfe)}
+.set-nav .sn{padding:9px 12px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:background .12s,color .12s}
+.set-nav .sn:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.set-nav .sn.on{background:var(--accent);color:#fff}
+.set-content{overflow:auto;padding:16px 18px}
+.set-pane{display:none}.set-pane.on{display:block;animation:rnPop .18s ease}
+.set-card{background:var(--panel);border:1px solid var(--border-2);border-radius:13px;overflow:hidden}
+.set-row{display:flex;align-items:center;gap:14px;padding:13px 15px;border-bottom:1px solid var(--border-2)}
+.set-row:last-child{border-bottom:0}
+.set-row.sub{padding-left:30px;background:var(--panel-2,#fafbfe)}
+.set-row .sl{flex:1;min-width:0}
+.set-row .sl b{font-size:13px;font-weight:700;color:var(--text);display:block}
+.set-row .sl small{font-size:11.5px;color:var(--muted);display:block;margin-top:2px}
+.set-row select{padding:8px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:12.5px;background:var(--panel);color:var(--text);cursor:pointer;min-width:130px}
+/* toggle switch */
+.sw-wrap{flex:none;cursor:pointer;display:inline-flex}
+.sw-wrap input{display:none}
+.sw-wrap .sw{width:42px;height:24px;border-radius:99px;background:var(--border);position:relative;transition:background .15s}
+.sw-wrap .sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.sw-wrap input:checked+.sw{background:var(--accent)}
+.sw-wrap input:checked+.sw::after{transform:translateX(18px)}
+.set-btn{padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--text);white-space:nowrap}
+.set-btn.ghost{background:transparent;color:var(--muted)}
+.set-btn.ghost:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.set-btn.no{background:var(--panel)}
+.set-btn.go{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(109,40,217,.35)}
+.set-btn.go:hover{box-shadow:0 8px 26px rgba(109,40,217,.55)}
+.set-note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6;background:var(--accent-soft);border-radius:11px;padding:11px 13px}
+.set-foot{display:flex;align-items:center;gap:9px;padding:13px 18px;border-top:1px solid var(--border-2);background:var(--panel-2,#fafafe)}
+@media (max-width:620px){.set-body{grid-template-columns:1fr}.set-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border-2)}}
 .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
 .tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
@@ -1287,43 +1326,76 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 </div>
 
 <div class="cam-overlay" id="setOverlay">
-  <div class="cam-box" style="max-width:460px;text-align:left;max-height:88vh;overflow:auto">
-    <h3>⚙️ Settings</h3>
-    <div class="set-sec">Interface</div>
-    <div class="set-row"><label>Theme</label>
-      <select id="setThemeSel"><option value="default">Default (Light)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
-    <div class="set-row"><label>Show page numbers</label><input type="checkbox" id="setNumsChk"></div>
-    <div class="set-row"><label>Show “Profiles” button</label><input type="checkbox" id="setProfChk"></div>
-    <div class="set-row"><label>“Save” button default</label>
-      <select id="setSaveSel"><option value="ask">Ask (PDF / JPG / PNG)</option><option value="pdf">Save as PDF</option><option value="jpg">Save as JPG</option><option value="png">Save as PNG</option></select></div>
-    <div class="set-row"><label>Keyboard shortcuts</label><div class="cam-btn" id="setShortcuts" style="padding:7px 14px">⌨ Open</div></div>
-
-    <div class="set-sec">Scanning</div>
-    <div class="set-row"><label>Resolution</label>
-      <select id="setResSel"><option value="100">100 dpi</option><option value="150">150 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="custom">Custom…</option></select></div>
-    <div class="set-row" id="setResCustomRow" style="display:none"><label>Custom dpi</label><input type="number" id="setResCustom" min="50" max="1200" step="10" placeholder="e.g. 250" style="width:150px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text)"></div>
-    <div class="set-row"><label>Color</label>
-      <select id="setColorSel"><option value="color">Color</option><option value="gray">Grayscale</option><option value="bw">Black &amp; White</option></select></div>
-    <div class="set-row"><label>Paper source</label>
-      <select id="setSrcSel"><option value="auto">Auto</option><option value="flatbed">Flatbed</option><option value="feeder">Feeder</option><option value="duplex">Duplex (both sides)</option></select></div>
-    <div class="set-row"><label>OCR by default</label><input type="checkbox" id="setOcrChk"></div>
-    <div class="set-row"><label>Auto-detect document names</label><input type="checkbox" id="setAutoNameChk"></div>
-
-    <div class="set-sec">Application</div>
-    <div class="set-row"><label>Trim blank borders (auto-crop)</label><input type="checkbox" id="setAutoCropChk"></div>
-    <div class="set-row"><label>Skip blank pages</label><input type="checkbox" id="setSkipBlankChk"></div>
-    <div class="set-row"><label>PDF compression (smaller size)</label>
-      <select id="setCompressSel"><option value="0">Off (best quality)</option><option value="20">Light — 20%</option><option value="40">Medium — 40%</option><option value="60">High — 60%</option><option value="75">Max — 75%</option></select></div>
-    <div class="set-row"><label>Clear pages after saving</label><input type="checkbox" id="setClearChk"></div>
-    <div class="set-row"><label>Send anonymous usage stats <span style="color:var(--muted-2);font-weight:400;font-size:11px">(no documents or personal data)</span></label><input type="checkbox" id="setTelemetryChk"></div>
-
-    <div class="set-sec">Feedback &amp; Support</div>
-    <div class="set-row"><label>Have a suggestion or found a bug?</label><div class="cam-btn" id="setFeedback" style="padding:7px 14px">💬 Send feedback</div></div>
-
-    <div class="cam-actions">
-      <div class="cam-btn" id="setRestore" style="margin-right:auto">Restore Defaults</div>
-      <div class="cam-btn no" id="setCancel">Cancel</div>
-      <div class="cam-btn primary" id="setSave">OK</div>
+  <div id="setBox">
+    <div class="set-head">
+      <div class="set-h-ic"><svg class="ic"><use href="#i-settings"/></svg></div>
+      <div class="set-h-t"><b>Settings</b><small>Personalise ApneScan — scanning, interface &amp; folder memory</small></div>
+      <div class="set-h-x" id="setCancel2" title="Close (Esc)">✕</div>
+    </div>
+    <div class="set-body">
+      <nav class="set-nav" id="setNav">
+        <div class="sn on" data-sec="interface">🎨 Interface</div>
+        <div class="sn" data-sec="scanning">🖨 Scanning</div>
+        <div class="sn" data-sec="folder">📁 Folder View</div>
+        <div class="sn" data-sec="application">⚙ Application</div>
+        <div class="sn" data-sec="support">💬 Support</div>
+      </nav>
+      <div class="set-content">
+        <section class="set-pane on" data-pane="interface">
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Theme</b><small>Light, dark or follow the system</small></div>
+              <select id="setThemeSel"><option value="default">Default (Light)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+            <div class="set-row"><div class="sl"><b>Show page numbers</b></div><label class="sw-wrap"><input type="checkbox" id="setNumsChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Show “Profiles” button</b></div><label class="sw-wrap"><input type="checkbox" id="setProfChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>“Save” button default</b></div>
+              <select id="setSaveSel"><option value="ask">Ask (PDF / JPG / PNG)</option><option value="pdf">Save as PDF</option><option value="jpg">Save as JPG</option><option value="png">Save as PNG</option></select></div>
+            <div class="set-row"><div class="sl"><b>Keyboard shortcuts</b><small>Customise every hotkey</small></div><div class="set-btn" id="setShortcuts">⌨ Open</div></div>
+          </div>
+        </section>
+        <section class="set-pane" data-pane="scanning">
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Resolution</b><small>Higher DPI = sharper, larger files</small></div>
+              <select id="setResSel"><option value="100">100 dpi</option><option value="150">150 dpi</option><option value="200">200 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="custom">Custom…</option></select></div>
+            <div class="set-row" id="setResCustomRow" style="display:none"><div class="sl"><b>Custom dpi</b></div><input type="number" id="setResCustom" min="50" max="1200" step="10" placeholder="e.g. 250" style="width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--text);background:var(--panel)"></div>
+            <div class="set-row"><div class="sl"><b>Color</b></div>
+              <select id="setColorSel"><option value="color">Color</option><option value="gray">Grayscale</option><option value="bw">Black &amp; White</option></select></div>
+            <div class="set-row"><div class="sl"><b>Paper source</b></div>
+              <select id="setSrcSel"><option value="auto">Auto</option><option value="flatbed">Flatbed</option><option value="feeder">Feeder</option><option value="duplex">Duplex (both sides)</option></select></div>
+            <div class="set-row"><div class="sl"><b>OCR by default</b><small>Make saved PDFs text-searchable</small></div><label class="sw-wrap"><input type="checkbox" id="setOcrChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Auto-detect document names</b></div><label class="sw-wrap"><input type="checkbox" id="setAutoNameChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Trim blank borders (auto-crop)</b></div><label class="sw-wrap"><input type="checkbox" id="setAutoCropChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Skip blank pages</b><small>Don’t keep empty duplex backs</small></div><label class="sw-wrap"><input type="checkbox" id="setSkipBlankChk"><span class="sw"></span></label></div>
+          </div>
+        </section>
+        <section class="set-pane" data-pane="folder">
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Remember folder view</b><small>Restore each folder’s layout when you reopen it (Explorer-style)</small></div><label class="sw-wrap"><input type="checkbox" id="setFvOn"><span class="sw"></span></label></div>
+            <div class="set-row sub"><div class="sl"><b>Remember sort order</b><small>Sort field &amp; direction per folder</small></div><label class="sw-wrap"><input type="checkbox" id="setFvSort"><span class="sw"></span></label></div>
+            <div class="set-row sub"><div class="sl"><b>Remember view mode</b><small>List / Grid / Tree per folder</small></div><label class="sw-wrap"><input type="checkbox" id="setFvView"><span class="sw"></span></label></div>
+            <div class="set-row sub"><div class="sl"><b>Remember filters</b><small>PDF / Images / All per folder</small></div><label class="sw-wrap"><input type="checkbox" id="setFvFilter"><span class="sw"></span></label></div>
+          </div>
+          <div class="set-note">These control the per-folder memory used by <b>My Files → Sort</b>. Turn a switch off and that part is no longer restored. Use <b>Forget folder</b> in the Sort popup to clear one folder.</div>
+        </section>
+        <section class="set-pane" data-pane="application">
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>PDF compression</b><small>Smaller files, slightly lower quality</small></div>
+              <select id="setCompressSel"><option value="0">Off (best quality)</option><option value="20">Light — 20%</option><option value="40">Medium — 40%</option><option value="60">High — 60%</option><option value="75">Max — 75%</option></select></div>
+            <div class="set-row"><div class="sl"><b>Clear pages after saving</b></div><label class="sw-wrap"><input type="checkbox" id="setClearChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Send anonymous usage stats</b><small>No documents or personal data — just feature counts</small></div><label class="sw-wrap"><input type="checkbox" id="setTelemetryChk"><span class="sw"></span></label></div>
+          </div>
+        </section>
+        <section class="set-pane" data-pane="support">
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Feedback &amp; support</b><small>Suggestion or bug? It goes straight to the developer</small></div><div class="set-btn" id="setFeedback">💬 Send feedback</div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="set-foot">
+      <div class="set-btn ghost" id="setRestore">Restore Defaults</div>
+      <div style="flex:1"></div>
+      <div class="set-btn no" id="setCancel">Cancel</div>
+      <div class="set-btn go" id="setSave">Save changes</div>
     </div>
   </div>
 </div>
@@ -3184,11 +3256,24 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var skb=byId('setSkipBlankChk'); if(skb) skb.checked=ui.skipBlank;
     var tmc=byId('setTelemetryChk'); if(tmc) tmc.checked=ui.telemetry;
     var cps=byId('setCompressSel'); if(cps) cps.value=String(ui.compressPercent);
+    var fo=fvOpts();
+    var f1=byId('setFvOn'); if(f1) f1.checked=fo.on;
+    var f2=byId('setFvSort'); if(f2) f2.checked=fo.sort;
+    var f3=byId('setFvView'); if(f3) f3.checked=fo.view;
+    var f4=byId('setFvFilter'); if(f4) f4.checked=fo.filter;
+    if(typeof fvSubDim==='function') fvSubDim();
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
   var nSet=byId('navSettings'); if(nSet) nSet.addEventListener('click', openSettings);
   var sCancel=byId('setCancel'); if(sCancel) sCancel.addEventListener('click', closeSettings);
+  var sCancel2=byId('setCancel2'); if(sCancel2) sCancel2.addEventListener('click', closeSettings);
+  // section nav
+  document.querySelectorAll('#setNav .sn').forEach(function(t){ t.addEventListener('click', function(){
+    var sec=t.getAttribute('data-sec');
+    document.querySelectorAll('#setNav .sn').forEach(function(x){ x.classList.toggle('on', x===t); });
+    document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
+  }); });
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   // Feedback dialog
   var setFb=byId('setFeedback'); if(setFb) setFb.addEventListener('click', function(){ closeSettings(); overlay('fbOverlay', true); var t=byId('fbMsg'); if(t){ t.value=''; setTimeout(function(){ t.focus(); },50); } var c=byId('fbContact'); if(c) c.value=''; });
@@ -3243,8 +3328,12 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
-    openSettings(); setStatus('Defaults restored — press OK to apply');
+    fvSetOpts({on:true,sort:true,view:true,filter:true});
+    openSettings(); fvSubDim(); setStatus('Defaults restored — press Save to apply');
   });
+  // Dim the folder-view sub-toggles when the master switch is off.
+  function fvSubDim(){ var on=byId('setFvOn')&&byId('setFvOn').checked; document.querySelectorAll('.set-pane[data-pane="folder"] .set-row.sub').forEach(function(r){ r.style.opacity=on?'1':'.45'; r.style.pointerEvents=on?'':'none'; }); }
+  (function(){ var m=byId('setFvOn'); if(m) m.addEventListener('change', fvSubDim); })();
   var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
   var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){
     var r=byId('setResSel'), c=byId('setColorSel'), s=byId('setSrcSel'), o=byId('setOcrChk');
@@ -3265,6 +3354,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
     var tmc=byId('setTelemetryChk'); if(tmc) ui.telemetry=tmc.checked;
     var cps=byId('setCompressSel'); if(cps) ui.compressPercent=parseInt(cps.value,10)||0;
+    fvSetOpts({ on:!!(byId('setFvOn')&&byId('setFvOn').checked), sort:!!(byId('setFvSort')&&byId('setFvSort').checked), view:!!(byId('setFvView')&&byId('setFvView').checked), filter:!!(byId('setFvFilter')&&byId('setFvFilter').checked) });
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
@@ -3617,10 +3707,16 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(best) return {s:best, self:false, inherited:true};
     return {s:fvGlobal(), self:false, global:true};
   }
+  // Master folder-view options (Settings → Folder View). Default: all on.
+  function fvOpts(){ try{ return Object.assign({on:true,sort:true,view:true,filter:true}, JSON.parse(localStorage.getItem('as_fv_opts')||'{}')); }catch(e){ return {on:true,sort:true,view:true,filter:true}; } }
+  function fvSetOpts(o){ try{ localStorage.setItem('as_fv_opts', JSON.stringify(o)); }catch(e){} }
   function fvApply(path){
+    var o=fvOpts();
+    if(!o.on){ fvUpdateBar({}); return; }   // folder memory disabled entirely
     var r=fvFor(path), s=r.s||FV_DEFAULT;
-    docsSort=s.sort||'date'; docsDir=s.dir||-1; docsFilter=s.filter||'all';
-    docsView=(s.view==='grid'||s.view==='tree')?s.view:'list';
+    if(o.sort){ docsSort=s.sort||'date'; docsDir=s.dir||-1; }
+    if(o.filter){ docsFilter=s.filter||'all'; }
+    if(o.view){ docsView=(s.view==='grid'||s.view==='tree')?s.view:'list'; }
     ['dvList','dvGrid','dvTree'].forEach(function(id){ var el=byId(id); if(el) el.classList.toggle('on',(id==='dvList'&&docsView==='list')||(id==='dvGrid'&&docsView==='grid')||(id==='dvTree'&&docsView==='tree')); });
     document.querySelectorAll('.dp-chips .dp-chip').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-f')===docsFilter); });
     fvUpdateLabel(); fvUpdateBar(r);
