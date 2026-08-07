@@ -25,7 +25,8 @@ if (!is_logged_in()) { require __DIR__ . '/admin/auth/login.php'; exit; }
 // ---- Routing --------------------------------------------------------------
 $pages = [
     'dashboard' => ['Overview', 'view'], 'analytics' => ['Analytics', 'view'], 'live' => ['Live Users', 'view'],
-    'scanner' => ['Scanner Analytics', 'view'], 'ocr' => ['OCR Analytics', 'view'], 'events' => ['Events & Feedback', 'view'],
+    'scanner' => ['Scanner Analytics', 'view'], 'ocr' => ['OCR Analytics', 'view'], 'features' => ['Feature Analytics', 'view'],
+    'events' => ['Events & Feedback', 'view'], 'search' => ['Search', 'view'],
     'reports' => ['Reports', 'reports'], 'versions' => ['Versions', 'view'], 'devices' => ['Devices', 'view'],
     'os' => ['Operating Systems', 'view'], 'users' => ['Admins & Roles', 'users'], 'notifications' => ['Notifications', 'view'],
     'backup' => ['Backup', 'backup'], 'export' => ['Export', 'export'], 'audit' => ['Audit Log', 'audit'],
@@ -53,6 +54,7 @@ if ($rd > 0 && cache_get('retention_ran') === null) {
 // ---- Shell data -----------------------------------------------------------
 $ov = metrics_overview(resolve_range($_GET['r'] ?? '30'));
 $notifs = notifications();
+fire_webhook_alerts($notifs);   // push crash/error/storage alerts (throttled)
 $badges = ['events' => (int)$ov['unread_fb'], 'notifications' => count(array_filter($notifs, fn($n) => ($n['sev'] ?? '') !== 'good'))];
 
 // ---- Render shell ---------------------------------------------------------
@@ -61,7 +63,7 @@ echo '<div class="app" id="app">';
 render_sidebar($page, $badges);
 echo '<div class="main">';
 render_topbar($title, (int)$ov['online'], $notifs);
-echo '<div class="content">';
+echo '<main class="content" role="main">';
 
 try {
     require __DIR__ . '/admin/pages/' . $page . '.php';
@@ -69,7 +71,7 @@ try {
     echo '<div class="flash err">This section hit an error: ' . h($e->getMessage()) . '</div>';
 }
 
-echo '</div></div></div>'; // content, main, app
+echo '</main></div></div>'; // content, main, app
 
 // ---- Global shell JS ------------------------------------------------------
 ?>
@@ -112,20 +114,25 @@ echo '</div></div></div>'; // content, main, app
   if(lb) lb.onclick=function(e){ e.preventDefault(); live=!live; setLive(live); };
   // Chart.js helper
   window._charts=window._charts||{};
+  try{ if(window.Chart && window.ChartZoom){ Chart.register(window.ChartZoom); } }catch(e){}
   window.ASchart=function(id,cfg){
     var el=document.getElementById(id); if(!el||!window.Chart) return;
     applyChartTheme();
     var area=cfg.options&&cfg.options.as_area;
     if(area){ var ds=cfg.data.datasets[0]; var ctx=el.getContext('2d');
       var g=ctx.createLinearGradient(0,0,0,220); g.addColorStop(0,hexA(ds.borderColor,.28)); g.addColorStop(1,hexA(ds.borderColor,0)); ds.backgroundColor=g; }
+    var isDoughnut=cfg.type==='doughnut';
+    var zoom=isDoughnut?{}:{zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'},pan:{enabled:true,mode:'x'}};
     cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:(cfg.data.datasets.length>1)},tooltip:{mode:'index',intersect:false}},
+      plugins:{legend:{display:(cfg.data.datasets.length>1)},tooltip:{mode:'index',intersect:false},zoom:zoom},
       interaction:{mode:'nearest',intersect:false},
-      scales:cfg.type==='doughnut'?{}:{x:{grid:{display:false},ticks:{maxTicksLimit:8}},y:{beginAtZero:true,grid:{color:Chart.defaults.borderColor},ticks:{maxTicksLimit:5}}}
+      scales:isDoughnut?{}:{x:{grid:{display:false},ticks:{maxTicksLimit:8}},y:{beginAtZero:true,grid:{color:Chart.defaults.borderColor},ticks:{maxTicksLimit:5}}}
     },cfg.options||{});
-    if(cfg.type==='doughnut'){ cfg.options.scales={}; cfg.options.plugins.legend={position:'right'}; }
+    if(isDoughnut){ cfg.options.scales={}; cfg.options.plugins.legend={position:'right'}; cfg.options.plugins.zoom={}; }
     window._charts[id]=new Chart(el,cfg);
   };
+  window.ASchartDL=function(id){ var c=window._charts[id]; if(!c) return; var a=document.createElement('a'); a.href=c.toBase64Image(); a.download='apnescan-'+id+'.png'; a.click(); };
+  window.ASchartReset=function(id){ var c=window._charts[id]; if(c&&c.resetZoom) c.resetZoom(); };
   function hexA(hex,a){ hex=(hex||'#8b5cf6').replace('#',''); if(hex.length===3)hex=hex.split('').map(function(c){return c+c;}).join(''); var n=parseInt(hex,16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
 })();
 </script>

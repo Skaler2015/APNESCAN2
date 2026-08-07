@@ -78,10 +78,13 @@ function funnel_html(array $steps): string {
     }
     return $o . '</div>';
 }
-/** Chart.js canvas + init. $config is a PHP array (Chart.js config). */
+/** Chart.js canvas + init with a hover toolbar (download PNG, reset zoom). */
 function chartjs(string $id, array $config, string $cls = ''): string {
     $json = json_encode($config, JSON_UNESCAPED_SLASHES);
-    return '<div class="chartbox ' . $cls . '"><canvas id="' . h($id) . '"></canvas></div>'
+    $tools = '<div class="charttools">'
+           . '<button type="button" class="ctool" title="Reset zoom" onclick="ASchartReset(\'' . h($id) . '\')">' . icon('refresh') . '</button>'
+           . '<button type="button" class="ctool" title="Download PNG" onclick="ASchartDL(\'' . h($id) . '\')">' . icon('download') . '</button></div>';
+    return '<div class="chartbox ' . $cls . '">' . $tools . '<canvas id="' . h($id) . '"></canvas></div>'
          . '<script>ASchart(' . json_encode($id) . ',' . $json . ');</script>';
 }
 /** Line/area chart config from a [{label,v}] series. */

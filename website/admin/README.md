@@ -65,3 +65,7 @@ profile endpoint. No document content or personal data is ever collected.
   mailer) with test send, TOTP two-factor auth, scheduled + on-server backups,
   and API-key generation. See `includes/cache.php`, `totp.php`, `backup.php`,
   `../api/mailer.php`, `../api/backup-cron.php`.
+- **Phase 4 (done):** global cross-entity search (`pages/search.php`), advanced
+  date filters (presets + custom range) on Events, dedicated Feature Analytics
+  page, Chart.js export-PNG + wheel-zoom/pan + monthly trend, and Slack/Discord/
+  generic webhook alerts (throttled) with a test button.

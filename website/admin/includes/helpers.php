@@ -106,6 +106,29 @@ function flash_html(): string {
 }
 function redirect(string $to): void { header('Location: ' . $to); exit; }
 
+// ---- Webhook alerts (Slack / Discord / generic) ----------------------------
+function send_webhook(string $url, string $text): bool {
+    if (!filter_var($url, FILTER_VALIDATE_URL)) return false;
+    $isDiscord = strpos($url, 'discord.com') !== false || strpos($url, 'discordapp.com') !== false;
+    $payload = $isDiscord ? ['content' => $text] : ['text' => $text];
+    $ctx = stream_context_create(['http' => [
+        'method' => 'POST', 'header' => "Content-Type: application/json\r\n",
+        'content' => json_encode($payload), 'timeout' => 6, 'ignore_errors' => true,
+    ]]);
+    return @file_get_contents($url, false, $ctx) !== false;
+}
+/** Post bad/warn notifications to the configured webhook, throttled hourly. */
+function fire_webhook_alerts(array $notifs): void {
+    $url = setting('webhook_url', '');
+    if ($url === '') return;
+    foreach ($notifs as $n) {
+        if (!in_array($n['sev'] ?? '', ['bad', 'warn'], true)) continue;
+        $key = 'alert_' . preg_replace('/[^a-z0-9]/i', '', $n['t'] ?? 'x');
+        if (cache_get($key) !== null) continue;                 // already alerted this hour
+        if (send_webhook($url, '⚠ ApneScan alert: ' . $n['title'] . ' — ' . $n['sub'])) cache_set($key, 1, 3600);
+    }
+}
+
 // ---- Audit log -------------------------------------------------------------
 function audit(string $action, string $detail = ''): void {
     try {

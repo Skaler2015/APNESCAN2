@@ -10,7 +10,11 @@ $items = [
     ['role', 'Admins & Roles', 'Add more admins with roles: Admin, Manager, Operator, Viewer. The bootstrap “admin” is the super admin.'],
     ['settings', 'App control', 'From Settings you can broadcast a banner to all apps, require a minimum version (force-update), toggle feature flags, and set up the daily email.'],
     ['download', 'Export & Backup', 'Download events as CSV/JSON/XML, generate topic reports, or take a full SQL backup.'],
-    ['shield', 'Security', 'CSRF, prepared statements, login rate-limiting, session hardening, role permissions and a full audit log are built in.'],
+    ['shield', 'Security', 'CSRF, prepared statements, login rate-limiting, session hardening, role permissions, TOTP two-factor auth and a full audit log are built in.'],
+    ['search', 'Search & filters', 'The top-bar search looks across events, installs, versions, OS and feedback. The Events page adds date presets (today, this week…) and a custom range.'],
+    ['tag', 'Feature Analytics', 'See usage grouped by category (Scanning, Editing, PDF tools, Sharing, OCR, Files), plus most- and least-used features and adoption.'],
+    ['bell', 'Alerts & email', 'Configure SMTP for the daily summary email, and a Slack/Discord/generic webhook to get pushed alerts on crashes, high error rate or low storage.'],
+    ['chart', 'Charts', 'Hover a chart to download it as PNG or reset zoom. Scroll to zoom and drag to pan on trend charts.'],
 ];
 echo '<div class="grid g2" style="margin-top:16px">';
 foreach ($items as $it) echo '<div class="card pad"><div class="ctitle">' . icon($it[0]) . h($it[1]) . '</div><p class="mut" style="font-size:13px;line-height:1.6;margin:10px 0 0">' . h($it[2]) . '</p></div>';

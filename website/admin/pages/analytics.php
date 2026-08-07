@@ -24,6 +24,10 @@ echo '<div class="grid g2">'
    . '<div class="card pad"><div class="ctitle">' . icon('trend') . 'Install growth</div><div class="csub">Cumulative</div>' . chartjs('aGrow', line_config(growth_series(), 'Installs', '#9333ea')) . '</div>'
    . '</div>';
 
+// monthly / yearly trend
+echo '<div class="card pad" style="margin-top:16px"><div class="ctitle">' . icon('trend') . 'Monthly trend (12 months)</div><div class="csub">Events per month — scroll to zoom, drag to pan</div>'
+   . chartjs('aMonth', line_config(monthly_series(12), 'Events', '#7c3aed')) . '</div>';
+
 // features + cohorts
 echo '<div class="sec">' . icon('repeat') . 'Retention &amp; features</div>';
 $coh = cohorts();

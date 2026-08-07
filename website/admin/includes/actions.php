@@ -35,6 +35,7 @@ switch ($action) {
         setset('smtp_port', (string)max(1, (int)($_POST['smtp_port'] ?? 587)));
         setset('smtp_secure', in_array($_POST['smtp_secure'] ?? 'tls', ['tls', 'ssl', 'none'], true) ? $_POST['smtp_secure'] : 'tls');
         if (($_POST['smtp_pass'] ?? '') !== '') setset('smtp_pass', (string)$_POST['smtp_pass']); // keep existing if blank
+        setset('webhook_url', trim((string)($_POST['webhook_url'] ?? '')));
         audit('settings_change', 'app controls updated');
         set_flash('Settings saved. Apps pick up broadcasts / flags on next launch.');
         redirect($back);
@@ -47,6 +48,15 @@ switch ($action) {
         [$ok, $detail] = apnescan_send_mail(getset(), $to, 'ApneScan test email', "This is a test email from your ApneScan admin dashboard.\nIf you received it, email delivery is working.");
         audit('test_email', $to . ' — ' . $detail);
         set_flash($ok ? 'Test email sent to ' . $to . ' (' . $detail . ').' : 'Could not send: ' . $detail, $ok ? 'ok' : 'err');
+        redirect($back);
+
+    case 'test_webhook':
+        require_cap('settings');
+        $url = setting('webhook_url', '');
+        if ($url === '') { set_flash('Set a webhook URL first.', 'err'); redirect($back); }
+        $ok = send_webhook($url, '✅ ApneScan test alert — your webhook is connected.');
+        audit('test_webhook', $ok ? 'ok' : 'failed');
+        set_flash($ok ? 'Test alert sent to your webhook.' : 'Webhook did not accept the message.', $ok ? 'ok' : 'err');
         redirect($back);
 
     case 'gen_api_key':

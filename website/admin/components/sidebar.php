@@ -18,6 +18,7 @@ function render_sidebar(string $active, array $badges = []): void
         ['__', 'Product'],
         ['scanner', 'Scanner Analytics', 'scan', 'view'],
         ['ocr', 'OCR Analytics', 'text', 'view'],
+        ['features', 'Feature Analytics', 'tag', 'view'],
         ['events', 'Events & Feedback', 'pulse', 'view'],
         ['reports', 'Reports', 'report', 'reports'],
         ['__', 'Audience'],
@@ -34,7 +35,7 @@ function render_sidebar(string $active, array $badges = []): void
         ['settings', 'Settings', 'settings', 'settings'],
         ['help', 'Help', 'help', 'view'],
     ];
-    echo '<aside class="side"><div class="brand"><span class="logo">A</span><span>ApneScan<small>Admin Console</small></span></div><nav class="nav">';
+    echo '<aside class="side"><div class="brand"><span class="logo">A</span><span>ApneScan<small>Admin Console</small></span></div><nav class="nav" aria-label="Primary navigation">';
     foreach ($nav as $it) {
         if ($it[0] === '__') { echo '<div class="navsec">' . h($it[1]) . '</div>'; continue; }
         [$key, $label, $ic, $cap] = $it;

@@ -16,7 +16,10 @@ function page_head(string $title, bool $withCharts = false): void
        . '<title>' . h($title) . ' · ApneScan Admin</title>'
        . '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
        . '<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
-    if ($withCharts) echo '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
+    if ($withCharts) {
+        echo '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
+        echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>';
+    }
     echo '<style>' . $css . '</style></head><body>';
     echo '<script>(function(){try{var t=localStorage.getItem("as_theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>';
 }
@@ -43,6 +46,8 @@ body{margin:0;color:var(--ink);font-family:Inter,system-ui,'Segoe UI',Roboto,san
   background:radial-gradient(1100px 560px at 88% -8%,color-mix(in srgb,var(--brand) 13%,transparent),transparent 60%),linear-gradient(180deg,var(--bg),var(--bg2));min-height:100vh}
 h1,h2,h3,h4{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.015em;margin:0}
 a{color:var(--brand);text-decoration:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+.skelrow{height:38px;margin:6px 0;border-radius:8px}
 .mut{color:var(--muted)}.faint{color:var(--faint)}.tabnum{font-variant-numeric:tabular-nums}
 svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* ---- App layout ---- */
@@ -135,6 +140,11 @@ a.mono{color:var(--brand)}a.mono:hover{text-decoration:underline}
 /* chart */
 .chartbox{position:relative;height:230px}
 .chartbox.sm{height:180px}
+.charttools{position:absolute;top:-4px;right:0;display:flex;gap:4px;opacity:0;transition:opacity .15s;z-index:2}
+.chartbox:hover .charttools{opacity:1}
+.ctool{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.ctool:hover{color:var(--brand);border-color:var(--brand)}
+.ctool svg{width:14px;height:14px}
 /* heatmap */
 .heat{display:grid;grid-template-columns:repeat(24,1fr);gap:4px}
 .hc{aspect-ratio:1;border-radius:5px}

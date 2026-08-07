@@ -18,7 +18,7 @@ function render_topbar(string $title, int $online, array $notifs): void
        . '<div class="burger" id="burger" title="Toggle sidebar" tabindex="0" aria-label="Toggle sidebar">' . icon('menu') . '</div>'
        . '<div class="crumb">Admin <span class="faint">/</span> <b>' . h($title) . '</b></div>';
 
-    echo '<form class="gsearch" method="get"><input type="hidden" name="page" value="events">'
+    echo '<form class="gsearch" method="get" role="search"><input type="hidden" name="page" value="search">'
        . icon('search') . '<input name="q" value="' . $q . '" placeholder="Search events, features, versions…" aria-label="Global search"></form>';
 
     echo '<div class="tspacer"></div>';

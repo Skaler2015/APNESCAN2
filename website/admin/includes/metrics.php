@@ -158,11 +158,55 @@ function events_page(array $f, int $page, int $per = 40): array {
     if (!empty($f['version'])) { $c .= ' AND version=?'; $a[] = $f['version']; }
     if (!empty($f['os'])) { $c .= ' AND os=?'; $a[] = $f['os']; }
     if (!empty($f['since'])) { $c .= ' AND ts>=?'; $a[] = (int)$f['since']; }
+    if (!empty($f['until'])) { $c .= ' AND ts<?'; $a[] = (int)$f['until']; }
     $total = (int) q1("SELECT COUNT(*) FROM events WHERE $c", $a);
     $off = max(0, ($page - 1) * $per);
     $rows = qa("SELECT ts,event,version,os,install,cnt FROM events WHERE $c ORDER BY id DESC LIMIT $per OFFSET $off", $a);
     return ['rows' => $rows, 'total' => $total, 'pages' => max(1, (int)ceil($total / $per)), 'page' => $page];
 }
+/** Human-facing grouping of raw event names into feature categories. */
+function feature_catalog(): array {
+    return [
+        'Scanning'  => ['scan', 'addPhoto', 'import', 'importPath', 'importDropped', 'camera'],
+        'Editing'   => ['rotateLeft', 'rotateRight', 'crop', 'deletePage', 'pageOp', 'moveLeft', 'moveRight', 'duplicate', 'reverse', 'copyPages', 'pastePages'],
+        'PDF tools' => ['savePdf', 'savePdfSelected', 'savePdfHere', 'compressPdf', 'mergePdfs', 'splitPdf', 'pdfToImages', 'imagesToPdf', 'addScanned'],
+        'Sharing'   => ['share', 'shareWhatsapp', 'shareWindows', 'sharePhone'],
+        'OCR'       => ['setOcr', 'ocr_ok', 'ocr_fail'],
+        'Files'     => ['deleteFile', 'moveFile', 'copyFile', 'duplicateFile', 'renameItem', 'revealFile', 'copyPath', 'print', 'printFile', 'saveImages', 'savePagesToFolder'],
+    ];
+}
+/** event => total uses (within range). */
+function feature_usage_map(int $since): array {
+    $m = []; foreach (feature_usage($since, 300) as $r) $m[$r['event']] = (int)$r['c'];
+    return $m;
+}
+/** event => distinct installs (adoption). */
+function feature_adoption_map(int $since): array {
+    $m = []; foreach (feature_usage($since, 300) as $r) $m[$r['event']] = (int)$r['u'];
+    return $m;
+}
+
+/** Monthly events series for the last N months. */
+function monthly_series(int $months = 12): array {
+    $rows = qa("SELECT DATE_FORMAT(FROM_UNIXTIME(ts),'%Y-%m') m, SUM(cnt) c FROM events WHERE ts>=?" . meta_filter() . ' GROUP BY m ORDER BY m', [time() - $months * 31 * 86400]);
+    $map = []; foreach ($rows as $r) $map[$r['m']] = (int)$r['c'];
+    $out = [];
+    for ($i = $months - 1; $i >= 0; $i--) { $ym = gmdate('Y-m', strtotime("-$i months", time())); $out[] = ['label' => gmdate('M y', strtotime($ym . '-01')), 'v' => (int)($map[$ym] ?? 0)]; }
+    return $out;
+}
+
+/** Cross-entity global search: events, installs, versions, OS, feedback. */
+function global_search(string $q): array {
+    $like = '%' . $q . '%';
+    return [
+        'features' => qa('SELECT event, SUM(cnt) c, COUNT(DISTINCT install) u FROM events WHERE event LIKE ?' . meta_filter() . ' GROUP BY event ORDER BY c DESC LIMIT 15', [$like]),
+        'installs' => qa('SELECT install, SUM(cnt) c, MAX(version) ver, MAX(ts) last FROM events WHERE install LIKE ? GROUP BY install ORDER BY last DESC LIMIT 15', [$like]),
+        'versions' => qa('SELECT version, COUNT(DISTINCT install) u FROM events WHERE version LIKE ? GROUP BY version ORDER BY u DESC LIMIT 15', [$like]),
+        'os'       => qa('SELECT os, COUNT(DISTINCT install) u FROM events WHERE os LIKE ? GROUP BY os ORDER BY u DESC LIMIT 15', [$like]),
+        'feedback' => qa('SELECT id, ts, version, message FROM feedback WHERE message LIKE ? ORDER BY id DESC LIMIT 15', [$like]),
+    ];
+}
+
 function distinct_versions(): array { return array_column(qa('SELECT DISTINCT version FROM events ORDER BY version DESC LIMIT 40'), 'version'); }
 function distinct_os(): array { return array_column(qa('SELECT DISTINCT os FROM events ORDER BY os LIMIT 40'), 'os'); }
 

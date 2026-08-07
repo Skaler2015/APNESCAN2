@@ -55,8 +55,13 @@ jobs:
             sed -i "s/__APP_VERSION__/$VER/g" website/index.html
           fi
 
-      - name: Deploy to Hostinger via FTP
+      # Hostinger's FTP intermittently drops the control socket. Try up to three
+      # times; each attempt resumes from the sync state, so only remaining files
+      # upload. Only the final attempt is allowed to fail the job.
+      - name: Deploy to Hostinger via FTP (attempt 1)
+        id: ftp1
         if: steps.check.outputs.configured == 'true'
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -65,8 +70,33 @@ jobs:
           protocol: ftp
           local-dir: ./website/
           server-dir: ${{ vars.FTP_DIR || 'apnescan/' }}
-          # Hostinger's FTP can be slow to answer; give the control socket
-          # more headroom than the 30s default so a brief stall doesn't fail.
           timeout: 120000
-          # Keep FTP state so only changed files upload next time.
+          state-name: .ftp-deploy-sync-state.json
+
+      - name: Deploy to Hostinger via FTP (attempt 2)
+        id: ftp2
+        if: steps.check.outputs.configured == 'true' && steps.ftp1.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./website/
+          server-dir: ${{ vars.FTP_DIR || 'apnescan/' }}
+          timeout: 120000
+          state-name: .ftp-deploy-sync-state.json
+
+      - name: Deploy to Hostinger via FTP (final attempt)
+        if: steps.check.outputs.configured == 'true' && steps.ftp1.outcome == 'failure' && steps.ftp2.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./website/
+          server-dir: ${{ vars.FTP_DIR || 'apnescan/' }}
+          timeout: 120000
           state-name: .ftp-deploy-sync-state.json

@@ -46,6 +46,7 @@ if (can('settings')) {
        . '<label class="fl">Feature flags (JSON)</label><textarea class="inp" name="flags" placeholder=\'{"betaOcr": true}\'>' . h($s['flags'] ?? '{}') . '</textarea>'
        . '<label class="fl">Daily-summary email</label><input class="inp" name="admin_email" value="' . h($s['admin_email'] ?? '') . '" placeholder="you@example.com">'
        . '<label class="fl">Cron token (for the daily email / backups)</label><input class="inp" name="cron_token" value="' . h($s['cron_token'] ?? '') . '" placeholder="a random word">'
+       . '<label class="fl">Alert webhook (Slack / Discord / generic)</label><input class="inp" name="webhook_url" value="' . h($s['webhook_url'] ?? '') . '" placeholder="https://hooks.slack.com/… or Discord webhook">'
        . '<label class="fl">Data retention (days, 0 = keep forever)</label><input class="inp" name="retention_days" type="number" value="' . h($s['retention_days'] ?? '0') . '" style="max-width:160px">'
        . '<div class="sec" style="margin-top:22px">' . icon('msg') . 'SMTP email (for the daily summary)</div>'
        . '<div class="csub" style="margin-bottom:4px">Leave host blank to use the server\'s default PHP mail().</div>'
@@ -62,7 +63,8 @@ if (can('settings')) {
        . '<div style="margin-top:16px"><button class="btn">Save settings</button></div></form>'
        . '<form method="post" style="margin-top:12px">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=settings"><input type="hidden" name="action" value="test_email">'
        . '<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label class="fl">Send a test email to</label><input class="inp" name="to" value="' . h($s['admin_email'] ?? '') . '" placeholder="you@example.com"></div>'
-       . '<button class="btn ghost">' . icon('msg') . 'Send test</button></div></form></div>';
+       . '<button class="btn ghost">' . icon('msg') . 'Send test</button></div></form>'
+       . '<form method="post" style="margin-top:10px">' . csrf_field() . '<input type="hidden" name="back" value="admin.php?page=settings"><button class="btn ghost" name="action" value="test_webhook">' . icon('bell') . 'Test webhook alert</button></form></div>';
 }
 
 // Security + password
