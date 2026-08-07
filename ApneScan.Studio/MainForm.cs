@@ -465,6 +465,7 @@ public class MainForm : Form
         int dpi = 200;
         string color = "color";
         string source = "auto";
+        string pageSize = "auto";
         bool on = false;
         string dataUrl = "";
         int index = -1;
@@ -504,6 +505,7 @@ public class MainForm : Form
             if (root.TryGetProperty("dpi", out var dp) && dp.ValueKind == JsonValueKind.Number) dpi = dp.GetInt32();
             if (root.TryGetProperty("color", out var cl) && cl.ValueKind == JsonValueKind.String) color = cl.GetString() ?? "color";
             if (root.TryGetProperty("source", out var sr) && sr.ValueKind == JsonValueKind.String) source = sr.GetString() ?? "auto";
+            if (root.TryGetProperty("pageSize", out var psz) && psz.ValueKind == JsonValueKind.String) pageSize = psz.GetString() ?? "auto";
             if (root.TryGetProperty("on", out var onEl) && (onEl.ValueKind == JsonValueKind.True || onEl.ValueKind == JsonValueKind.False)) on = onEl.GetBoolean();
             if (root.TryGetProperty("theme", out var thEl) && thEl.ValueKind == JsonValueKind.String) theme = thEl.GetString() ?? "default";
             if (root.TryGetProperty("saveDefault", out var sdEl) && sdEl.ValueKind == JsonValueKind.String) saveDefault = sdEl.GetString() ?? "ask";
@@ -547,7 +549,7 @@ public class MainForm : Form
                 await SendDevicesAsync();
                 break;
             case "scan":
-                await ScanAsync(deviceIndex, dpi, color, source);
+                await ScanAsync(deviceIndex, dpi, color, source, pageSize);
                 break;
             case "savePdf":
                 await SavePdfAsync();
@@ -618,7 +620,7 @@ public class MainForm : Form
             case "saveSettings":
                 SaveSettings(new AppSettings
                 {
-                    Dpi = dpi, Color = color, Source = source, Ocr = on, Device = deviceName,
+                    Dpi = dpi, Color = color, Source = source, PageSize = pageSize, Ocr = on, Device = deviceName,
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
@@ -839,6 +841,17 @@ public class MainForm : Form
         _ => NAPS2.Scan.PaperSource.Auto
     };
 
+    // Map a page-size key to physical dimensions. "auto" captures the scanner's
+    // full area (driver clamps to the device maximum).
+    private static PageSize ParsePageSize(string s) => s switch
+    {
+        "a4" => new PageSize(210m, 297m, PageSizeUnit.Millimetre),
+        "a5" => new PageSize(148m, 210m, PageSizeUnit.Millimetre),
+        "letter" => new PageSize(8.5m, 11m, PageSizeUnit.Inch),
+        "legal" => new PageSize(8.5m, 14m, PageSizeUnit.Inch),
+        _ => new PageSize(14m, 22m, PageSizeUnit.Inch)
+    };
+
     private async Task RotatePageAsync(double degrees)
     {
         int idx = Sel();
@@ -1003,7 +1016,7 @@ public class MainForm : Form
         }
     }
 
-    private async Task ScanAsync(int deviceIndex, int dpi, string color, string source)
+    private async Task ScanAsync(int deviceIndex, int dpi, string color, string source, string pageSize = "auto")
     {
         if (_busy)
         {
@@ -1029,9 +1042,9 @@ public class MainForm : Form
             {
                 Device = _devices[deviceIndex],
                 PaperSource = ParseSource(source),
-                // Scan the scanner's full area (the driver clamps to the device
-                // maximum) so a page of any size is captured completely.
-                PageSize = new PageSize(14m, 22m, PageSizeUnit.Inch),
+                // "auto" scans the scanner's full area (driver clamps to the
+                // device max); named sizes constrain to that paper size.
+                PageSize = ParsePageSize(pageSize),
                 BitDepth = ParseColor(color),
                 Dpi = dpi > 0 ? dpi : 200
             };
@@ -2889,6 +2902,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public int Dpi { get; set; } = 200;
         public string Color { get; set; } = "color";
         public string Source { get; set; } = "auto";
+        public string PageSize { get; set; } = "auto";
         public bool Ocr { get; set; }
         // Preferred scanner (by name) — remembered across sessions.
         public string Device { get; set; } = "";
@@ -2938,7 +2952,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         Post(new
         {
             type = "settings",
-            dpi = s.Dpi, color = s.Color, source = s.Source, ocr = s.Ocr, device = s.Device,
+            dpi = s.Dpi, color = s.Color, source = s.Source, pageSize = s.PageSize, ocr = s.Ocr, device = s.Device,
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,

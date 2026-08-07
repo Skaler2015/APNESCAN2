@@ -534,7 +534,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
         </div>
         <div class="field" id="setDpi" style="cursor:pointer"><span class="k">RESOLUTION</span><span class="v"><span id="valDpi">200 dpi</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="field" id="setColor" style="cursor:pointer"><span class="k">COLOR</span><span class="v"><span id="valColor">Color</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
-        <div class="field"><span class="k">PAGE SIZE</span><span class="v">Auto (full)</span></div>
+        <div class="field" id="setPageSize" style="cursor:pointer"><span class="k">PAGE SIZE</span><span class="v"><span id="valPageSize">Auto (full)</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="field" id="setSource" style="cursor:pointer"><span class="k">PAPER SOURCE</span><span class="v"><span id="valSource">Auto</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="scan-sm" id="scanSm">&#9654; Scan</div>
       </div>
@@ -837,6 +837,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 
 <!-- Scanner picker dropdown (list of detected scanners) -->
 <div class="menu" id="scannerMenu" style="min-width:240px;max-width:420px"></div>
+<div class="menu" id="setMenu" style="min-width:170px"></div>
 
 <!-- Save-as dropdown menu (PDF / JPG / PNG) -->
 <div class="menu" id="saveMenu">
@@ -1012,10 +1013,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   var devices = [];
   var selectedDevice = 0;   // which scanner to use
   var savedScanner = '';    // remembered scanner name (from settings)
-  var settings = { dpi:200, color:'color', source:'auto' };
+  var settings = { dpi:200, color:'color', source:'auto', pageSize:'auto' };
   var dpiOpts = [100,150,200,300,600];
   var colorOpts = [['color','Color'],['gray','Grayscale'],['bw','Black & White']];
   var srcOpts = [['auto','Auto'],['flatbed','Flatbed'],['feeder','Feeder'],['duplex','Duplex (both sides)']];
+  var pageSizeOpts = [['auto','Auto (full)'],['a4','A4'],['letter','Letter'],['legal','Legal'],['a5','A5']];
   function cycle(arr, cur){ var i=arr.indexOf(cur); return arr[(i+1)%arr.length]; }
   function labelFor(opts, key){ for(var i=0;i<opts.length;i++){ if(opts[i][0]===key) return opts[i][1]; } return key; }
   function send(o){ if(bridge){ bridge.postMessage(JSON.stringify(o)); } }
@@ -1402,13 +1404,38 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
     var s=byId('scanSub'); if(s) s.textContent='Feeding page from your scanner';
     setStatus('Scanning…');
-    if(bridge){ send({cmd:'scan', device:selectedDevice, dpi:settings.dpi, color:settings.color, source:settings.source}); }
+    if(bridge){ send({cmd:'scan', device:selectedDevice, dpi:settings.dpi, color:settings.color, source:settings.source, pageSize:settings.pageSize}); }
     else { setTimeout(function(){ if(t)t.textContent='Ready to Scan'; if(s)s.textContent='Place your document in the feeder and press Scan'; setStatus('Ready (design preview)'); }, 1600); }
   }
   // scan settings — click a field to cycle its value
-  var sd=byId('setDpi'); if(sd) sd.addEventListener('click', function(){ settings.dpi=cycle(dpiOpts, settings.dpi); var v=byId('valDpi'); if(v) v.textContent=settings.dpi+' dpi'; persistSettings(); });
-  var sco=byId('setColor'); if(sco) sco.addEventListener('click', function(){ settings.color=cycle(colorOpts.map(function(o){return o[0];}), settings.color); var v=byId('valColor'); if(v) v.textContent=labelFor(colorOpts, settings.color); persistSettings(); });
-  var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(){ settings.source=cycle(srcOpts.map(function(o){return o[0];}), settings.source); var v=byId('valSource'); if(v) v.textContent=labelFor(srcOpts, settings.source); persistSettings(); });
+  // Scan-setting dropdowns (open a real menu on click)
+  var setMenu=byId('setMenu');
+  function closeSetMenu(){ if(setMenu){ setMenu.classList.remove('on'); setMenu.__anchor=null; } }
+  function openSetMenu(anchor, opts, current, onSelect){
+    if(!setMenu||!anchor) return;
+    closeScannerMenu();
+    var wasOpen = setMenu.classList.contains('on') && setMenu.__anchor===anchor;
+    closeSetMenu();
+    if(wasOpen) return;                       // second click on same field = close
+    setMenu.__anchor=anchor;
+    setMenu.innerHTML='';
+    opts.forEach(function(o){
+      var val=o[0], lbl=o[1];
+      var el=document.createElement('div'); el.className='opt';
+      el.innerHTML='<svg class="ic" style="'+(String(val)===String(current)?'':'visibility:hidden')+'"><use href="#i-check"/></svg><span style="flex:1;white-space:nowrap">'+esc(lbl)+'</span>';
+      el.addEventListener('click', function(e){ e.stopPropagation(); onSelect(val); closeSetMenu(); });
+      setMenu.appendChild(el);
+    });
+    var rect=anchor.getBoundingClientRect();
+    setMenu.style.left=rect.left+'px';
+    setMenu.style.top=(rect.bottom+6)+'px';
+    setMenu.classList.add('on');
+  }
+  var sd=byId('setDpi'); if(sd) sd.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sd, dpiOpts.map(function(n){return [n, n+' dpi'];}), settings.dpi, function(v){ settings.dpi=v; var el=byId('valDpi'); if(el) el.textContent=v+' dpi'; persistSettings(); }); });
+  var sco=byId('setColor'); if(sco) sco.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sco, colorOpts, settings.color, function(v){ settings.color=v; var el=byId('valColor'); if(el) el.textContent=labelFor(colorOpts, v); persistSettings(); }); });
+  var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sso, srcOpts, settings.source, function(v){ settings.source=v; var el=byId('valSource'); if(el) el.textContent=labelFor(srcOpts, v); persistSettings(); }); });
+  var sps=byId('setPageSize'); if(sps) sps.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sps, pageSizeOpts, settings.pageSize, function(v){ settings.pageSize=v; var el=byId('valPageSize'); if(el) el.textContent=labelFor(pageSizeOpts, v); persistSettings(); }); });
+  document.addEventListener('click', function(e){ if(setMenu && setMenu.classList.contains('on') && !setMenu.contains(e.target) && !(setMenu.__anchor && setMenu.__anchor.contains(e.target))){ closeSetMenu(); } });
   // editor — rotate / delete the latest page
   var brt=byId('btnRotate'); if(brt) brt.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
@@ -1478,7 +1505,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
   function persistSettings(){ if(bridge) send({cmd:'saveSettings',
-    dpi:settings.dpi, color:settings.color, source:settings.source, on:ocrOn,
+    dpi:settings.dpi, color:settings.color, source:settings.source, pageSize:settings.pageSize, on:ocrOn,
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
@@ -1488,10 +1515,12 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
     if(s.dpi) settings.dpi=s.dpi;
     if(s.color) settings.color=s.color;
     if(s.source) settings.source=s.source;
+    if(s.pageSize) settings.pageSize=s.pageSize;
     if(s.device){ savedScanner=s.device; if(devices.length){ var i=devices.indexOf(savedScanner); if(i>=0){ selectedDevice=i; renderDevice(); } } }
     var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
     var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts, settings.color);
     var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts, settings.source);
+    var vps=byId('valPageSize'); if(vps) vps.textContent=labelFor(pageSizeOpts, settings.pageSize);
     setOcr(!!s.ocr, false);
     if(s.saveDefault) ui.saveDefault=s.saveDefault;
     ui.autoName=(s.autoName!==false);
@@ -2468,6 +2497,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   function closeScannerMenu(){ if(scannerMenu) scannerMenu.classList.remove('on'); }
   function openScannerMenu(){
     if(!scannerMenu||!setScanner) return;
+    if(typeof closeSetMenu==='function') closeSetMenu();
     if(scannerMenu.classList.contains('on')){ closeScannerMenu(); return; }
     scannerMenu.innerHTML='';
     if(!devices.length){
@@ -2495,7 +2525,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
