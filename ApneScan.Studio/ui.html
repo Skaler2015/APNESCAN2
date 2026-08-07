@@ -1403,12 +1403,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(!scannedTotal){ setStatus('Scan or import a page first'); return; }
     editMenu.__anchor=anchor; editMenu.innerHTML='';
     function sep(label){ var s=document.createElement('div'); s.className='mhd'; s.textContent=label; editMenu.appendChild(s); }
-    function it(label, sym, op){
-      var o=document.createElement('div'); o.className='opt';
+    function it(label, sym, op, cls){
+      var o=document.createElement('div'); o.className='opt'+(cls?(' '+cls):'');
       o.innerHTML=(sym?('<svg class="ic"><use href="#'+sym+'"/></svg>'):'<span style="width:15px;display:inline-block"></span>')+'<span style="flex:1;white-space:nowrap">'+label+'</span>';
-      o.addEventListener('click', function(e){ e.stopPropagation(); closeEditMenu(); if(scanToolsMap[op]) scanToolsMap[op](); });
+      o.addEventListener('click', function(e){ e.stopPropagation(); if(op==='selall'||op==='invert'||op==='none'||op==='vgrid'||op==='vlist'){ if(scanToolsMap[op]) scanToolsMap[op](); return; } closeEditMenu(); if(scanToolsMap[op]) scanToolsMap[op](); });
       editMenu.appendChild(o);
     }
+    sep('Selection');
+    it('Select all','i-check','selall'); it('Invert selection','i-swap','invert'); it('Select none',null,'none');
     sep('Rotate & straighten');
     it('Rotate left','i-rotate','rotL'); it('Rotate right','i-rotate','rotR');
     it('Rotate 180°','i-rotate','rot180'); it('Deskew (auto-straighten)','i-crop','deskew');
@@ -1420,9 +1422,11 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     sep('Arrange');
     it('Duplicate','i-files','dup'); it('Move to top','i-chevron','top');
     it('Move to bottom','i-chevron','bottom'); it('Reverse order','i-swap','reverse');
+    sep('View');
+    it('Grid view','i-grid','vgrid'); it('List view','i-list','vlist');
     sep('Page');
     it('Export as image','i-image','export'); it('Redo','i-refresh','redo');
-    it('Delete page','i-delete','del');
+    it('Delete page','i-delete','del','danger');
     var rect=anchor.getBoundingClientRect();
     editMenu.style.left=Math.max(8, Math.min(rect.left-90, window.innerWidth-225))+'px';
     editMenu.style.top=Math.max(8, Math.min(rect.bottom+6, window.innerHeight-40))+'px';
