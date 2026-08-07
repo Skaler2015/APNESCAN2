@@ -20,9 +20,9 @@
     <Copyright>Copyright 2026 Subhash Kaler</Copyright>
 
     <!-- ApneScan version. Starts at 1.0.0 and is bumped on every update. -->
-    <Version>1.0.59</Version>
-    <AssemblyVersion>1.0.59.0</AssemblyVersion>
-    <FileVersion>1.0.59.0</FileVersion>
+    <Version>1.0.60</Version>
+    <AssemblyVersion>1.0.60.0</AssemblyVersion>
+    <FileVersion>1.0.60.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -419,6 +419,12 @@ public class MainForm : Form
             case "sharePhone":
                 SharePhoneFile(filePath);
                 break;
+            case "getThumb":
+                await SendFileThumbAsync(filePath);
+                break;
+            case "fileInfo":
+                SendFileInfo(filePath);
+                break;
             case "listFolder":
                 SendFolder(filePath, ctx);
                 break;
@@ -2984,6 +2990,64 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             File.Copy(file, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(file)), false);
         foreach (var sub in Directory.GetDirectories(src))
             CopyDirectory(sub, System.IO.Path.Combine(dest, System.IO.Path.GetFileName(sub)));
+    }
+
+    // Render a small thumbnail (first page for PDF) for the grid view.
+    private async Task SendFileThumbAsync(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        if (!IsPreviewable(ext)) return;
+        ProcessedImage? first = null;
+        try
+        {
+            var importer = ext == ".pdf" ? new PdfImporter(_ctx).Import(path) : new ImageImporter(_ctx).Import(path);
+            await foreach (var img in importer) { first = img; break; }
+            if (first == null) return;
+            var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+            using var thumb = await renderer.Render(first, 200);
+            var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_dth_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            thumb.Save(tmp, ImageFileFormat.Png);
+            var dataUrl = "data:image/png;base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(tmp));
+            try { File.Delete(tmp); } catch { }
+            Post(new { type = "thumb", path, dataUrl });
+        }
+        catch { /* thumbnails are best-effort */ }
+        finally { first?.Dispose(); }
+    }
+
+    private void SendFileInfo(string path)
+    {
+        try
+        {
+            bool isDir = Directory.Exists(path);
+            if (!isDir && !File.Exists(path)) { Status("Not found"); return; }
+            var name = System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+            long size = 0;
+            string dims = "";
+            int items = 0;
+            string modified;
+            if (isDir)
+            {
+                var di = new DirectoryInfo(path);
+                modified = di.LastWriteTime.ToString("dd MMM yyyy, HH:mm");
+                try { items = di.GetFiles().Length + di.GetDirectories().Length; } catch { }
+            }
+            else
+            {
+                var fi = new FileInfo(path);
+                size = fi.Length;
+                modified = fi.LastWriteTime.ToString("dd MMM yyyy, HH:mm");
+                var e = fi.Extension.ToLowerInvariant();
+                if (e is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".tif" or ".tiff")
+                {
+                    try { using var im = System.Drawing.Image.FromFile(path); dims = $"{im.Width} × {im.Height} px"; } catch { }
+                }
+            }
+            var kind = isDir ? "Folder" : (System.IO.Path.GetExtension(path).TrimStart('.').ToUpperInvariant() + " file");
+            Post(new { type = "fileInfo", name, path, kind, size, dims, items, modified, dir = isDir });
+        }
+        catch (Exception ex) { Status("Info error: " + ex.Message); }
     }
 
     // ---- PDF tools (from the My Documents right-click menu) ----
