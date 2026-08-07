@@ -52,6 +52,7 @@ public class MainForm : Form
     private readonly List<ProcessedImage> _pages = new();
     private List<ScanDevice> _devices = new();
     private bool _busy;
+    private CancellationTokenSource? _scanCts;   // lets the user cancel a scan mid-way
     private bool _ocr;
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
@@ -455,7 +456,7 @@ public class MainForm : Form
         "getDevices", "getSettings", "getStorage", "getProfiles", "getAnalytics",
         "getHistory", "getNames", "getFavs", "getShortcuts", "getText", "getRecent",
         "getThumb", "getSubfolders", "listFolder", "previewFile", "select",
-        "checkUpdate", "browseFolder"
+        "checkUpdate", "browseFolder", "cancelScan"
     };
 
     private void TrackAction(string cmd)
@@ -556,6 +557,14 @@ public class MainForm : Form
                 break;
             case "scan":
                 await ScanAsync(deviceIndex, dpi, color, source, pageSize);
+                break;
+            case "cancelScan":
+                if (_scanCts != null)
+                {
+                    Status("Cancelling scan…");
+                    ScanStatus("busy", "Cancelling…");
+                    try { _scanCts.Cancel(); } catch { }
+                }
                 break;
             case "savePdf":
                 await SavePdfAsync();
@@ -1058,7 +1067,12 @@ public class MainForm : Form
         }
 
         _busy = true;
+        _scanCts = new CancellationTokenSource();
+        var token = _scanCts.Token;
         ScanStatus("busy", "Busy · Scanning…");
+        Post(new { type = "scanProgress", count = 0, done = false });   // show progress UI + Cancel button
+        bool cancelled = false;
+        int added = 0, skipped = 0;
         try
         {
             Status("Scanning…");
@@ -1076,18 +1090,23 @@ public class MainForm : Form
             };
 
             var scanSw = Stopwatch.StartNew();
-            int added = 0, skipped = 0;
-            await foreach (var image in controller.Scan(options))
+            await foreach (var image in controller.Scan(options, token))
             {
                 var (proc, blank) = await PostProcessScanAsync(image);
                 if (blank && _skipBlank)
                 {
                     proc.Dispose();
                     skipped++;
+                    Post(new { type = "scanProgress", count = added, skipped, done = false });
                     continue;
                 }
                 _pages.Add(proc);
                 added++;
+                // Show the page in the thumbnail strip immediately, and update
+                // the live progress counter shown in the scan hero.
+                await RefreshAsync(true);
+                ScanStatus("busy", $"Busy · Scanning… {added} page(s)");
+                Post(new { type = "scanProgress", count = added, skipped, done = false });
             }
 
             if (added == 0)
@@ -1115,6 +1134,14 @@ public class MainForm : Form
             Status($"{_pages.Count} page(s) ready. Use Save or Print.");
             ScanStatus("ready", "Free · Ready");
         }
+        catch (OperationCanceledException)
+        {
+            // User pressed Cancel mid-scan. Keep whatever pages already came in.
+            cancelled = true;
+            await RefreshAsync(true);
+            Status(added > 0 ? $"Scan cancelled — kept {added} page(s)" : "Scan cancelled");
+            ScanStatus("ready", "Free · Ready");
+        }
         catch (Exception ex)
         {
             Status("Scan error: " + ex.Message);
@@ -1122,7 +1149,10 @@ public class MainForm : Form
         }
         finally
         {
+            Post(new { type = "scanProgress", count = added, skipped, done = true, cancelled });
             _busy = false;
+            _scanCts?.Dispose();
+            _scanCts = null;
         }
     }
 

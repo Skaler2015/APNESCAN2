@@ -251,6 +251,14 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .scan-btn b{font-size:15px;letter-spacing:2px;font-weight:700}
 .scan-btn::before{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(124,58,237,.28);animation:pulse 2.4s ease-out infinite}
 @keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.18);opacity:0}}
+.scan-progress{max-width:340px;margin:20px auto 0}
+.scan-progress .sp-bar{height:6px;border-radius:99px;background:rgba(124,58,237,.14);overflow:hidden}
+.scan-progress .sp-fill{height:100%;width:36%;border-radius:99px;background:linear-gradient(90deg,#8b5cf6,#6d28d9);animation:spslide 1.2s ease-in-out infinite}
+@keyframes spslide{0%{margin-left:-40%}100%{margin-left:100%}}
+.scan-progress .sp-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+.scan-progress .sp-count{font-size:12.5px;color:var(--muted-2);font-weight:600}
+.scan-progress .sp-cancel{border:1px solid #ef4444;background:transparent;color:#ef4444;font-size:12px;font-weight:700;padding:6px 16px;border-radius:8px;cursor:pointer}
+.scan-progress .sp-cancel:hover{background:#ef4444;color:#fff}
 .hint{text-align:center;color:var(--muted-2);font-size:11.5px;margin:14px 0 0;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 .hint kbd{background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font:inherit;font-size:10.5px;color:#5b6376}
 .h3{font-size:15px;font-weight:700;margin:26px 2px 12px}
@@ -611,6 +619,13 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
             <div class="scan-btn" id="scanBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-scan"/></svg>
               <b>SCAN</b>
+            </div>
+            <div class="scan-progress" id="scanProg" style="display:none">
+              <div class="sp-bar"><div class="sp-fill"></div></div>
+              <div class="sp-row">
+                <span class="sp-count" id="scanProgCount">Preparing scanner…</span>
+                <button type="button" class="sp-cancel" id="scanCancelBtn">Cancel</button>
+              </div>
             </div>
           </div>
           <div class="hint" id="scanHint">
@@ -1414,6 +1429,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       if(!m || !m.type) return;
       if(m.type==='devices'){ applyDeviceList(m.devices); }
       else if(m.type==='scanStatus'){ setScanStatus(m.state, m.text); }
+      else if(m.type==='scanProgress'){
+        if(m.done){ scanUI(false); }
+        else {
+          scanUI(true, m.count||0);
+          var c=byId('scanProgCount');
+          if(c){ var txt=(m.count>0? (m.count+' page(s) scanned') : 'Preparing scanner…'); if(m.skipped>0) txt+=' · '+m.skipped+' blank skipped'; c.textContent=txt; }
+        }
+      }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
       else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); }
@@ -1498,12 +1521,33 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   document.addEventListener('click', function(e){ if(printMenu && printMenu.classList.contains('on') && !printMenu.contains(e.target) && !(printMenu.__anchor && printMenu.__anchor.contains(e.target))){ closePrintMenu(); } });
   var bp=byId('btnPrint'); if(bp) bp.addEventListener('click', function(e){ e.stopPropagation(); openPrintMenu(bp); });
   var bc=byId('btnClear'); if(bc) bc.addEventListener('click', function(){ if(bridge){ send({cmd:'clear'}); } else { resetPreview(); } });
+  var scanRunning=false;
+  function scanUI(on, count){
+    scanRunning=on;
+    var t=byId('scanTitle'), s=byId('scanSub'), btn=byId('scanBtn'), prog=byId('scanProg'), c=byId('scanProgCount');
+    if(on){
+      if(t) t.textContent='Scanning…';
+      if(s) s.textContent='Feeding pages from your scanner';
+      if(btn) btn.style.display='none';
+      if(prog) prog.style.display='block';
+      if(c) c.textContent = (count>0? (count+' page(s) scanned') : 'Preparing scanner…');
+    } else {
+      if(t) t.textContent='Ready to Scan';
+      if(s) s.textContent='Place your document in the feeder and press Scan';
+      if(btn) btn.style.display='';
+      if(prog) prog.style.display='none';
+    }
+  }
+  function cancelScan(){
+    var c=byId('scanProgCount'); if(c) c.textContent='Cancelling…';
+    if(bridge) send({cmd:'cancelScan'});
+  }
   function doScan(){
-    var t=byId('scanTitle'); if(t) t.textContent='Scanning…';
-    var s=byId('scanSub'); if(s) s.textContent='Feeding page from your scanner';
+    if(scanRunning) return;
+    scanUI(true, 0);
     setStatus('Scanning…');
     if(bridge){ send({cmd:'scan', device:selectedDevice, dpi:settings.dpi, color:settings.color, source:settings.source, pageSize:settings.pageSize}); }
-    else { setTimeout(function(){ if(t)t.textContent='Ready to Scan'; if(s)s.textContent='Place your document in the feeder and press Scan'; setStatus('Ready (design preview)'); }, 1600); }
+    else { setTimeout(function(){ scanUI(false); setStatus('Ready (design preview)'); }, 1600); }
   }
   // scan settings — click a field to cycle its value
   // Scan-setting dropdowns (open a real menu on click)
@@ -1765,6 +1809,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     persistSettings(); closeSettings(); setStatus('Settings saved');
   });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
+  (function(){ var cb=byId('scanCancelBtn'); if(cb) cb.addEventListener('click', cancelScan); })();
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
 
   // ---------- newly wired small buttons ----------
