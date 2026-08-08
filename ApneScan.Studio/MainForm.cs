@@ -1128,16 +1128,58 @@ public class MainForm : Form
         }
     }
 
+    private static string DriverTag(Driver d) => d switch
+    {
+        Driver.Wia => "WIA",
+        Driver.Twain => "TWAIN",
+        Driver.Escl => "Network",
+        Driver.Sane => "SANE",
+        _ => d.ToString()
+    };
+
+    // Human label for a device — adds the driver tag only when the same scanner
+    // name shows up under more than one driver, so the list stays clean.
+    private string DeviceLabel(ScanDevice d)
+    {
+        bool dup = _devices.Count(x => string.Equals(x.Name, d.Name, StringComparison.OrdinalIgnoreCase)) > 1;
+        return dup ? $"{d.Name} · {DriverTag(d.Driver)}" : d.Name;
+    }
+
+    // Enumerate one driver with a timeout so a slow/hanging backend (e.g. TWAIN
+    // or network discovery) never blocks the whole scan-list refresh.
+    private async Task<List<ScanDevice>> EnumDriverAsync(ScanController controller, Driver driver, int timeoutMs)
+    {
+        var found = new List<ScanDevice>();
+        using var cts = new CancellationTokenSource(timeoutMs);
+        try
+        {
+            await foreach (var d in controller.GetDevices(new ScanOptions { Driver = driver }, cts.Token))
+                found.Add(d);
+        }
+        catch { /* driver unavailable / timed out — return whatever was found */ }
+        return found;
+    }
+
     private async Task SendDevicesAsync()
     {
         try
         {
             Status("Looking for scanners…");
             var controller = new ScanController(_ctx);
-            _devices = await controller.GetDeviceList();
-            Post(new { type = "devices", devices = _devices.Select(d => d.Name).ToArray() });
+            // Scan every Windows driver so USB (WIA/TWAIN) and network (ESCL)
+            // scanners all show up — not just the default WIA list.
+            var merged = new List<ScanDevice>();
+            foreach (var drv in new[] { Driver.Wia, Driver.Twain, Driver.Escl })
+            {
+                var list = await EnumDriverAsync(controller, drv, drv == Driver.Escl ? 6000 : 12000);
+                foreach (var d in list)
+                    if (!merged.Any(m => m.Driver == d.Driver && m.ID == d.ID))
+                        merged.Add(d);
+            }
+            _devices = merged;
+            Post(new { type = "devices", devices = _devices.Select(DeviceLabel).ToArray() });
             if (_devices.Count == 0) { Status("No scanner found"); ScanStatus("offline", "No scanner"); }
-            else { Status($"{_devices[0].Name} · Ready"); ScanStatus("ready", "Free · Ready"); }
+            else { Status($"{DeviceLabel(_devices[0])} · Ready"); ScanStatus("ready", $"{_devices.Count} scanner(s) · Ready"); }
         }
         catch (Exception ex)
         {
@@ -1207,6 +1249,9 @@ public class MainForm : Form
             var options = new ScanOptions
             {
                 Device = _devices[deviceIndex],
+                // Use the driver the chosen device was discovered under, otherwise
+                // a TWAIN/network device would be scanned with the wrong (WIA) driver.
+                Driver = _devices[deviceIndex].Driver,
                 PaperSource = ParseSource(source),
                 // "auto" scans the scanner's full area (driver clamps to the
                 // device max); named sizes constrain to that paper size.
