@@ -316,6 +316,9 @@ public class MainForm : Form
         var core = _web.CoreWebView2;
         core.Settings.AreDefaultContextMenusEnabled = false;
         core.Settings.IsStatusBarEnabled = false;
+        // Ctrl+wheel / Ctrl+± must not zoom the whole app — the UI scopes zoom to
+        // the thumbnail or preview area itself.
+        core.Settings.IsZoomControlEnabled = false;
         core.WebMessageReceived += OnMessage;
 
         // Auto-grant camera/microphone so in-page photo capture works.

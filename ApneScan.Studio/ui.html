@@ -2951,22 +2951,60 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   // the scanned thumbnail area.
   document.addEventListener('paste', function(e){
     if(!bridge) return;
-    var dt=e.clipboardData; if(!dt) return;
+    var tgt=e.target, tag=(tgt&&tgt.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||(tgt&&tgt.isContentEditable)) return;   // let text paste into fields
+    var dt=e.clipboardData;
     var files=[], i;
-    var items=dt.items||[];
-    for(i=0;i<items.length;i++){ if(items[i].kind==='file'){ var f=items[i].getAsFile(); if(f) files.push(f); } }
-    if(!files.length && dt.files){ for(i=0;i<dt.files.length;i++) files.push(dt.files[i]); }
+    if(dt){
+      var items=dt.items||[];
+      for(i=0;i<items.length;i++){ if(items[i].kind==='file'){ var f=items[i].getAsFile(); if(f) files.push(f); } }
+      if(!files.length && dt.files){ for(i=0;i<dt.files.length;i++) files.push(dt.files[i]); }
+    }
     var ok=files.filter(function(f){ return /^image\//.test(f.type) || /pdf/i.test(f.type) || /\.(png|jpe?g|tiff?|bmp|gif|webp|pdf)$/i.test(f.name||''); });
-    if(!ok.length) return;                 // nothing pasteable → let normal paste happen
+    if(ok.length){
+      e.preventDefault();
+      setStatus('Pasting '+ok.length+' item(s)…');
+      ok.forEach(function(f){
+        var r=new FileReader();
+        r.onload=function(){ var nm=f.name||('pasted.'+(/pdf/i.test(f.type)?'pdf':'png')); send({cmd:'importDropped', dataUrl:r.result, name:nm}); };
+        r.onerror=function(){ setStatus('Could not read pasted item'); };
+        r.readAsDataURL(f);
+      });
+      return;
+    }
+    // The web clipboard had nothing usable (common when copying an image from
+    // WhatsApp, Photos, Paint, etc.). Fall back to the real Windows clipboard,
+    // which the app reads directly (bitmap or copied file). Skip pure-text pastes.
+    var types=(dt&&dt.types)?Array.prototype.slice.call(dt.types):[];
+    var hasText=types.indexOf('text/plain')>=0 || types.indexOf('text/html')>=0;
+    var hasImgHint=types.indexOf('Files')>=0 || types.some(function(t){return /image\//.test(t);});
+    if(hasText && !hasImgHint) return;     // plain text copied → nothing to import
     e.preventDefault();
-    setStatus('Pasting '+ok.length+' item(s)…');
-    ok.forEach(function(f){
-      var r=new FileReader();
-      r.onload=function(){ var nm=f.name||('pasted.'+(/pdf/i.test(f.type)?'pdf':'png')); send({cmd:'importDropped', dataUrl:r.result, name:nm}); };
-      r.onerror=function(){ setStatus('Could not read pasted item'); };
-      r.readAsDataURL(f);
-    });
+    setStatus('Pasting from clipboard…');
+    send({cmd:'pastePages'});
   });
+
+  // Ctrl + mouse wheel zooms ONLY the area under the pointer — the thumbnails
+  // when over the thumbnail area, the document when over the preview — never the
+  // whole app. Plain wheel keeps scrolling normally.
+  document.addEventListener('wheel', function(e){
+    if(!(e.ctrlKey||e.metaKey)) return;
+    var t=e.target; if(!t||!t.closest) return;
+    if(byId('fsOverlay') && byId('fsOverlay').classList.contains('on')) return;  // the editor has its own zoom
+    if(t.closest('#rpView')){
+      e.preventDefault();
+      fitMode=false;
+      zoom=Math.max(0.2, Math.min(6, (zoom||1)*(e.deltaY<0?1.12:0.9)));
+      applyZoom();
+      var tb=byId('tbZoom'); if(tb) tb.value=Math.round(zoom*100);
+    } else if(t.closest('#scannedGrid') || (scannedTotal>0 && t.closest('.center'))){
+      e.preventDefault();
+      if(scanView==='list'||scanView==='film') scanView='grid';
+      thumbPx=Math.max(80, Math.min(340, thumbPx+(e.deltaY<0?14:-14)));
+      applyScanView();
+      var ts=byId('thumbSize'); if(ts) ts.value=Math.max(90, Math.min(220, thumbPx));
+    }
+  }, {passive:false, capture:true});
   var zfull=byId('zoomFull'); if(zfull) zfull.addEventListener('click', openFs);
   // Close only when the dark backdrop itself is clicked (not the editor/toolbar).
   var fsov=byId('fsOverlay'); if(fsov) fsov.addEventListener('click', function(e){ if(e.target===fsov) fsClose(); });
@@ -4228,7 +4266,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.22'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.23'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -4469,7 +4507,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       l.appendChild(row);
     });
   }
-  function openProfiles(){ if(bridge) send({cmd:'getProfiles'}); overlay('profOverlay', true); }
+  // "Profiles" everywhere now opens the one Scan Profiles manager (same as the
+  // toolbar Profile control) so there is a single, consistent profile system.
+  function openProfiles(){ if(window.PF){ PF.openManage(); } else { overlay('profOverlay', true); } }
   ['navProfiles','btnProfiles'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', openProfiles); });
   var profClose=byId('profClose'); if(profClose) profClose.addEventListener('click', function(){ overlay('profOverlay', false); });
   var profSave=byId('profSave'); if(profSave) profSave.addEventListener('click', function(){
