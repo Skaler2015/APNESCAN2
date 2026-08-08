@@ -3894,14 +3894,15 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
                 if (t.Count == 0) { Status("No page selected"); return; }
                 PushUndo();
                 SyncNames();
-                // Insert from the end so earlier indices stay valid.
-                foreach (var i in t.OrderByDescending(x => x))
+                // Duplicates go to the very end, in the selected order.
+                foreach (var i in t.OrderBy(x => x))
                 {
-                    _pages.Insert(i + 1, _pages[i].Clone());
-                    _pageNames.Insert(i + 1, i < _pageNames.Count ? _pageNames[i] : "");
+                    _pages.Add(_pages[i].Clone());
+                    _pageNames.Add(i < _pageNames.Count ? _pageNames[i] : "");
                 }
+                _selected = _pages.Count - 1;
                 await RefreshAsync(false);
-                Status($"Duplicated {t.Count} page(s)");
+                Status($"Duplicated {t.Count} page(s) — added at the end");
                 return;
             }
             case "top":
@@ -4103,17 +4104,15 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             PushUndo();
             SyncNames();
-            int at = Sel();
-            int insert = (at >= 0 ? at + 1 : _pages.Count);
-            insert = Math.Clamp(insert, 0, _pages.Count);
+            // Pasted pages always go to the end.
             var clones = _copiedPages.Select(p => p.Clone()).ToList();
-            _pages.InsertRange(insert, clones);
+            _pages.AddRange(clones);
             for (int k = 0; k < clones.Count; k++)
-                _pageNames.Insert(Math.Min(insert + k, _pageNames.Count), "");
-            _selected = insert + clones.Count - 1;
+                _pageNames.Add("");
+            _selected = _pages.Count - 1;
             await RefreshAsync(false);
             _ = AutoNameAsync();
-            Status($"Pasted {clones.Count} page(s)");
+            Status($"Pasted {clones.Count} page(s) — added at the end");
             return;
         }
         // 2. Windows clipboard — image, then file list.

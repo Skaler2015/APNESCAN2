@@ -3152,6 +3152,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   // Center gallery of scanned pages (fills the main area after a scan)
   var scannedNames=[], scannedSel=-1, nameSuggestions=[], selSet=[], scannedTotal=0, scannedThumbs=[], nameEntries=[], pageTypes=[];
+  var pendingEditOpen=false;   // set when a page is double-clicked to open in the editor
   var scanView='grid', thumbPx=122;
   function isSel(i){ return selSet.length ? (selSet.indexOf(i)>=0) : (i===scannedSel); }
   function selCurrent(){ return (selSet.length ? selSet.slice() : (scannedSel>=0 ? [scannedSel] : [])); }
@@ -3279,6 +3280,12 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         if(ev.ctrlKey||ev.metaKey){ var p=selSet.indexOf(i); if(p>=0) selSet.splice(p,1); else selSet.push(i); scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); return; }
         if(ev.shiftKey && scannedSel>=0){ selSet=[]; var a=Math.min(scannedSel,i), b=Math.max(scannedSel,i); for(var j=a;j<=b;j++) selSet.push(j); applyMultiHighlight(); return; }
         selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i});
+      });
+      c.addEventListener('dblclick', function(ev){ ev.stopPropagation();
+        selSet=[]; scannedSel=i; applyMultiHighlight();
+        pendingEditOpen=true;
+        if(bridge){ send({cmd:'select', index:i}); } else { pendingEditOpen=false; openFs(); }
+        setTimeout(function(){ if(pendingEditOpen){ pendingEditOpen=false; openFs(); } }, 600);
       });
       c.addEventListener('contextmenu', function(ev){ ev.preventDefault(); ev.stopPropagation();
         if(selSet.indexOf(i)<0){ selSet=[]; scannedSel=i; applyMultiHighlight(); if(bridge) send({cmd:'select', index:i}); }
@@ -3489,7 +3496,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='scanDone'){ sxDone(m); }
       else if(m.type==='scanFail'){ sxFail(m); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
-      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
+      else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } if(pendingEditOpen){ pendingEditOpen=false; openFs(); } }
       else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); edThumbs=m.thumbs||[]; if(byId('fsOverlay')&&byId('fsOverlay').classList.contains('on')){ fsRenderThumbs(); fsUpdateInfo(); fsUpdateStatus(); } try{ if(byId('connectOverlay')&&byId('connectOverlay').classList.contains('on')) connect.refreshDoc(); }catch(e){} }
       else if(m.type==='pageName'){ scannedNames[m.index]=m.name||''; var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv+'  (double-click or F2 to rename)'; } }
       else if(m.type==='names'){ nameEntries=m.items||[]; nameSuggestions=nameEntries.map(function(e){ return e.name; }); fillNameSuggest(); rebuildChips(); if(byId('mnOverlay') && byId('mnOverlay').classList.contains('on')) renderNames(); }
@@ -4221,7 +4228,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.21'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.22'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
