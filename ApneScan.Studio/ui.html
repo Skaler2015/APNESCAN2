@@ -3642,7 +3642,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.18'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.19'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -4323,6 +4323,11 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     item('Export as image','i-image', function(){ send({cmd:'exportPageImage', indices:selCurrent(), format:'png'}); });
     item('Share via WhatsApp','i-share', function(){ setStatus('Opening WhatsApp…'); send({cmd:'shareWhatsapp', indices:selCurrent()}); });
     item('Share… (Windows)','i-share', function(){ setStatus('Opening Share…'); send({cmd:'shareWindows', indices:selCurrent()}); });
+    sep();
+    item('Print all pages','i-print', function(){ setStatus('Printing…'); send({cmd:'print', op:'all'}); });
+    item((n>1?'Print selected ('+n+' pages)':'Print this page'),'i-print', function(){ setStatus('Printing…'); send({cmd:'print', op:'selected', indices:selCurrent()}); });
+    item('ID print (2 per page)','i-print', function(){ setStatus('Printing…'); send({cmd:'print', op:'id'}); });
+    item((n>1?'ID print — selected ('+n+')':'ID print — this page'),'i-print', function(){ setStatus('Printing…'); send({cmd:'print', op:'idSelected', indices:selCurrent()}); });
     sep();
     item((n>1?'Delete '+n+' pages':'Delete page'),'i-delete', function(){ send({cmd:'deletePage', indices:selCurrent()}); }, 'danger');
     m.classList.add('on');
