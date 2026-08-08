@@ -333,11 +333,13 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .rc b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc small{color:var(--muted);font-size:10.5px}
 .grid-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:14px;margin-bottom:6px}
-.pg-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px;cursor:pointer;position:relative;transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s,border-color .18s;box-shadow:0 1px 2px rgba(20,20,50,.05)}
+.pg-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px;cursor:grab;position:relative;transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s,border-color .18s;box-shadow:0 1px 2px rgba(20,20,50,.05);user-select:none;-webkit-user-select:none;-webkit-user-drag:element}
+.pg-card.dragging{opacity:.5}
+.pg-card:active{cursor:grabbing}
 .pg-card:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 30px rgba(20,20,50,.14);border-color:#dcd6f5;z-index:3}
 .pg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 8px 22px rgba(106,56,255,.22)}
 .pg-card .pg-imgwrap{position:relative;border-radius:9px;overflow:hidden;background:#fff}
-.pg-card img{width:100%;height:var(--thumb-h,158px);object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:9px;display:block;transition:transform .2s}
+.pg-card img{width:100%;height:var(--thumb-h,158px);object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:9px;display:block;transition:transform .2s;pointer-events:none;-webkit-user-drag:none}
 body.no-anim *,body.no-anim *::before,body.no-anim *::after{transition:none!important;animation:none!important}
 body.dense .pg-card{padding:5px}
 body.dense .pg-card .pg-name{margin-top:5px}
@@ -3250,6 +3252,23 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function renderScanned(thumbs, selected, names){
     var head=byId('scannedHead'), grid=byId('scannedGrid'), cnt=byId('scannedCount');
     if(!grid) return;
+    // Grid-level drop safety net (attached once): if a reorder drop lands in a
+    // gap between cards, still drop the pages at the nearest position.
+    if(!grid.__dndInit){
+      grid.__dndInit=true;
+      grid.addEventListener('dragover', function(ev){ if(dragSrc<0) return; ev.preventDefault(); try{ ev.dataTransfer.dropEffect='move'; }catch(_){} });
+      grid.addEventListener('drop', function(ev){
+        if(dragSrc<0) return; ev.preventDefault(); ev.stopPropagation();
+        var cards=grid.querySelectorAll('.pg-card'), insertAt=cards.length;
+        for(var k=0;k<cards.length;k++){ var r=cards[k].getBoundingClientRect();
+          if(ev.clientY>=r.top && ev.clientY<=r.bottom){ insertAt=k+((ev.clientX-r.left)>r.width/2?1:0); break; }
+          if(ev.clientY<r.top){ insertAt=k; break; } }
+        clearDropMarks();
+        var srcs=(dragSrcs&&dragSrcs.length)?dragSrcs.slice():[dragSrc];
+        if(bridge) send({cmd:'pageOp', op:'reorderMulti', indices:srcs, amount:insertAt});
+        dragSrc=-1; dragSrcs=[];
+      });
+    }
     scannedNames=(names||[]).slice();
     scannedThumbs=(thumbs||[]).slice();
     var _prevTotal=scannedTotal;
@@ -3295,7 +3314,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       });
       c.addEventListener('dragend', function(){ dragSrc=-1; dragSrcs=[]; c.classList.remove('dragging'); clearDropMarks(); });
       c.addEventListener('dragover', function(ev){
-        if(dragSrc<0) return; ev.preventDefault();
+        if(dragSrc<0) return; ev.preventDefault(); try{ ev.dataTransfer.dropEffect='move'; }catch(_){}
         var r=c.getBoundingClientRect(), after=(ev.clientX-r.left)>r.width/2;
         clearDropMarks(); c.classList.add(after?'drop-after':'drop-before');
       });
@@ -3562,7 +3581,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='openDocsPanel'){ var dpn=byId('docsPanel'); if(dpn) dpn.classList.add('on'); }
       else if(m.type==='filePreview'){ showFilePreview(m.name, m.pages); }
       else if(m.type==='favs'){ renderFavs(m.items); }
-      else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
+      else if(m.type==='shortcuts'){ try{ if(m.data){ var saved=JSON.parse(m.data); ACTIONS.forEach(function(a){ scMap[a.id]=(a.id in saved)?saved[a.id]:a.def; }); if(scMap['crop']==='Ctrl+Shift+C') scMap['crop']='C'; buildReverse(); if(byId('scOverlay') && byId('scOverlay').classList.contains('on')) renderShortcuts(); } }catch(e){} }
       else if(m.type==='banner'){ showBanner(m.text, m.style, m.id); }
       else if(m.type==='renamed'){ docsSelectedFile=m.path||''; docsSelected=''; docsMultiSel=[]; renderDocsList(); var rl=byId('docsList'); if(rl){ var rs=rl.querySelector('.sel'); if(rs&&rs.scrollIntoView) rs.scrollIntoView({block:'nearest'}); } }
       else if(m.type==='forceUpdate'){ showForceUpdate(m.url, m.min, m.force); }
@@ -4270,7 +4289,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.25'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.26'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -5411,7 +5430,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     {id:'deskew', sec:'Edit page', label:'Deskew (auto-straighten)', def:'Ctrl+Shift+D', run:function(){ pageOp('deskew'); }},
     {id:'duplicate', sec:'Edit page', label:'Duplicate page', def:'Ctrl+Shift+U', run:function(){ pageOp('duplicate'); }},
     {id:'autoEnhance', sec:'Edit page', label:'Auto-enhance', def:'Ctrl+Shift+E', run:function(){ pageOp('auto'); }},
-    {id:'crop', sec:'Edit page', label:'Crop page', def:'Ctrl+Shift+C', run:function(){ startCrop(); }},
+    {id:'crop', sec:'Edit page', label:'Crop page (draw an area in the editor)', def:'C', run:function(){ startCropBig(); }},
     {id:'moveL', sec:'Edit page', label:'Move page left', def:'Ctrl+Left', run:function(){ send({cmd:'moveLeft'}); }},
     {id:'moveR', sec:'Edit page', label:'Move page right', def:'Ctrl+Right', run:function(){ send({cmd:'moveRight'}); }},
     {id:'clear', sec:'Edit page', label:'Clear all pages', def:'Ctrl+Shift+Delete', run:function(){ send({cmd:'clear'}); }},
