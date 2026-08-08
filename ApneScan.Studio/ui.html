@@ -287,6 +287,7 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .scan-sm{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:9px 20px;border-radius:10px;cursor:pointer;box-shadow:0 5px 14px rgba(109,40,217,.3);white-space:nowrap}
 .toolrow{display:flex;align-items:center;gap:14px;padding:7px 14px;background:var(--panel);border-bottom:1px solid var(--border);flex:none}
 .zoom{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.tb-zoom{width:120px;accent-color:var(--accent);cursor:pointer}
 .slider{width:120px;height:5px;border-radius:6px;background:#e6e8f0;position:relative}
 .slider>i{position:absolute;left:26%;top:50%;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .tools{display:flex;align-items:center;gap:3px}
@@ -1167,10 +1168,10 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       </div>
 
       <div class="toolrow">
-        <div class="zoom"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><div class="slider"><i></i></div></div>
+        <div class="zoom" title="Zoom preview"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg><input type="range" id="tbZoom" class="tb-zoom" min="40" max="300" step="10" value="100" title="Zoom preview"></div>
         <div class="tools">
-          <div class="tool"><svg class="ic"><use href="#i-list"/></svg></div>
-          <div class="tool" id="btnCrop" title="Crop selected page"><svg class="ic"><use href="#i-crop"/></svg></div>
+          <div class="tool" id="btnListTr" title="Toggle list view"><svg class="ic"><use href="#i-list"/></svg></div>
+          <div class="tool" id="btnCrop" title="Crop page — opens the editor to drag &amp; crop"><svg class="ic"><use href="#i-crop"/></svg></div>
           <div class="tool" id="btnRotR"><svg class="ic"><use href="#i-rotate"/></svg></div>
           <div class="tool" id="btnRotL"><svg class="ic" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg></div>
           <div class="tool" id="btnEditTr" title="Edit &amp; enhance page"><svg class="ic"><use href="#i-editor"/></svg></div>
@@ -3136,7 +3137,25 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function imgRect(){ var im=byId('previewImg'); return (im && im.style.display!=='none' && im.getAttribute('src'))?im.getBoundingClientRect():null; }
   function startCrop(){ if(!imgRect()){ setStatus('Nothing to crop — scan a page first'); return; } cropping=true; var rp=byId('rpView'); if(rp) rp.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
   function endCropMode(){ cropping=false; cStart=null; cRect=null; var rp=byId('rpView'); if(rp) rp.classList.remove('cropping'); var cb=byId('cropBox'); if(cb) cb.style.display='none'; var bar=byId('cropBar'); if(bar) bar.style.display='none'; }
-  var bcrop=byId('btnCrop'); if(bcrop) bcrop.addEventListener('click', startCrop);
+  // Crop from the top toolbar → open the full-screen editor and arm crop there,
+  // so the user drags on a big, obvious page instead of the tiny side preview.
+  function startCropBig(){
+    var im=byId('previewImg');
+    if(!im || !im.getAttribute('src')){ setStatus('Scan or open a page first'); return; }
+    openFs();
+    var n=0; (function tick(){ n++;
+      var fi=byId('fsImg'); var r=fi?fi.getBoundingClientRect():null;
+      if(fi && fi.getAttribute('src') && r && r.width>20 && r.height>20){ fsStartCrop(); }
+      else if(n<40){ setTimeout(tick,50); }
+    })();
+  }
+  var bcrop=byId('btnCrop'); if(bcrop) bcrop.addEventListener('click', startCropBig);
+  // Toolbar zoom slider → preview zoom (was a dead decorative slider)
+  var tbZoom=byId('tbZoom');
+  if(tbZoom) tbZoom.addEventListener('input', function(){ fitMode=false; zoom=Math.max(0.2, Math.min(5, (parseInt(tbZoom.value,10)||100)/100)); applyZoom(); });
+  // Toolbar list icon → toggle List view of the scanned pages (was dead)
+  var btnListTr=byId('btnListTr');
+  if(btnListTr) btnListTr.addEventListener('click', function(){ scanView=(scanView==='list'?'grid':'list'); applyScanView(); });
   var rpv=byId('rpView');
   if(rpv){
     rpv.addEventListener('dragstart', function(e){ if(cropping) e.preventDefault(); });
@@ -3577,7 +3596,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.11'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.12'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
