@@ -749,6 +749,90 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .cam-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 .cam-btn{padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--text);background:#f4f5f9}
 .cam-btn.primary{background:var(--accent);color:#fff;border:0;box-shadow:0 5px 14px rgba(109,40,217,.3)}
+/* ===== ApneScan Connect ===== */
+.cn-box{width:min(780px,95vw);max-height:94vh;overflow:auto;padding:0;text-align:left}
+.cn-head{position:relative;padding:18px 20px 14px;border-bottom:1px solid var(--border-2);background:linear-gradient(90deg,var(--accent-soft),transparent)}
+.cn-title{font-size:17px;font-weight:800;display:flex;align-items:center;gap:9px}
+.cn-sub{color:var(--muted);font-size:12.5px;margin-top:3px;font-weight:600}
+.cn-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:15px}
+.cn-x:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.cn-body{padding:18px 20px 20px}
+/* QR screen */
+.cn-qr-wrap{text-align:center}
+.cn-qr-inst{color:var(--text);font-weight:700;font-size:13.5px;margin:2px 0 2px}
+.cn-qr-desc{color:var(--muted);font-size:12px;margin:0 0 12px}
+.cn-qr{width:232px;height:232px;margin:4px auto;display:block;background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px}
+.cn-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px 0 4px}
+.cn-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:20px;background:var(--panel);border:1px solid var(--border);color:var(--muted)}
+.cn-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 25%,transparent)}
+.cn-chip.wait{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 40%,var(--border))}
+.cn-chip.sec{color:var(--good)}
+.cn-chip.sec .lk{color:var(--good)}
+.cn-manual{margin:14px auto 4px;max-width:340px;background:var(--accent-soft);border-radius:12px;padding:11px 14px;text-align:center}
+.cn-manual .lbl{font-size:11px;color:var(--accent-ink);font-weight:700}
+.cn-code{font-size:23px;font-weight:800;letter-spacing:4px;color:var(--accent-ink);margin:3px 0 8px;font-variant-numeric:tabular-nums}
+.cn-copy{display:inline-block;font-size:11.5px;font-weight:700;padding:6px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--border);color:var(--accent-ink);cursor:pointer}
+.cn-copy:hover{background:#fff}
+.cn-btnrow{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.cn-btn{padding:11px 20px;border-radius:11px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid var(--border);color:var(--text);background:var(--panel);display:inline-flex;align-items:center;gap:8px}
+.cn-btn:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.cn-btn.pri{background:var(--accent-grad);color:#fff;border:0;box-shadow:0 6px 16px rgba(109,40,217,.28)}
+.cn-btn.pri:hover{filter:brightness(1.05);color:#fff}
+.cn-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:2px}
+/* Dashboard */
+.cn-statuspill{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:800;padding:8px 14px;border-radius:22px;background:var(--good-soft);color:var(--good)}
+.cn-statuspill .dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 25%,transparent)}
+.cn-statuspill.lost{background:color-mix(in srgb,#ef4444 14%,transparent);color:#ef4444}
+.cn-statuspill.lost .dot{background:#ef4444;box-shadow:0 0 0 3px color-mix(in srgb,#ef4444 25%,transparent)}
+.cn-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+@media(max-width:640px){.cn-cards{grid-template-columns:1fr}}
+.cn-card{border:1px solid var(--border);border-radius:14px;padding:15px;background:var(--panel)}
+.cn-card .ct{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px}
+.cn-card .cp{color:var(--muted);font-size:11.5px;margin:4px 0 12px;line-height:1.5;min-height:32px}
+.cn-card .cn-btn{width:100%;justify-content:center;margin-top:8px}
+.cn-doc{margin-top:12px;border:1px dashed var(--border);border-radius:12px;padding:13px 14px}
+.cn-doc .dh{font-size:12px;font-weight:800;display:flex;align-items:center;gap:8px}
+.cn-doc .dm{color:var(--muted);font-size:11px;margin:3px 0 10px}
+.cn-doc-btns{display:flex;flex-wrap:wrap;gap:7px}
+.cn-doc-btns .cn-btn{padding:8px 12px;font-size:11.5px}
+.cn-sec-h{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted-2);margin:18px 0 8px}
+/* transfer rows (queue + progress) */
+.cn-row{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--panel)}
+.cn-row .rt{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600}
+.cn-row .ar{flex:none;font-weight:800}
+.cn-row .ar.in{color:var(--blue)}.cn-row .ar.out{color:var(--accent)}
+.cn-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn-row .st{flex:none;color:var(--muted);font-weight:700;font-size:11.5px}
+.cn-row .st.ok{color:var(--good)}.cn-row .st.err{color:#ef4444}
+.cn-pbar{height:7px;border-radius:6px;background:var(--border-2);overflow:hidden;margin-top:8px}
+.cn-pbar>i{display:block;height:100%;width:0;background:var(--accent-grad);transition:width .15s ease}
+.cn-row .mt{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted-2);margin-top:5px}
+.cn-empty{color:var(--muted);font-size:12px;padding:8px 2px}
+/* history filters */
+.cn-filters{display:flex;gap:7px;margin-bottom:9px}
+.cn-fchip{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:var(--panel)}
+.cn-fchip.on{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.cn-hrow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-bottom:1px solid var(--border-2);font-size:12.5px}
+.cn-hrow:last-child{border-bottom:0}
+.cn-hic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;font-size:12px;font-weight:800}
+.cn-hic.in{background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue)}
+.cn-hic.out{background:var(--accent-soft);color:var(--accent-ink)}
+.cn-hrow .hn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.cn-hrow .hmeta{flex:none;color:var(--muted);font-size:11px;text-align:right}
+.cn-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px;flex-wrap:wrap}
+.cn-net{font-size:11px;color:var(--muted-2)}
+.cn-danger{color:#ef4444;border-color:color-mix(in srgb,#ef4444 40%,var(--border))}
+.cn-danger:hover{background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444}
+/* success dialog */
+#cnDoneOverlay{z-index:70}
+.cn-done{width:min(420px,92vw);text-align:center;padding:22px 20px}
+.cn-done .ok-ic{width:56px;height:56px;border-radius:50%;background:var(--good-soft);color:var(--good);display:grid;place-items:center;font-size:26px;margin:2px auto 10px}
+.cn-done h3{margin:0 0 4px;font-size:16px}
+.cn-done .fn{font-weight:800;font-size:14px;margin-top:8px;word-break:break-word}
+.cn-done .fsz{color:var(--muted);font-size:12px;margin-top:2px}
+.cn-done .dest{background:var(--accent-soft);border-radius:10px;padding:9px;margin:12px 0 4px;font-size:12px;color:var(--accent-ink);font-weight:700}
+.cn-done .when{color:var(--muted-2);font-size:11px;margin-top:8px}
+.cn-done .cn-btnrow{margin-top:16px;flex-wrap:wrap}
 .hist-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px}
 .hist-row:hover{background:#f4f5f9}
 .hist-row .hi{width:34px;height:44px;border-radius:5px;background:#fff;border:1px solid var(--border);position:relative;flex:none}
@@ -1109,7 +1193,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <div class="item" id="navShortcuts"><svg class="ic"><use href="#i-key"/></svg><span class="lbl">Shortcuts</span></div>
         <div class="sec">LIBRARY</div>
         <div class="item" id="navProfiles"><svg class="ic"><use href="#i-folder"/></svg><span class="lbl">Profiles</span></div>
-        <div class="item" id="navPhone"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">Phone to PC</span></div>
+        <div class="item" id="navPhone"><svg class="ic"><use href="#i-phone"/></svg><span class="lbl">ApneScan Connect</span></div>
         <div class="item" id="navTools"><svg class="ic"><use href="#i-wrench"/></svg><span class="lbl">Tools</span></div>
         <div class="sec">SYSTEM</div>
         <div class="item" id="navSettings"><svg class="ic"><use href="#i-settings"/></svg><span class="lbl">Settings</span></div>
@@ -1138,7 +1222,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <div class="tbtn" id="btnOcr"><span class="cap">OCR</span><svg class="ic"><use href="#i-ocr"/></svg><small>OCR</small></div>
         <div class="tbtn" id="btnImport"><svg class="ic"><use href="#i-import"/></svg><small>Import</small></div>
         <div class="tbtn" id="btnCamera"><svg class="ic"><use href="#i-camera"/></svg><small>Camera</small></div>
-        <div class="tbtn" id="btnPhone"><svg class="ic"><use href="#i-phone"/></svg><small>Phone</small></div>
+        <div class="tbtn" id="btnPhone"><svg class="ic"><use href="#i-phone"/></svg><small>Connect</small></div>
         <div class="sep"></div>
         <div class="tbtn" id="btnSave"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-save"/></svg><small>Save</small></div>
         <div class="tbtn" id="btnPrint"><svg class="cv ic" style="width:9px;height:9px"><use href="#i-chevron"/></svg><svg class="ic"><use href="#i-print"/></svg><small>Print</small></div>
@@ -1297,7 +1381,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <div class="h3" id="qaHead">Quick Actions</div>
           <div class="grid-q" id="qaGrid">
             <div class="qc" id="qcScan"><div class="qi" style="background:var(--accent-grad)"><svg class="ic" style="stroke:#fff"><use href="#i-print"/></svg></div><b>New Scan</b><small>feeder ready</small></div>
-            <div class="qc" id="qcPhone"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>Phone to PC</b><small>QR · from anywhere</small></div>
+            <div class="qc" id="qcPhone"><div class="qi" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><svg class="ic" style="stroke:#fff"><use href="#i-qr"/></svg></div><b>ApneScan Connect</b><small>Phone ⇄ PC · any file</small></div>
             <div class="qc" id="qcImport"><div class="qi" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><svg class="ic" style="stroke:#fff"><use href="#i-import"/></svg></div><b>Import</b><small>add files</small></div>
             <div class="qc" id="qcPhoto"><div class="qi" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg class="ic" style="stroke:#fff"><use href="#i-camera"/></svg></div><b>Photo→PDF</b><small>camera shots</small></div>
             <div class="qc" id="qcHistory"><div class="qi" style="background:linear-gradient(135deg,#10b981,#059669)"><svg class="ic" style="stroke:#fff"><use href="#i-history"/></svg></div><b>History</b><small>saved PDFs</small></div>
@@ -1383,27 +1467,100 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   </div>
 </div>
 
-<div class="cam-overlay" id="phoneOverlay">
-  <div class="cam-box" style="max-width:420px;text-align:center">
-    <h3>📱 Phone to PC</h3>
-    <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px">Scan this QR with your phone camera — it opens a page to <b>send photos to the PC</b> and <b>download files from the PC</b>. Works on <b>any network</b> (mobile data or WiFi).</p>
-    <img id="phoneQr" alt="QR code" style="width:220px;height:220px;margin:6px auto;display:block;background:#fff;border:1px solid var(--border);border-radius:10px">
-    <div id="phoneUrl" style="font-size:12px;color:var(--accent);font-weight:700;word-break:break-all"></div>
-    <div id="phoneLog" style="color:var(--good);font-weight:700;font-size:12.5px;margin-top:10px;min-height:18px"></div>
-    <div class="cam-actions" style="justify-content:center">
-      <div class="cam-btn primary" id="phoneClose">Done</div>
+<div class="cam-overlay" id="connectOverlay">
+  <div class="cam-box cn-box">
+    <div class="cn-head">
+      <div class="cn-title">📱⇄💻 <span>ApneScan Connect</span></div>
+      <div class="cn-sub">Phone ⇄ PC Wireless File Transfer</div>
+      <div class="cn-x" id="cnClose" tabindex="0" role="button" aria-label="Close">✕</div>
+    </div>
+
+    <!-- ============ QR PAIRING SCREEN ============ -->
+    <div id="cnQr" class="cn-body">
+      <div class="cn-qr-wrap">
+        <div class="cn-qr-inst">Scan this QR code with your phone camera</div>
+        <div class="cn-qr-desc">Send files between your phone and PC over your network.</div>
+        <img id="cnQrImg" class="cn-qr" alt="Pairing QR code">
+        <div class="cn-badges">
+          <span class="cn-chip wait" id="cnWait"><span class="dot"></span>Waiting for phone connection…</span>
+          <span class="cn-chip sec"><span class="lk">🔐</span>Secure session</span>
+          <span class="cn-chip" id="cnCount">⏱ 05:00</span>
+        </div>
+        <div class="cn-manual">
+          <div class="lbl">Can’t scan? Enter this code on your phone at apnescan · phone</div>
+          <div class="cn-code" id="cnCode">·······</div>
+          <span class="cn-copy" id="cnCopy">⧉ Copy code</span>
+        </div>
+        <div class="cn-btnrow">
+          <div class="cn-btn" id="cnRefresh">↻ Refresh QR</div>
+          <div class="cn-btn" id="cnCloseBtn">Close</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CONNECTED DASHBOARD ============ -->
+    <div id="cnDash" class="cn-body" style="display:none">
+      <span class="cn-statuspill" id="cnStatus"><span class="dot"></span><span id="cnStatusTxt">Phone Connected</span></span>
+
+      <div class="cn-cards">
+        <div class="cn-card">
+          <div class="ct">📱 → 💻 Phone to PC</div>
+          <div class="cp">Any file your phone sends is saved straight to this PC’s Downloads folder.</div>
+          <div class="cn-btn pri" id="cnReceive">📥 Receive Files from Phone</div>
+          <div class="cn-btn" id="cnScan">📷 Scan from Phone</div>
+        </div>
+        <div class="cn-card">
+          <div class="ct">💻 → 📱 PC to Phone</div>
+          <div class="cp">Pick any file on this PC and send it straight to your connected phone.</div>
+          <div class="cn-btn pri" id="cnSend">📤 Send Files to Phone</div>
+          <div class="cn-btn" id="cnOpenDl">📁 Open Downloads</div>
+        </div>
+      </div>
+
+      <div class="cn-doc" id="cnDoc" style="display:none">
+        <div class="dh">🗎 Current document — <span id="cnDocName">Untitled</span></div>
+        <div class="dm"><span id="cnDocPages">0</span> page(s) open in ApneScan</div>
+        <div class="cn-doc-btns">
+          <div class="cn-btn" id="cnSendDoc">Send as PDF</div>
+          <div class="cn-btn" id="cnSendSel">Send selected pages</div>
+          <div class="cn-btn" id="cnSendImg">Send as images</div>
+        </div>
+      </div>
+
+      <div id="cnQueueWrap" style="display:none">
+        <div class="cn-sec-h">Transfer activity</div>
+        <div id="cnQueue"></div>
+      </div>
+
+      <div class="cn-sec-h">Transfer history</div>
+      <div class="cn-filters">
+        <span class="cn-fchip on" data-f="all">All</span>
+        <span class="cn-fchip" data-f="in">Phone → PC</span>
+        <span class="cn-fchip" data-f="out">PC → Phone</span>
+      </div>
+      <div id="cnHist"><div class="cn-empty">No transfers yet.</div></div>
+
+      <div class="cn-foot">
+        <span class="cn-net">🌐 Connected via your network · files auto-expire on the server after 2 hours · up to 100&nbsp;MB per file</span>
+        <div class="cn-btn cn-danger" id="cnDisconnect">Disconnect</div>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="cam-overlay" id="phoneShareOverlay">
-  <div class="cam-box" style="max-width:420px;text-align:center">
-    <h3>📲 Send to phone</h3>
-    <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px">Scan this QR with your phone to download <b id="psName"></b> — works on <b>any network</b>:</p>
-    <img id="psQr" alt="QR code" style="width:220px;height:220px;margin:6px auto;display:block;background:#fff;border:1px solid var(--border);border-radius:10px">
-    <div id="psUrl" style="font-size:12px;color:var(--accent);font-weight:700;word-break:break-all"></div>
-    <div class="cam-actions" style="justify-content:center">
-      <div class="cam-btn primary" id="psClose">Done</div>
+<!-- ============ SAVE / SEND SUCCESS DIALOG ============ -->
+<div class="cam-overlay" id="cnDoneOverlay">
+  <div class="cam-box cn-done">
+    <div class="ok-ic">✓</div>
+    <h3 id="cnDoneTitle">File Saved Successfully</h3>
+    <div class="fn" id="cnDoneName">file.pdf</div>
+    <div class="fsz" id="cnDoneSize">—</div>
+    <div class="dest" id="cnDoneDest">📁 Saved to: Downloads</div>
+    <div class="when" id="cnDoneWhen">Saved just now</div>
+    <div class="cn-btnrow">
+      <div class="cn-btn pri" id="cnDoneOpen">Open File</div>
+      <div class="cn-btn" id="cnDoneFolder">Open Downloads</div>
+      <div class="cn-btn" id="cnDoneOk">Done</div>
     </div>
   </div>
 </div>
@@ -3253,20 +3410,19 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='scanFail'){ sxFail(m); }
       else if(m.type==='status'){ setStatus(m.text); if(typeof m.pages==='number') setPages(m.pages); }
       else if(m.type==='preview'){ showPreview(m.dataUrl, m.pages); if(typeof m.index==='number'){ scannedSel=m.index; highlightThumb(m.index); highlightScanned(m.index); } }
-      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); edThumbs=m.thumbs||[]; if(byId('fsOverlay')&&byId('fsOverlay').classList.contains('on')){ fsRenderThumbs(); fsUpdateInfo(); fsUpdateStatus(); } }
+      else if(m.type==='pages'){ renderThumbs(m.thumbs, m.selected); renderScanned(m.thumbs, m.selected, m.names); edThumbs=m.thumbs||[]; if(byId('fsOverlay')&&byId('fsOverlay').classList.contains('on')){ fsRenderThumbs(); fsUpdateInfo(); fsUpdateStatus(); } try{ if(byId('connectOverlay')&&byId('connectOverlay').classList.contains('on')) connect.refreshDoc(); }catch(e){} }
       else if(m.type==='pageName'){ scannedNames[m.index]=m.name||''; var pnEl=byId('pgname-'+m.index); if(pnEl){ var nv=(m.name&&m.name.length)?m.name:('Page '+(m.index+1)); pnEl.className='pg-name'; pnEl.textContent=nv; pnEl.title=nv+'  (double-click or F2 to rename)'; } }
       else if(m.type==='names'){ nameEntries=m.items||[]; nameSuggestions=nameEntries.map(function(e){ return e.name; }); fillNameSuggest(); rebuildChips(); if(byId('mnOverlay') && byId('mnOverlay').classList.contains('on')) renderNames(); }
       else if(m.type==='cleared'){ resetPreview(); var st=byId('thumbStrip'); if(st) st.innerHTML=''; renderScanned(null); }
       else if(m.type==='done'){ setStatus('Saved'); }
       else if(m.type==='update'){ showUpdate(m.version, m.current); }
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
-      else if(m.type==='phone'){ var qr=byId('phoneQr'); if(qr&&m.qr) qr.src=m.qr; var pu=byId('phoneUrl'); if(pu) pu.textContent=m.url||''; }
-      else if(m.type==='phoneShare'){ var q2=byId('psQr'); if(q2&&m.qr) q2.src=m.qr; var u2=byId('psUrl'); if(u2) u2.textContent=m.url||''; var nn=byId('psName'); if(nn) nn.textContent=m.name||'file'; overlay('phoneShareOverlay', true); }
+      else if(m.type==='connect'){ connect.on(m); }
       else if(m.type==='thumb'){ if(m.path && m.dataUrl){ docThumbs[m.path]=m.dataUrl; var el=docCardEls[m.path]; if(el){ var th=el.querySelector('.th'); if(th) th.innerHTML='<img src="'+m.dataUrl+'" alt="">'; }
         if(rnFileMode && rnFilePath===m.path){ var rt=byId('rnThumb'), rn=byId('rnNoImg'); if(rt){ rt.src=m.dataUrl; rt.style.display='block'; } if(rn) rn.style.display='none'; } } }
       else if(m.type==='fileInfo'){ showFileInfo(m); }
       else if(m.type==='subfolders'){ treeState[m.path]=m.folders||[]; treeReq[m.path]=0; if(docsView==='tree') renderTree(); }
-      else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
+      else if(m.type==='phonePhoto'){ if(typeof setStatus==='function') setStatus('Received from phone — '+m.pages+' page(s)'); }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
       else if(m.type==='libStats'){ setLibStats(m); }
@@ -3438,20 +3594,140 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var qcam=byId('qcPhoto'); if(qcam) qcam.addEventListener('click', openCamera);
   var ccl=byId('camClose'); if(ccl) ccl.addEventListener('click', closeCamera);
   var ccap=byId('camCapture'); if(ccap) ccap.addEventListener('click', capturePhoto);
-  // phone-to-pc — show a QR the phone scans to upload photos over WiFi
-  function openPhone(){
-    var ov=byId('phoneOverlay'); if(ov) ov.classList.add('on');
-    var lg=byId('phoneLog'); if(lg) lg.textContent='';
-    var qr=byId('phoneQr'); if(qr) qr.removeAttribute('src');
-    var pu=byId('phoneUrl'); if(pu) pu.textContent='Starting…';
-    if(bridge) send({cmd:'startPhone'});
-  }
-  function closePhone(){ var ov=byId('phoneOverlay'); if(ov) ov.classList.remove('on'); if(bridge) send({cmd:'stopPhone'}); }
-  var psClose=byId('psClose'); if(psClose) psClose.addEventListener('click', function(){ overlay('phoneShareOverlay', false); });
-  var bph=byId('btnPhone'); if(bph) bph.addEventListener('click', openPhone);
-  var qph=byId('qcPhone'); if(qph) qph.addEventListener('click', openPhone);
-  var nph=byId('navPhone'); if(nph) nph.addEventListener('click', openPhone);
-  var pcl=byId('phoneClose'); if(pcl) pcl.addEventListener('click', closePhone);
+  // ===================== ApneScan Connect (Phone ⇄ PC) =====================
+  var connect=(function(){
+    var tx={};            // live transfers: key -> {dir,name,got,total,speed,eta,status}
+    var hist=[];          // transfer history (from C#)
+    var filter='all';
+    var countTimer=null, countLeft=0;
+    var lastSaved=null;   // {path,name}
+
+    function csize(b){ b=+b||0; if(b>=1073741824)return (b/1073741824).toFixed(2)+' GB'; if(b>=1048576)return (b/1048576).toFixed(1)+' MB'; if(b>=1024)return Math.round(b/1024)+' KB'; return b+' B'; }
+    function cspeed(b){ b=+b||0; return b>0?csize(b)+'/s':''; }
+    function ceta(s){ s=+s; if(!(s>=0))return ''; if(s<60)return s+'s left'; var m=Math.floor(s/60); return m+'m '+(s%60)+'s left'; }
+    function mmss(s){ s=Math.max(0,s|0); var m=(s/60)|0, ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
+    function show(id,on){ var el=byId(id); if(el) el.style.display=on?'':'none'; }
+
+    function open(){ overlay('connectOverlay',true); showQr(); if(bridge) send({cmd:'connectOpen'}); }
+    function close(){ overlay('connectOverlay',false); stopCount(); if(bridge) send({cmd:'connectClose'}); }
+
+    function showQr(){ show('cnQr',true); show('cnDash',false); }
+    function showDash(){ show('cnQr',false); show('cnDash',true); refreshDoc(); }
+
+    function startCount(sec){ stopCount(); countLeft=sec||300; tick(); countTimer=setInterval(tick,1000);
+      function tick(){ var el=byId('cnCount'); if(el) el.textContent='⏱ '+mmss(countLeft); if(countLeft<=0){ stopCount(); return; } countLeft--; } }
+    function stopCount(){ if(countTimer){ clearInterval(countTimer); countTimer=null; } }
+
+    function refreshDoc(){
+      var n=(typeof scannedTotal==='number')?scannedTotal:0;
+      show('cnDoc', n>0);
+      if(n>0){
+        var nm=''; if(typeof scannedNames!=='undefined'){ for(var i=0;i<scannedNames.length;i++){ if(scannedNames[i]){ nm=scannedNames[i]; break; } } }
+        var dn=byId('cnDocName'); if(dn) dn.textContent=nm||'Untitled';
+        var dp=byId('cnDocPages'); if(dp) dp.textContent=n;
+      }
+    }
+
+    // -------- live transfer queue --------
+    function key(dir,name){ return dir+'|'+name; }
+    function upsert(dir,name,o){ var k=key(dir,name); tx[k]=Object.assign(tx[k]||{dir:dir,name:name,got:0,total:0,speed:0,eta:-1,status:'run'},o); renderQueue(); }
+    function finish(dir,name,status){ var k=key(dir,name); if(tx[k]){ tx[k].status=status; renderQueue(); setTimeout(function(){ delete tx[k]; renderQueue(); },4000); } }
+    function renderQueue(){
+      var keys=Object.keys(tx), wrap=byId('cnQueueWrap'), box=byId('cnQueue'); if(!box) return;
+      show('cnQueueWrap', keys.length>0);
+      box.innerHTML=keys.map(function(k){ var t=tx[k];
+        var pct=t.total>0?Math.min(100,Math.round(t.got/t.total*100)):(t.status==='ok'?100:0);
+        var arrow=t.dir==='in'?'📱→💻':'💻→📱';
+        var st=t.status==='ok'?'<span class="st ok">✓ Done</span>':t.status==='err'?'<span class="st err">Failed</span>':'<span class="st">'+pct+'%</span>';
+        return '<div class="cn-row"><div class="rt"><span class="ar '+t.dir+'">'+arrow+'</span><span class="nm">'+esc(t.name)+'</span>'+st+'</div>'+
+          (t.status==='run'?'<div class="cn-pbar"><i style="width:'+pct+'%"></i></div><div class="mt"><span>'+cspeed(t.speed)+'</span><span>'+(t.total>0?(csize(t.got)+' / '+csize(t.total)):'')+' '+ceta(t.eta)+'</span></div>':'')+'</div>';
+      }).join('');
+    }
+
+    // -------- history --------
+    function renderHist(){
+      var box=byId('cnHist'); if(!box) return;
+      var arr=hist.filter(function(h){ return filter==='all'||h.dir===filter; });
+      if(!arr.length){ box.innerHTML='<div class="cn-empty">No transfers'+(filter==='all'?' yet':' in this view')+'.</div>'; return; }
+      box.innerHTML=arr.map(function(h){
+        var inn=h.dir==='in';
+        var when=fmtWhen(h.ts);
+        var open=inn&&h.path?' data-open="'+esc(h.path)+'" style="cursor:pointer"':'';
+        return '<div class="cn-hrow"'+open+'><span class="cn-hic '+(inn?'in':'out')+'">'+(inn?'📥':'📤')+'</span>'+
+          '<span class="hn">'+esc(h.name)+'</span><span class="hmeta">'+csize(h.size)+'<br>'+when+' · ✓</span></div>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-open]'),function(el){ el.addEventListener('click',function(){ if(bridge) send({cmd:'openReceived',path:el.getAttribute('data-open')}); }); });
+    }
+    function fmtWhen(ts){ if(!ts)return ''; var d=new Date(ts*1000), now=new Date();
+      var t=d.getHours()%12; t=(t||12)+':'+(d.getMinutes()<10?'0':'')+d.getMinutes()+' '+(d.getHours()<12?'AM':'PM');
+      if(d.toDateString()===now.toDateString())return t;
+      return (d.getMonth()+1)+'/'+d.getDate()+' '+t; }
+
+    // -------- success dialog --------
+    function done(kind,m){
+      byId('cnDoneTitle').textContent=kind==='in'?'File Saved Successfully':'File Sent Successfully';
+      byId('cnDoneName').textContent=m.name||'file';
+      byId('cnDoneSize').textContent=csize(m.size||0);
+      byId('cnDoneDest').innerHTML=kind==='in'?'📁 Saved to: <b>Downloads</b>':'📱 Sent to your connected phone';
+      byId('cnDoneWhen').textContent=kind==='in'?'Saved just now':'Sent just now';
+      show('cnDoneOpen', kind==='in'); show('cnDoneFolder', kind==='in');
+      lastSaved=kind==='in'?{path:m.path,name:m.name}:null;
+      window._cnLastPath=(kind==='in')?(m.path||''):'';
+      overlay('cnDoneOverlay',true);
+    }
+
+    // -------- event router --------
+    function on(m){
+      var s=m.state;
+      if(s==='qr'){ var img=byId('cnQrImg'); if(img){ if(m.qr) img.src=m.qr; else img.removeAttribute('src'); }
+        byId('cnCode').textContent=m.code||'·······'; showQr();
+        var w=byId('cnWait'); if(w){ w.className='cn-chip wait'; w.innerHTML='<span class="dot"></span>Waiting for phone connection…'; }
+        startCount(m.expiresSec||300); }
+      else if(s==='open'){ overlay('connectOverlay',true); }
+      else if(s==='connected'){ stopCount(); var st=byId('cnStatus'), tt=byId('cnStatusTxt');
+        if(st) st.className='cn-statuspill'; if(tt) tt.textContent='🟢 '+(m.device||'Phone')+' — Connected'; showDash(); }
+      else if(s==='lost'){ var st2=byId('cnStatus'), tt2=byId('cnStatusTxt'); if(st2) st2.className='cn-statuspill lost'; if(tt2) tt2.textContent='🔴 Phone disconnected'; }
+      else if(s==='expired'){ var w2=byId('cnWait'); if(w2){ w2.className='cn-chip'; w2.style.color='#ef4444'; w2.innerHTML='QR expired — tap Refresh'; } stopCount(); var c=byId('cnCount'); if(c) c.textContent='⏱ 00:00'; }
+      else if(s==='disconnected'){ showQr(); }
+      else if(s==='rx'){ upsert('in',m.name,{got:0,total:m.size||0,status:'run'}); }
+      else if(s==='rxprog'){ upsert('in',m.name,{got:m.got,total:m.total,speed:m.speed,eta:m.eta,status:'run'}); }
+      else if(s==='saved'){ finish('in',m.name,'ok'); done('in',m); }
+      else if(s==='rxerr'){ finish('in',m.name,'err'); if(typeof setStatus==='function') setStatus('Receive failed: '+(m.error||'')); }
+      else if(s==='tx'){ upsert('out',m.name,{got:0,total:m.size||0,status:'run'}); }
+      else if(s==='txprog'){ upsert('out',m.name,{got:m.got,total:m.total,speed:m.speed,eta:m.eta,status:'run'}); }
+      else if(s==='sent'){ finish('out',m.name,'ok'); done('out',m); }
+      else if(s==='txerr'){ finish('out',m.name,'err'); if(typeof setStatus==='function') setStatus(m.error||'Send failed'); }
+      else if(s==='history'){ hist=m.items||[]; renderHist(); }
+    }
+
+    return { open:open, close:close, on:on, refreshDoc:refreshDoc, setFilter:function(f){ filter=f; renderHist(); } };
+  })();
+
+  function openPhone(){ connect.open(); }   // legacy name used by command palette / shortcut
+
+  // wiring
+  (function(){
+    function C(id,fn,ev){ var el=byId(id); if(el) el.addEventListener(ev||'click',fn); }
+    C('btnPhone',openPhone); C('qcPhone',openPhone); C('navPhone',openPhone);
+    C('cnClose',function(){ connect.close(); }); C('cnCloseBtn',function(){ connect.close(); });
+    C('cnClose',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); connect.close(); } },'keydown');
+    C('cnRefresh',function(){ if(bridge) send({cmd:'connectRefresh'}); });
+    C('cnCopy',function(){ var t=(byId('cnCode')||{}).textContent||''; try{ navigator.clipboard.writeText(t); }catch(e){} var b=byId('cnCopy'); if(b){ var o=b.textContent; b.textContent='✓ Copied'; setTimeout(function(){ b.textContent=o; },1400); } });
+    C('cnReceive',function(){ if(typeof setStatus==='function') setStatus('Ready — send a file from your phone. It will save to Downloads.'); });
+    C('cnScan',function(){ if(typeof setStatus==='function') setStatus('On your phone tap “Scan Document” to add pages here.'); });
+    C('cnSend',function(){ if(bridge) send({cmd:'connectSendFiles'}); });
+    C('cnOpenDl',function(){ if(bridge) send({cmd:'openDownloads'}); });
+    C('cnSendDoc',function(){ if(bridge) send({cmd:'connectSendDoc',op:'doc'}); });
+    C('cnSendSel',function(){ if(bridge) send({cmd:'connectSendDoc',op:'selected',indices:(typeof selCurrent==='function'?selCurrent():[])}); });
+    C('cnSendImg',function(){ if(bridge) send({cmd:'connectSendDoc',op:'images'}); });
+    C('cnDisconnect',function(){ if(bridge) send({cmd:'connectDisconnect'}); });
+    Array.prototype.forEach.call(document.querySelectorAll('#connectOverlay .cn-fchip'),function(ch){
+      ch.addEventListener('click',function(){ Array.prototype.forEach.call(document.querySelectorAll('#connectOverlay .cn-fchip'),function(x){ x.classList.remove('on'); }); ch.classList.add('on'); connect.setFilter(ch.getAttribute('data-f')); });
+    });
+    C('cnDoneOk',function(){ overlay('cnDoneOverlay',false); });
+    C('cnDoneFolder',function(){ if(bridge) send({cmd:'openDownloads'}); });
+    C('cnDoneOpen',function(){ var el=byId('cnDoneName'); if(bridge) send({cmd:'openReceived',path:(window._cnLastPath||'')}); });
+  })();
   // OCR toggle — when on, saved PDFs get a searchable text layer
   var ocrOn=false;
   function setOcr(on, persist){
@@ -3642,7 +3918,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.19'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.20'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -4738,7 +5014,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   });
 
   // ---- Customizable keyboard shortcuts ----
-  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
+  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','connectOverlay','cnDoneOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
   function modalOverlayOpen(){ for(var i=0;i<MODAL_IDS.length;i++){ var el=byId(MODAL_IDS[i]); if(el && el.classList.contains('on')) return true; } return false; }
   function anyOverlayOpen(){
     if(modalOverlayOpen()) return true;
@@ -4769,7 +5045,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     {id:'print', sec:'Files', label:'Print', def:'Ctrl+P', run:function(){ setStatus('Printing…'); send({cmd:'print'}); }},
     {id:'share', sec:'Files', label:'Share / Email', def:'Ctrl+E', run:function(){ doShare(); }},
     {id:'camera', sec:'Capture', label:'Camera', def:'Ctrl+M', run:function(){ openCamera(); }},
-    {id:'phone', sec:'Capture', label:'Phone to PC', def:'Ctrl+G', run:function(){ openPhone(); }},
+    {id:'phone', sec:'Capture', label:'ApneScan Connect (Phone ⇄ PC)', def:'Ctrl+G', run:function(){ openPhone(); }},
     {id:'undo', sec:'Edit page', label:'Undo', def:'Ctrl+Z', run:function(){ send({cmd:'undo'}); }},
     {id:'redo', sec:'Edit page', label:'Redo', def:'Ctrl+Y', run:function(){ send({cmd:'redo'}); }},
     {id:'copy', sec:'Edit page', label:'Copy selected page(s)', def:'Ctrl+C', run:function(){ send({cmd:'copyPages', indices:selCurrent()}); }},
@@ -4932,7 +5208,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','phoneOverlay','phoneShareOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closePrintMenu==='function') closePrintMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','cnDoneOverlay','connectOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closePrintMenu==='function') closePrintMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});

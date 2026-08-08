@@ -4,93 +4,193 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#6d28d9">
-<title>ApneScan · Phone bridge</title>
+<title>ApneScan Connect</title>
 <style>
-  :root{--brand:#6d28d9;--brand2:#9333ea;--bg:#f4f2fb;--card:#fff;--ink:#191426;--muted:#6d6785;--line:#e8e3f3;--good:#16a34a}
-  @media(prefers-color-scheme:dark){:root{--bg:#0d0a16;--card:#171221;--ink:#f1eef8;--muted:#a49dba;--line:#241f34}}
+  :root{--brand:#6d28d9;--brand2:#9333ea;--bg:#f4f2fb;--card:#fff;--ink:#191426;--muted:#6d6785;--line:#e8e3f3;--good:#16a34a;--bad:#dc2626;--soft:#efeafe}
+  @media(prefers-color-scheme:dark){:root{--bg:#0d0a16;--card:#171221;--ink:#f1eef8;--muted:#a49dba;--line:#241f34;--soft:#221a36}}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);
-    -webkit-font-smoothing:antialiased;padding:16px;max-width:560px;margin:0 auto}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;margin:8px 2px 4px}
+  html,body{margin:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding:14px;max-width:600px;margin:0 auto;padding-bottom:40px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:18px;margin:6px 2px 2px}
   .logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;color:#fff;font-weight:800}
-  .sub{color:var(--muted);font-size:13px;margin:0 2px 16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 6px 20px rgba(20,12,45,.06)}
-  .card h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
-  .card p{color:var(--muted);font-size:12.5px;margin:0 0 14px}
-  .btn{display:block;width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;font-size:15px;cursor:pointer;text-align:center;text-decoration:none;margin-top:10px}
-  .btn.ghost{background:var(--card);color:var(--brand);border:1.5px solid var(--brand)}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 2px 14px}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:6px 11px;border-radius:20px;background:var(--soft);color:var(--brand)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 25%,transparent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 6px 20px rgba(20,12,45,.06)}
+  .card h2{font-size:15px;margin:0 0 3px;display:flex;align-items:center;gap:8px}
+  .card p{color:var(--muted);font-size:12.5px;margin:0 0 12px;line-height:1.5}
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:15px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;font-size:15.5px;cursor:pointer;text-align:center;text-decoration:none;margin-top:10px;-webkit-tap-highlight-color:transparent}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--card);color:var(--brand);border:1.6px solid var(--brand)}
+  .btn:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:2px}
   input[type=file]{display:none}
-  .status{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:16px}
-  .status.ok{color:var(--good);font-weight:600}
-  .flist a{display:flex;align-items:center;gap:10px;padding:12px 6px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13.5px}
+  .status{font-size:12.5px;color:var(--muted);margin-top:12px;min-height:16px}
+  .status.ok{color:var(--good);font-weight:700}
+  .status.err{color:var(--bad);font-weight:700}
+  /* upload rows */
+  .up{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+  .row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--brand) 4%,transparent)}
+  .row .rt{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+  .row .rt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .rt .st{flex:none;color:var(--muted);font-weight:700}
+  .row .rt .st.ok{color:var(--good)}.row .rt .st.err{color:var(--bad)}
+  .bar{height:7px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .15s ease}
+  .row .meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px}
+  /* from-PC list */
+  .flist a{display:flex;align-items:center;gap:11px;padding:12px 6px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13.5px}
   .flist a:last-child{border-bottom:0}
-  .flist .ic{width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand);display:grid;place-items:center;font-size:16px;flex:none}
-  .flist .dl{margin-left:auto;color:var(--brand);font-weight:700;font-size:12px}
+  .flist .ic{width:36px;height:36px;border-radius:11px;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand);display:grid;place-items:center;font-size:17px;flex:none}
+  .flist .dl{margin-left:auto;color:#fff;background:var(--brand);font-weight:700;font-size:11.5px;padding:7px 12px;border-radius:9px}
   .empty{color:var(--muted);font-size:12.5px;padding:10px 2px}
-  .badcode{padding:40px 16px;text-align:center;color:var(--muted)}
+  .badcode{padding:22px 8px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+  .cin{display:flex;gap:8px;margin-top:12px}
+  .cin input{flex:1;min-width:0;padding:13px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center}
+  .foot{text-align:center;color:var(--muted);font-size:11px;margin-top:6px}
 </style>
 </head>
 <body>
-  <div class="brand"><span class="logo">A</span><span>ApneScan</span></div>
-  <p class="sub">Phone bridge — send &amp; receive files with your PC over the internet.</p>
+  <div class="brand"><span class="logo">A</span><span>ApneScan&nbsp;Connect</span></div>
+  <p class="sub">Phone ⇄ PC · send &amp; receive any file over your network.</p>
   <div id="app"></div>
+  <div class="foot" id="foot"></div>
 
 <script>
 (function(){
+  var app=document.getElementById('app'), foot=document.getElementById('foot');
   var code=(new URLSearchParams(location.search)).get('s')||'';
-  var app=document.getElementById('app');
+  var API='../api/phone.php';
+  var MAX=100*1024*1024;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtSize(b){ if(b<1024)return b+' B'; if(b<1048576)return (b/1024).toFixed(0)+' KB'; if(b<1073741824)return (b/1048576).toFixed(1)+' MB'; return (b/1073741824).toFixed(2)+' GB'; }
+  function fmtSpeed(bps){ if(!bps||bps<1)return ''; return fmtSize(bps)+'/s'; }
+  function deviceName(){
+    var ua=navigator.userAgent||'';
+    var m=ua.match(/\((?:Linux;\s*)?(?:Android[^;)]*;\s*)?([^;)]*(?:Pixel|Galaxy|SM-[A-Z0-9]+|iPhone|iPad|Redmi|POCO|OnePlus|Moto|Nokia|Vivo|OPPO|Realme)[^;)]*)/i);
+    if(m&&m[1]) return m[1].trim().slice(0,32);
+    if(/iPhone/i.test(ua))return 'iPhone'; if(/iPad/i.test(ua))return 'iPad';
+    if(/Android/i.test(ua))return 'Android Phone'; return 'Phone';
+  }
+
+  // ---- No / bad code: let the user type the pairing code shown on the PC. ----
   if(!/^[a-zA-Z0-9]{4,}$/.test(code)){
-    app.innerHTML='<div class="card"><div class="badcode">Open this page by scanning the QR code shown in ApneScan on your PC.</div></div>';
+    app.innerHTML=
+      '<div class="card"><h2>🔗 Enter pairing code</h2>'+
+      '<p>Open <b>ApneScan Connect</b> on your PC and type the code shown under the QR — or just scan the QR with your camera.</p>'+
+      '<div class="cin"><input id="cc" maxlength="12" inputmode="latin" autocomplete="off" placeholder="CODE" aria-label="Pairing code"><button class="btn" id="go" style="width:auto;padding:13px 20px;margin:0">Connect</button></div>'+
+      '<div class="status" id="cerr"></div></div>';
+    var go=document.getElementById('go'), cc=document.getElementById('cc');
+    function tryGo(){ var v=(cc.value||'').replace(/[^a-zA-Z0-9]/g,''); if(v.length<4){document.getElementById('cerr').className='status err';document.getElementById('cerr').textContent='Enter the full code from your PC.';return;} location.search='?s='+encodeURIComponent(v); }
+    go.addEventListener('click',tryGo);
+    cc.addEventListener('keydown',function(e){ if(e.key==='Enter')tryGo(); });
+    cc.focus();
     return;
   }
-  var API='../api/phone.php';
 
+  var dev=deviceName();
   app.innerHTML=
-    '<div class="card"><h2>📤 Send to PC</h2><p>Pick photos or files — they appear in ApneScan on your PC automatically.</p>'+
-      '<label class="btn" for="pick">Choose photos / files</label>'+
-      '<label class="btn ghost" for="cam">Take a photo</label>'+
-      '<input type="file" id="pick" multiple accept="image/*,application/pdf">'+
-      '<input type="file" id="cam" accept="image/*" capture="environment">'+
+    '<div style="margin:0 2px 14px"><span class="pill" id="conPill"><span class="dot"></span><span id="conTxt">Connecting…</span></span></div>'+
+    '<div class="card"><h2>📤 Send to PC</h2><p>Pick <b>any file</b> — it saves straight to your PC’s Downloads folder.</p>'+
+      '<label class="btn" for="pick">📎 Send Any File</label>'+
+      '<input type="file" id="pick" multiple>'+
+      '<div class="up" id="upList"></div>'+
       '<div class="status" id="upStatus"></div></div>'+
-    '<div class="card"><h2>📥 From PC</h2><p>Files your PC shared to this phone show up here.</p>'+
+    '<div class="card"><h2>📷 Scan Document</h2><p>Use your camera — pages are added to the open scan in ApneScan.</p>'+
+      '<label class="btn ghost" for="cam">📷 Capture &amp; send</label>'+
+      '<input type="file" id="cam" accept="image/*" capture="environment" multiple>'+
+      '<div class="up" id="camList"></div>'+
+      '<div class="status" id="camStatus"></div></div>'+
+    '<div class="card"><h2>📥 From PC</h2><p>Files your PC sends to this phone appear here — tap to download.</p>'+
       '<div class="flist" id="fromPC"><div class="empty">Nothing yet…</div></div></div>';
 
-  var upStatus=document.getElementById('upStatus');
-  function uploadFiles(files){
-    if(!files||!files.length) return;
-    var total=files.length, done=0, failed=0;
-    upStatus.className='status'; upStatus.textContent='Sending '+total+' file(s)…';
-    Array.prototype.forEach.call(files,function(f){
-      var fd=new FormData(); fd.append('file', f, f.name||'photo.jpg');
-      fetch(API+'?action=up&s='+encodeURIComponent(code)+'&dir=toPC',{method:'POST',body:fd})
-        .then(function(r){ return r.json(); })
-        .then(function(d){ done++; if(!d||!d.ok) failed++; finish(); })
-        .catch(function(){ done++; failed++; finish(); });
-    });
-    function finish(){ if(done<total) return;
-      if(failed===0){ upStatus.className='status ok'; upStatus.textContent='✓ Sent '+total+' file(s) to your PC.'; }
-      else { upStatus.className='status'; upStatus.textContent='Sent '+(total-failed)+'/'+total+' — some failed, try again.'; }
-    }
-  }
-  document.getElementById('pick').addEventListener('change', function(e){ uploadFiles(e.target.files); e.target.value=''; });
-  document.getElementById('cam').addEventListener('change', function(e){ uploadFiles(e.target.files); e.target.value=''; });
+  var conPill=document.getElementById('conPill'), conTxt=document.getElementById('conTxt');
+  var upStatus=document.getElementById('upStatus'), upList=document.getElementById('upList');
+  var camStatus=document.getElementById('camStatus'), camList=document.getElementById('camList');
+  var fromPC=document.getElementById('fromPC');
+  var ended=false;
 
-  var fromPC=document.getElementById('fromPC'), seen={};
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  // ---- Heartbeat so the PC sees "Phone Connected" + device name. ----
+  function beat(){
+    if(ended) return;
+    fetch(API+'?action=hello&s='+encodeURIComponent(code)+'&name='+encodeURIComponent(dev),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.ended){ onEnded(); } })
+      .catch(function(){});
+  }
+  function onEnded(){
+    if(ended) return; ended=true;
+    conPill.style.background='color-mix(in srgb,var(--bad) 14%,transparent)'; conPill.style.color='var(--bad)';
+    conPill.querySelector('.dot').style.background='var(--bad)';
+    conTxt.textContent='Session ended';
+    foot.innerHTML='This pairing session was closed on the PC. <a href="../phone/" style="color:var(--brand);font-weight:700">Reconnect</a>';
+  }
+  conTxt.textContent=dev+' · connected';
+  beat(); setInterval(beat,5000);
+
+  // ---- Uploads (real progress via XHR). ----
+  function uploadOne(file, dir, listEl, onDone){
+    var row=document.createElement('div'); row.className='row';
+    row.innerHTML='<div class="rt"><span class="nm">'+esc(file.name||'file')+'</span><span class="st">0%</span></div>'+
+      '<div class="bar"><i></i></div><div class="meta"><span class="mspd"></span><span class="msz">'+fmtSize(file.size||0)+'</span></div>';
+    listEl.appendChild(row);
+    var bar=row.querySelector('.bar>i'), st=row.querySelector('.st'), spd=row.querySelector('.mspd');
+    if((file.size||0)>MAX){ st.textContent='Too big'; st.className='st err'; row.querySelector('.bar').style.display='none';
+      spd.textContent='Max '+fmtSize(MAX); onDone(false); return; }
+    var fd=new FormData(); fd.append('file',file,file.name||'file');
+    var xhr=new XMLHttpRequest(); var t0=Date.now();
+    xhr.open('POST',API+'?action=up&s='+encodeURIComponent(code)+'&dir='+dir);
+    xhr.upload.onprogress=function(e){ if(!e.lengthComputable)return;
+      var pct=Math.round(e.loaded/e.total*100); bar.style.width=pct+'%'; st.textContent=pct+'%';
+      var dt=(Date.now()-t0)/1000; if(dt>0.3) spd.textContent=fmtSpeed(e.loaded/dt); };
+    xhr.onload=function(){ var ok=false; try{ ok=(JSON.parse(xhr.responseText)||{}).ok===true; }catch(e){}
+      if(xhr.status===413){ st.textContent='Too big'; st.className='st err'; spd.textContent='Max '+fmtSize(MAX); onDone(false); return; }
+      if(ok){ bar.style.width='100%'; st.textContent='✓ Sent'; st.className='st ok'; onDone(true); }
+      else{ st.textContent='Failed'; st.className='st err'; onDone(false); } };
+    xhr.onerror=function(){ st.textContent='Failed'; st.className='st err'; onDone(false); };
+    xhr.send(fd);
+  }
+  function sendFiles(files, dir, listEl, statusEl){
+    if(!files||!files.length) return;
+    if(ended){ statusEl.className='status err'; statusEl.textContent='Session ended — reconnect first.'; return; }
+    listEl.innerHTML=''; var total=files.length, done=0, ok=0;
+    statusEl.className='status'; statusEl.textContent='Sending '+total+' file'+(total>1?'s':'')+'…';
+    Array.prototype.forEach.call(files,function(f){
+      uploadOne(f,dir,listEl,function(good){ done++; if(good)ok++;
+        if(done<total){ statusEl.textContent='Sending '+done+'/'+total+'…'; return; }
+        if(ok===total){ statusEl.className='status ok'; statusEl.textContent='✓ '+total+' file'+(total>1?'s':'')+' sent to PC.'; }
+        else{ statusEl.className='status err'; statusEl.textContent='Sent '+ok+'/'+total+' — some failed. Try again.'; }
+      });
+    });
+  }
+  document.getElementById('pick').addEventListener('change',function(e){ sendFiles(e.target.files,'toPC',upList,upStatus); e.target.value=''; });
+  document.getElementById('cam').addEventListener('change',function(e){ sendFiles(e.target.files,'toPCScan',camList,camStatus); e.target.value=''; });
+
+  // ---- From-PC list. ----
+  function iconFor(name){ var e=(name.split('.').pop()||'').toLowerCase();
+    if(['jpg','jpeg','png','gif','webp','heic','bmp'].indexOf(e)>=0)return '🖼';
+    if(e==='pdf')return '📕'; if(['zip','rar','7z'].indexOf(e)>=0)return '📦';
+    if(['mp3','wav','flac','m4a','aac'].indexOf(e)>=0)return '🎵';
+    if(['mp4','mkv','avi','mov','webm'].indexOf(e)>=0)return '🎬';
+    if(['doc','docx'].indexOf(e)>=0)return '📘'; if(['xls','xlsx','csv'].indexOf(e)>=0)return '📗';
+    if(['ppt','pptx'].indexOf(e)>=0)return '📙'; return '📄'; }
   function pollFromPC(){
+    if(ended) return;
     fetch(API+'?action=list&s='+encodeURIComponent(code)+'&dir=toPhone&since=0',{cache:'no-store'})
-      .then(function(r){ return r.json(); })
+      .then(function(r){return r.json();})
       .then(function(d){
-        if(!d||!d.ok) return;
+        if(!d||!d.ok){ if(d&&d.ended)onEnded(); return; }
         if(!d.items.length){ fromPC.innerHTML='<div class="empty">Nothing yet…</div>'; return; }
-        fromPC.innerHTML=d.items.map(function(it){
+        fromPC.innerHTML=d.items.slice().reverse().map(function(it){
           var url=API+'?action=dl&s='+encodeURIComponent(code)+'&dir=toPhone&id='+encodeURIComponent(it.id);
-          var kb=Math.max(1,Math.round(it.size/1024));
-          return '<a href="'+url+'" download><span class="ic">📄</span><span style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(it.name)+'</b><span style="color:var(--muted);font-size:11px">'+kb+' KB</span></span><span class="dl">Download</span></a>';
+          return '<a href="'+url+'" download="'+esc(it.name)+'"><span class="ic">'+iconFor(it.name)+'</span>'+
+            '<span style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(it.name)+'</b>'+
+            '<span style="color:var(--muted);font-size:11px">'+fmtSize(it.size)+'</span></span><span class="dl">Download</span></a>';
         }).join('');
       }).catch(function(){});
   }
-  pollFromPC(); setInterval(pollFromPC, 3000);
+  pollFromPC(); setInterval(pollFromPC,3000);
 })();
 </script>
 </body>

@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -233,13 +234,35 @@ public class MainForm : Form
     private const string PhoneRelay = "https://apnescan.subhashkaler.com/api/phone.php";
     private const string PhonePageBase = "https://apnescan.subhashkaler.com/phone/";
     private static readonly HttpClient _relay = new() { Timeout = TimeSpan.FromSeconds(60) };
+    // A separate client with a generous timeout for the actual file transfers.
+    private static readonly HttpClient _xfer = new() { Timeout = TimeSpan.FromMinutes(15) };
     private string _phoneCode = "";
     private System.Windows.Forms.Timer? _phonePollTimer;
-    private long _lastPhoneTs = 0;
+    private long _lastPhoneTs = 0;        // newest toPC (file) timestamp pulled
+    private long _lastScanTs = 0;         // newest toPCScan (photo) timestamp pulled
+    // ApneScan Connect session state.
+    private bool _connActive;             // a QR session is live
+    private bool _connPhoneUp;            // the phone is currently connected
+    private string _connDevice = "";      // connected device name
+    private DateTime _connExpiryUtc;      // pairing QR expiry (only while not yet connected)
+    private const long ConnMaxBytes = 100L * 1024 * 1024; // per-file limit over the bridge
+    private readonly List<ConnHistItem> _connHist = new();
+    private readonly object _connHistLock = new();
+    private bool _connHistLoaded;
     // Legacy same-WiFi server fields (kept for compatibility; no longer started).
     private TcpListener? _phoneServer;
     private const int PhonePort = 8765;
     private readonly Dictionary<string, string> _phoneShares = new();
+
+    private sealed class ConnHistItem
+    {
+        public string dir { get; set; } = "";   // "in" (phone→PC) or "out" (PC→phone)
+        public string name { get; set; } = "";
+        public long size { get; set; }
+        public long ts { get; set; }
+        public string path { get; set; } = "";
+        public string status { get; set; } = "done";
+    }
 
     public MainForm()
     {
@@ -884,10 +907,35 @@ public class MainForm : Form
                 ImportNames();
                 break;
             case "startPhone":
-                StartPhoneServer();
+            case "connectOpen":
+                ConnectOpen();
                 break;
             case "stopPhone":
                 StopPhoneServer();
+                break;
+            case "connectClose":
+                // Keep the session alive in the background so files still arrive.
+                break;
+            case "connectRefresh":
+                ConnectRefresh();
+                break;
+            case "connectDisconnect":
+                ConnectDisconnect();
+                break;
+            case "connectSendFiles":
+                ConnectSendPicked();
+                break;
+            case "connectSendDoc":
+                ConnectSendDoc(op, indices);
+                break;
+            case "connectHistory":
+                SendConnHistory();
+                break;
+            case "openDownloads":
+                OpenDownloadsFolder(filePath);
+                break;
+            case "openReceived":
+                OpenReceivedFile(filePath);
                 break;
             case "rotateLeft":
                 PushUndo();
@@ -2197,80 +2245,519 @@ public class MainForm : Form
         return "data:image/png;base64," + Convert.ToBase64String(png);
     }
 
-    // Show the QR to a page the phone opens (any network). Also start polling
-    // the relay for files the phone sends back to this PC.
-    private void StartPhoneServer()
+    // ============================ ApneScan Connect ============================
+    // A single QR-paired session between this PC and a phone that carries files
+    // both ways over the internet relay. Phone→PC files land in the Windows
+    // Downloads folder; PC→phone files are pushed to the phone's browser.
+
+    // Fresh uppercase pairing code (no ambiguous 0/O/1/I) shown under the QR.
+    private static string NewConnCode()
     {
-        var url = PhonePageBase + "?s=" + PhoneCode();
+        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var raw = RandomNumberGenerator.GetBytes(7);
+        var sb = new StringBuilder(7);
+        foreach (var b in raw) sb.Append(alphabet[b % alphabet.Length]);
+        return sb.ToString();
+    }
+
+    // Legacy command alias.
+    private void StartPhoneServer() => ConnectOpen();
+
+    // Begin a new pairing session: mint a code, show the QR, start polling.
+    private void ConnectOpen()
+    {
+        _phoneCode = NewConnCode();
+        _lastPhoneTs = 0; _lastScanTs = 0;
+        _connActive = true; _connPhoneUp = false; _connDevice = "";
+        _connExpiryUtc = DateTime.UtcNow.AddMinutes(5);
+        var url = PhonePageBase + "?s=" + _phoneCode;
         try
         {
-            Post(new { type = "phone", qr = QrDataUri(url), url });
-            Status("Phone-to-PC ready — scan the QR with your phone (any network)");
-            _lastPhoneTs = 0;
-            if (_phonePollTimer == null)
-            {
-                _phonePollTimer = new System.Windows.Forms.Timer { Interval = 3000 };
-                _phonePollTimer.Tick += (_, _) => { _ = PhonePollAsync(); };
-            }
-            _phonePollTimer.Start();
+            Post(new { type = "connect", state = "qr", qr = QrDataUri(url), url, code = _phoneCode, expiresSec = 300 });
+            Status("ApneScan Connect ready — scan the QR with your phone (any network)");
         }
         catch (Exception ex)
         {
-            Post(new { type = "phone", qr = (string?)null, url });
-            Status("Phone-to-PC error: " + ex.Message);
+            Post(new { type = "connect", state = "qr", qr = (string?)null, url, code = _phoneCode, expiresSec = 300 });
+            Status("ApneScan Connect error: " + ex.Message);
         }
+        EnsureConnPoll();
+        SendConnHistory();
     }
 
+    // Modal close keeps the session alive so files still arrive in the background.
+    private void EnsureConnPoll()
+    {
+        if (_phonePollTimer == null)
+        {
+            _phonePollTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+            _phonePollTimer.Tick += (_, _) => { _ = ConnectPollAsync(); };
+        }
+        _phonePollTimer.Start();
+    }
+
+    // Stop the session entirely (form close / legacy stopPhone).
     private void StopPhoneServer()
     {
         try { _phonePollTimer?.Stop(); } catch { /* ignore */ }
         try { _phoneServer?.Stop(); } catch { /* legacy */ }
         _phoneServer = null;
+        var code = _phoneCode;
+        _connActive = false; _connPhoneUp = false;
+        if (!string.IsNullOrEmpty(code)) _ = EndSessionAsync(code);
     }
 
-    // Poll the relay for files the phone sent to this PC and import them.
-    private async Task PhonePollAsync()
+    // User pressed "Refresh QR": invalidate the old code, mint a new one.
+    private void ConnectRefresh()
+    {
+        var old = _phoneCode;
+        if (!string.IsNullOrEmpty(old)) _ = EndSessionAsync(old);
+        ConnectOpen();
+    }
+
+    // User pressed "Disconnect": end the session and return to the QR screen.
+    private void ConnectDisconnect()
+    {
+        var code = _phoneCode;
+        _connActive = false; _connPhoneUp = false; _connDevice = "";
+        try { _phonePollTimer?.Stop(); } catch { /* ignore */ }
+        if (!string.IsNullOrEmpty(code)) _ = EndSessionAsync(code);
+        _phoneCode = "";
+        Post(new { type = "connect", state = "disconnected" });
+        Status("Phone disconnected");
+    }
+
+    private async Task EndSessionAsync(string code)
+    {
+        try { await _relay.GetStringAsync(PhoneRelay + "?action=end&s=" + Uri.EscapeDataString(code)); }
+        catch { /* best-effort */ }
+    }
+
+    // Every 2 s: check the phone's presence, then pull any queued files.
+    private async Task ConnectPollAsync()
+    {
+        var code = _phoneCode;
+        if (!_connActive || string.IsNullOrEmpty(code)) return;
+
+        // The shown QR expires if nobody has connected within the window.
+        if (!_connPhoneUp && DateTime.UtcNow > _connExpiryUtc)
+        {
+            _connActive = false;
+            await EndSessionAsync(code);
+            try { _phonePollTimer?.Stop(); } catch { /* ignore */ }
+            if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "expired" })));
+            return;
+        }
+
+        try
+        {
+            var sj = await _relay.GetStringAsync(PhoneRelay + "?action=status&s=" + Uri.EscapeDataString(code));
+            using var sd = JsonDocument.Parse(sj);
+            var r = sd.RootElement;
+            bool up = r.TryGetProperty("connected", out var cc) && cc.ValueKind == JsonValueKind.True;
+            string dev = r.TryGetProperty("device", out var dv) ? (dv.GetString() ?? "") : "";
+            if (up && !_connPhoneUp)
+            {
+                _connPhoneUp = true; _connDevice = dev;
+                if (IsHandleCreated) BeginInvoke(new Action(() =>
+                {
+                    Post(new { type = "connect", state = "connected", device = _connDevice });
+                    Status("Phone connected: " + (string.IsNullOrEmpty(_connDevice) ? "phone" : _connDevice));
+                }));
+            }
+            else if (up && dev != _connDevice)
+            {
+                _connDevice = dev;
+                if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "connected", device = _connDevice })));
+            }
+            else if (!up && _connPhoneUp)
+            {
+                _connPhoneUp = false;
+                if (IsHandleCreated) BeginInvoke(new Action(() =>
+                {
+                    Post(new { type = "connect", state = "lost" });
+                    Status("Phone connection interrupted");
+                }));
+            }
+        }
+        catch { /* transient network errors are fine */ }
+
+        await PullDirAsync("toPC", asScan: false);
+        await PullDirAsync("toPCScan", asScan: true);
+    }
+
+    // List a direction and receive anything new.
+    private async Task PullDirAsync(string dir, bool asScan)
     {
         var code = _phoneCode;
         if (string.IsNullOrEmpty(code)) return;
+        long since = asScan ? _lastScanTs : _lastPhoneTs;
         try
         {
-            var listUrl = PhoneRelay + "?action=list&s=" + Uri.EscapeDataString(code) + "&dir=toPC&since=" + _lastPhoneTs;
-            var json = await _relay.GetStringAsync(listUrl);
+            var json = await _relay.GetStringAsync(PhoneRelay + "?action=list&s=" + Uri.EscapeDataString(code) + "&dir=" + dir + "&since=" + since);
             using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return;
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return;
             foreach (var it in items.EnumerateArray())
             {
                 string id = it.TryGetProperty("id", out var idv) ? (idv.GetString() ?? "") : "";
                 string name = it.TryGetProperty("name", out var nv) ? (nv.GetString() ?? "file") : "file";
                 long ts = it.TryGetProperty("ts", out var tv) && tv.ValueKind == JsonValueKind.Number ? tv.GetInt64() : 0;
+                long size = it.TryGetProperty("size", out var sv) && sv.ValueKind == JsonValueKind.Number ? sv.GetInt64() : 0;
                 if (id == "") continue;
-                if (ts > _lastPhoneTs) _lastPhoneTs = ts;
-                var bytes = await _relay.GetByteArrayAsync(PhoneRelay + "?action=dl&s=" + Uri.EscapeDataString(code) + "&dir=toPC&id=" + Uri.EscapeDataString(id));
-                var ext = System.IO.Path.GetExtension(name);
-                if (string.IsNullOrEmpty(ext)) ext = ".jpg";
-                var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_phone_" + Guid.NewGuid().ToString("N")[..8] + ext);
-                await File.WriteAllBytesAsync(temp, bytes);
-                if (IsHandleCreated) BeginInvoke(new Action(() => { _ = AddPhoneFileAsync(temp); }));
+                if (asScan) { if (ts > _lastScanTs) _lastScanTs = ts; }
+                else { if (ts > _lastPhoneTs) _lastPhoneTs = ts; }
+                await ReceiveOneAsync(code, dir, id, name, size, asScan);
             }
         }
         catch { /* transient network errors are fine */ }
     }
 
-    private async Task<bool> UploadToRelayAsync(string path, string dir)
+    // Stream one queued file down, reporting progress. Files → Downloads (safe,
+    // deduped, verified); scanned photos → added to the open document.
+    private async Task ReceiveOneAsync(string code, string dir, string id, string name, long size, bool asScan)
+    {
+        var safeName = SafeReceivedName(name);
+        var dlUrl = PhoneRelay + "?action=dl&s=" + Uri.EscapeDataString(code) + "&dir=" + dir + "&id=" + Uri.EscapeDataString(id);
+        var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+            "apnescan_recv_" + Guid.NewGuid().ToString("N")[..8] + System.IO.Path.GetExtension(safeName));
+        if (!asScan && IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "rx", name = safeName, size })));
+        try
+        {
+            using (var resp = await _xfer.GetAsync(dlUrl, HttpCompletionOption.ResponseHeadersRead))
+            {
+                resp.EnsureSuccessStatusCode();
+                long total = resp.Content.Headers.ContentLength ?? size;
+                using var src = await resp.Content.ReadAsStreamAsync();
+                using var dst = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None);
+                var buf = new byte[81920];
+                long got = 0; int r; var sw = System.Diagnostics.Stopwatch.StartNew(); long lastPost = 0;
+                while ((r = await src.ReadAsync(buf)) > 0)
+                {
+                    await dst.WriteAsync(buf.AsMemory(0, r));
+                    got += r;
+                    if (!asScan && total > 0 && (sw.ElapsedMilliseconds - lastPost) > 150)
+                    {
+                        lastPost = sw.ElapsedMilliseconds;
+                        long g = got, t = total; double sec = sw.Elapsed.TotalSeconds; long spd = sec > 0 ? (long)(g / sec) : 0;
+                        int eta = spd > 1 ? (int)((t - g) / spd) : -1;
+                        if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "rxprog", name = safeName, got = g, total = t, speed = spd, eta })));
+                    }
+                }
+            }
+
+            if (asScan)
+            {
+                if (IsHandleCreated) BeginInvoke(new Action(() => { _ = AddPhoneFileAsync(tmp); }));
+                return;
+            }
+
+            var dlDir = DownloadsDir();
+            var finalPath = UniqueInDir(dlDir, safeName);
+            File.Move(tmp, finalPath);
+            var fi = new FileInfo(finalPath);
+            if (!fi.Exists || fi.Length == 0) throw new IOException("The file could not be written to Downloads.");
+            AddConnHistory("in", System.IO.Path.GetFileName(finalPath), fi.Length, finalPath);
+            Bump("phoneRecv", 1);
+            if (IsHandleCreated) BeginInvoke(new Action(() =>
+            {
+                Post(new { type = "connect", state = "saved", name = System.IO.Path.GetFileName(finalPath), size = fi.Length, path = finalPath, folder = "Downloads" });
+                Status("Saved to Downloads: " + System.IO.Path.GetFileName(finalPath));
+            }));
+        }
+        catch (Exception ex)
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* best-effort */ }
+            if (IsHandleCreated) BeginInvoke(new Action(() =>
+            {
+                Post(new { type = "connect", state = "rxerr", name = safeName, error = ex.Message });
+                Status("Receive failed: " + ex.Message);
+            }));
+        }
+    }
+
+    // ------- PC → phone -------
+
+    private void ConnectSendPicked()
+    {
+        if (!_connActive || string.IsNullOrEmpty(_phoneCode)) ConnectOpen();
+        using var ofd = new OpenFileDialog { Title = "Send files to phone", Multiselect = true, Filter = "All files (*.*)|*.*" };
+        if (ofd.ShowDialog(this) != DialogResult.OK) return;
+        _ = ConnectSendPathsAsync(ofd.FileNames);
+    }
+
+    // Build a temp PDF / images from the current document and send it.
+    private async void ConnectSendDoc(string op, List<int> indices)
+    {
+        if (_pages.Count == 0) { Status("Nothing to send — scan or open a document first"); return; }
+        if (!_connActive || string.IsNullOrEmpty(_phoneCode)) ConnectOpen();
+        var sel = indices.Where(i => i >= 0 && i < _pages.Count).Distinct().OrderBy(i => i).ToList();
+        var stem = SanitizeFileName(_pageNames.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "");
+        if (string.IsNullOrWhiteSpace(stem)) stem = "ApneScan";
+        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_send_" + Guid.NewGuid().ToString("N")[..8]);
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            var files = new List<string>();
+            if (op == "images")
+            {
+                var use = sel.Count > 0 ? sel : Enumerable.Range(0, _pages.Count).ToList();
+                int n = 1;
+                foreach (var i in use)
+                {
+                    var jpg = System.IO.Path.Combine(tempDir, $"{stem}_{n:00}.jpg");
+                    using (var rendered = _pages[i].Render()) rendered.Save(jpg, ImageFileFormat.Jpeg);
+                    files.Add(jpg); n++;
+                }
+            }
+            else
+            {
+                var pagesToUse = (op == "selected" && sel.Count > 0) ? sel.Select(i => _pages[i]).ToList() : _pages.ToList();
+                var pdf = System.IO.Path.Combine(tempDir, stem + ".pdf");
+                var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
+                await ExportPdf(pdf, pagesToUse, ocrParams);
+                files.Add(pdf);
+            }
+            Status("Sending to phone…");
+            await ConnectSendPathsAsync(files);
+        }
+        catch (Exception ex) { Status("Send error: " + ex.Message); }
+        finally { try { Directory.Delete(tempDir, true); } catch { /* best-effort */ } }
+    }
+
+    private async Task ConnectSendPathsAsync(IEnumerable<string> paths)
+    {
+        foreach (var path in paths)
+        {
+            if (!File.Exists(path)) continue;
+            var name = System.IO.Path.GetFileName(path);
+            long size = 0; try { size = new FileInfo(path).Length; } catch { /* ignore */ }
+            if (size > ConnMaxBytes)
+            {
+                if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "txerr", name, error = "File is larger than 100 MB — too big for the wireless bridge." })));
+                continue;
+            }
+            if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "tx", name, size })));
+            var ok = await UploadWithProgressAsync(path, "toPhone", name);
+            if (ok)
+            {
+                AddConnHistory("out", name, size, path);
+                Bump("sharePhone", 1);
+                if (IsHandleCreated) BeginInvoke(new Action(() =>
+                {
+                    Post(new { type = "connect", state = "sent", name, size });
+                    Status("Sent to phone: " + name);
+                }));
+            }
+            else
+            {
+                if (IsHandleCreated) BeginInvoke(new Action(() =>
+                {
+                    Post(new { type = "connect", state = "txerr", name, error = "Upload failed — check your internet connection." });
+                    Status("Send failed: " + name);
+                }));
+            }
+        }
+    }
+
+    // HttpContent that streams a file and reports upload progress.
+    private sealed class ProgressContent : HttpContent
+    {
+        private readonly string _path;
+        private readonly long _len;
+        private readonly Action<long, long> _onProgress;
+        public ProgressContent(string path, string contentType, Action<long, long> onProgress)
+        {
+            _path = path; _len = new FileInfo(path).Length; _onProgress = onProgress;
+            Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        }
+        protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+        {
+            using var fs = File.OpenRead(_path);
+            var buf = new byte[81920]; long sent = 0; int r;
+            while ((r = await fs.ReadAsync(buf)) > 0)
+            {
+                await stream.WriteAsync(buf.AsMemory(0, r));
+                sent += r; _onProgress(sent, _len);
+            }
+        }
+        protected override bool TryComputeLength(out long length) { length = _len; return true; }
+    }
+
+    private async Task<bool> UploadWithProgressAsync(string path, string dir, string name)
     {
         try
         {
-            using var form = new MultipartFormDataContent();
-            var bytes = await File.ReadAllBytesAsync(path);
-            var fc = new ByteArrayContent(bytes);
-            fc.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ContentTypeFor(path));
-            form.Add(fc, "file", System.IO.Path.GetFileName(path));
-            var url = PhoneRelay + "?action=up&s=" + Uri.EscapeDataString(PhoneCode()) + "&dir=" + dir;
-            var resp = await _relay.PostAsync(url, form);
+            var sw = System.Diagnostics.Stopwatch.StartNew(); long lastPost = 0;
+            var content = new ProgressContent(path, ContentTypeFor(name), (sent, len) =>
+            {
+                if ((sw.ElapsedMilliseconds - lastPost) > 150 || sent == len)
+                {
+                    lastPost = sw.ElapsedMilliseconds;
+                    double sec = sw.Elapsed.TotalSeconds; long spd = sec > 0 ? (long)(sent / sec) : 0;
+                    int eta = spd > 1 ? (int)((len - sent) / spd) : -1;
+                    long g = sent, t = len;
+                    if (IsHandleCreated) BeginInvoke(new Action(() => Post(new { type = "connect", state = "txprog", name, got = g, total = t, speed = spd, eta })));
+                }
+            });
+            var url = PhoneRelay + "?action=up&s=" + Uri.EscapeDataString(_phoneCode) + "&dir=" + dir + "&name=" + Uri.EscapeDataString(name);
+            var resp = await _xfer.PostAsync(url, content);
             return resp.IsSuccessStatusCode;
         }
         catch { return false; }
+    }
+
+    // ------- Downloads folder + safe filenames -------
+
+    [DllImport("shell32.dll")]
+    private static extern int SHGetKnownFolderPath([MarshalAs(UnmanagedType.LPStruct)] Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr ppszPath);
+    private static readonly Guid FolderIdDownloads = new("374DE290-123F-4565-9164-39C4925E467B");
+
+    // The current user's real Downloads folder, honouring any redirection.
+    private static string DownloadsDir()
+    {
+        try
+        {
+            if (SHGetKnownFolderPath(FolderIdDownloads, 0, IntPtr.Zero, out var ptr) == 0)
+            {
+                var s = Marshal.PtrToStringUni(ptr);
+                Marshal.FreeCoTaskMem(ptr);
+                if (!string.IsNullOrEmpty(s))
+                {
+                    try { Directory.CreateDirectory(s!); } catch { /* ignore */ }
+                    if (Directory.Exists(s!)) return s!;
+                }
+            }
+        }
+        catch { /* fall through */ }
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var dl = System.IO.Path.Combine(home, "Downloads");
+        try { Directory.CreateDirectory(dl); } catch { /* ignore */ }
+        return dl;
+    }
+
+    // Sanitize a phone-supplied filename: no path traversal, no invalid/reserved
+    // names, bounded length.
+    private static string SafeReceivedName(string raw)
+    {
+        var name = System.IO.Path.GetFileName(raw ?? "");   // strips any directory → traversal-safe
+        if (string.IsNullOrWhiteSpace(name)) name = "file";
+        foreach (var c in System.IO.Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
+        name = name.Trim().TrimStart('.');
+        if (string.IsNullOrWhiteSpace(name)) name = "file";
+        var stem = System.IO.Path.GetFileNameWithoutExtension(name).ToUpperInvariant();
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "CON","PRN","AUX","NUL","COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+          "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9" };
+        if (reserved.Contains(stem)) name = "_" + name;
+        if (name.Length > 150)
+        {
+            var ext = System.IO.Path.GetExtension(name);
+            var keep = Math.Max(1, 150 - ext.Length);
+            name = System.IO.Path.GetFileNameWithoutExtension(name)[..Math.Min(keep, System.IO.Path.GetFileNameWithoutExtension(name).Length)] + ext;
+        }
+        return name;
+    }
+
+    // Never overwrite: append " (1)", " (2)", … until the name is free.
+    private static string UniqueInDir(string dir, string fileName)
+    {
+        var target = System.IO.Path.Combine(dir, fileName);
+        if (!File.Exists(target)) return target;
+        var stem = System.IO.Path.GetFileNameWithoutExtension(fileName);
+        var ext = System.IO.Path.GetExtension(fileName);
+        int k = 0; string candidate;
+        do { candidate = System.IO.Path.Combine(dir, $"{stem} ({++k}){ext}"); } while (File.Exists(candidate));
+        return candidate;
+    }
+
+    private void OpenDownloadsFolder(string? selectPath)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(selectPath) && File.Exists(selectPath))
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{selectPath}\"", UseShellExecute = true });
+            else
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{DownloadsDir()}\"", UseShellExecute = true });
+        }
+        catch (Exception ex) { Status("Open error: " + ex.Message); }
+    }
+
+    private void OpenReceivedFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) { Status("File not found"); return; }
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            var known = new HashSet<string>
+            { ".pdf",".jpg",".jpeg",".png",".gif",".webp",".bmp",".tif",".tiff",".txt",".csv",
+              ".doc",".docx",".xls",".xlsx",".ppt",".pptx",".mp3",".wav",".mp4",".mkv",".mov",".zip",".html",".htm" };
+            if (known.Contains(ext))
+                Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            else
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{path}\"", UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            try { Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{path}\"", UseShellExecute = true }); }
+            catch { /* best-effort */ }
+            Status("Open error: " + ex.Message);
+        }
+    }
+
+    // ------- Transfer history (persisted) -------
+
+    private static string ConnHistoryPath() => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ApneScan", "connect_history.json");
+
+    private void LoadConnHistory()
+    {
+        lock (_connHistLock)
+        {
+            if (_connHistLoaded) return;
+            _connHistLoaded = true;
+            try
+            {
+                var p = ConnHistoryPath();
+                if (File.Exists(p))
+                {
+                    var list = JsonSerializer.Deserialize<List<ConnHistItem>>(File.ReadAllText(p));
+                    if (list != null) _connHist.AddRange(list);
+                }
+            }
+            catch { /* start empty */ }
+        }
+    }
+
+    private void AddConnHistory(string dir, string name, long size, string path)
+    {
+        LoadConnHistory();
+        lock (_connHistLock)
+        {
+            _connHist.Add(new ConnHistItem { dir = dir, name = name, size = size, ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), path = path, status = "done" });
+            if (_connHist.Count > 200) _connHist.RemoveRange(0, _connHist.Count - 200);
+            try
+            {
+                var p = ConnHistoryPath();
+                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(p)!);
+                File.WriteAllText(p, JsonSerializer.Serialize(_connHist));
+            }
+            catch { /* best-effort */ }
+        }
+        if (IsHandleCreated) BeginInvoke(new Action(SendConnHistory));
+    }
+
+    private void SendConnHistory()
+    {
+        LoadConnHistory();
+        object[] items;
+        lock (_connHistLock)
+        {
+            items = _connHist.AsEnumerable().Reverse().Take(60)
+                .Select(h => (object)new { dir = h.dir, name = h.name, size = h.size, ts = h.ts, path = h.path, status = h.status })
+                .ToArray();
+        }
+        Post(new { type = "connect", state = "history", items });
     }
 
     private async Task PhoneServerLoop()
@@ -2300,22 +2787,13 @@ public class MainForm : Form
     }
 
     // Upload the file to the relay so the phone can download it from anywhere.
-    private async void SharePhoneFile(string path)
+    // My Files → right-click → "Send to phone": route through ApneScan Connect.
+    private void SharePhoneFile(string path)
     {
         if (!File.Exists(path)) { Status("File not found"); return; }
-        Status("Uploading to the phone bridge…");
-        try
-        {
-            if (!await UploadToRelayAsync(path, "toPhone"))
-            {
-                Status("Could not upload — check your internet connection");
-                return;
-            }
-            var url = PhonePageBase + "?s=" + PhoneCode();
-            Post(new { type = "phoneShare", qr = QrDataUri(url), url, name = System.IO.Path.GetFileName(path) });
-            Status("Scan the QR — the file is ready on the phone (any network)");
-        }
-        catch (Exception ex) { Status("Phone share error: " + ex.Message); }
+        if (!_connActive || string.IsNullOrEmpty(_phoneCode)) ConnectOpen();
+        Post(new { type = "connect", state = "open" });   // ask the UI to show the Connect window
+        _ = ConnectSendPathsAsync(new[] { path });
     }
 
     private static string ContentTypeFor(string name)
