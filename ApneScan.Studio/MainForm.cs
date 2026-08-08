@@ -491,6 +491,7 @@ public class MainForm : Form
         string ctx = "";
         string op = "";
         string footerText = "";
+        string uiExtra = "";   // opaque JSON blob of extra interface prefs (accent, thumb size, density, toggles…)
         int amount = 0;
         long target = 0;
         var indices = new List<int>();
@@ -527,6 +528,7 @@ public class MainForm : Form
             if (root.TryGetProperty("telemetry", out var tmEl) && (tmEl.ValueKind == JsonValueKind.True || tmEl.ValueKind == JsonValueKind.False)) telemetry = tmEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
+            if (root.TryGetProperty("uiExtra", out var uxEl) && uxEl.ValueKind == JsonValueKind.String) uiExtra = uxEl.GetString() ?? "";
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
@@ -653,8 +655,11 @@ public class MainForm : Form
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
-                    FooterText = footerText, Telemetry = telemetry
+                    FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra
                 });
+                break;
+            case "getLibraryStats":
+                await SendLibraryStatsAsync();
                 break;
             case "getHistory":
                 SendHistory();
@@ -1177,6 +1182,7 @@ public class MainForm : Form
             await RefreshAsync(true);
             _ = AutoNameAsync();
             Bump("scan", added);
+            AddLifetimePages(added);                                     // persist running total for Settings stats
             SendTelemetry("pages_scanned", added);                       // total pages captured
             if (skipped > 0) SendTelemetry("blank_skipped", skipped);    // blank pages auto-skipped
             SendTelemetry("src_" + (string.IsNullOrEmpty(source) ? "auto" : source)); // flatbed/feeder/auto/duplex
@@ -3495,6 +3501,11 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string FooterText { get; set; } = "";
         // Anonymous usage telemetry (opt-out). Default on.
         public bool Telemetry { get; set; } = true;
+        // Opaque JSON blob of extra interface prefs owned by the web UI
+        // (accent colour, thumbnail size, density, startup, interface toggles…).
+        public string UiExtra { get; set; } = "";
+        // Lifetime count of pages captured — shown in Settings statistics.
+        public long PagesLifetime { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -3531,8 +3542,76 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
-            footerText = s.FooterText, telemetry = s.Telemetry
+            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra
         });
+    }
+
+    // Real, cheap library statistics for the Settings preview panel: number of
+    // document files, their total size on disk, and the lifetime page count.
+    // Nothing is fabricated — an empty library reports zeros.
+    private async Task SendLibraryStatsAsync()
+    {
+        long pages = LoadSettings().PagesLifetime;
+        int docs = 0;
+        long bytes = 0;
+        try
+        {
+            var roots = new List<string>();
+            foreach (var sf in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.Desktop, Environment.SpecialFolder.MyPictures })
+            {
+                var p = Environment.GetFolderPath(sf);
+                if (Directory.Exists(p)) roots.Add(p);
+            }
+            var downloads = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            if (Directory.Exists(downloads)) roots.Add(downloads);
+
+            await Task.Run(() =>
+            {
+                var opts = new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
+                };
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in roots)
+                {
+                    try
+                    {
+                        foreach (var f in Directory.EnumerateFiles(r, "*", opts))
+                        {
+                            try
+                            {
+                                var ext = System.IO.Path.GetExtension(f);
+                                if (!DocExts.Contains(ext)) continue;
+                                if (!seen.Add(f)) continue;
+                                docs++;
+                                bytes += new FileInfo(f).Length;
+                                if (docs >= 50000) return;
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                }
+            });
+        }
+        catch { /* non-fatal — report what we have */ }
+        Post(new { type = "libStats", documents = docs, storageBytes = bytes, pages });
+    }
+
+    // Add to the persisted lifetime page total (best-effort, never throws).
+    private void AddLifetimePages(int n)
+    {
+        if (n <= 0) return;
+        try
+        {
+            var s = LoadSettings();
+            s.PagesLifetime += n;
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsFile)!);
+            File.WriteAllText(SettingsFile, JsonSerializer.Serialize(s));
+        }
+        catch { /* best-effort */ }
     }
 
     private void SaveSettings(AppSettings s)
@@ -3541,6 +3620,10 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             if (s.Dpi <= 0) s.Dpi = 200;
             s.Device ??= "";
+            s.UiExtra ??= "";
+            // The lifetime page counter is owned by the scan pipeline, not the
+            // settings dialog — carry the existing value across a settings save.
+            s.PagesLifetime = LoadSettings().PagesLifetime;
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsFile)!);
             File.WriteAllText(SettingsFile, JsonSerializer.Serialize(s));
             _ocr = s.Ocr;

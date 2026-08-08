@@ -334,7 +334,11 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .pg-card:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 30px rgba(20,20,50,.14);border-color:#dcd6f5;z-index:3}
 .pg-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 8px 22px rgba(106,56,255,.22)}
 .pg-card .pg-imgwrap{position:relative;border-radius:9px;overflow:hidden;background:#fff}
-.pg-card img{width:100%;height:158px;object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:9px;display:block;transition:transform .2s}
+.pg-card img{width:100%;height:var(--thumb-h,158px);object-fit:contain;background:#fff;border:1px solid var(--border-2);border-radius:9px;display:block;transition:transform .2s}
+body.no-anim *,body.no-anim *::before,body.no-anim *::after{transition:none!important;animation:none!important}
+body.dense .pg-card{padding:5px}
+body.dense .pg-card .pg-name{margin-top:5px}
+body.hide-scanstat #scanStatusBar{display:none!important}
 .pg-card:hover img{transform:scale(1.02)}
 .pg-card .pn{position:absolute;top:13px;left:13px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;box-shadow:0 2px 6px rgba(106,56,255,.4);z-index:2}
 /* selection checkbox */
@@ -849,14 +853,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .mn-bar .bv{width:24px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:640px){.rn-body{grid-template-columns:1fr}.rn-left{flex-direction:row}.rn-preview{width:120px;flex:none}}
 /* ===== Premium Settings ===== */
-#setBox{width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 30px 90px rgba(20,20,50,.32);text-align:left;animation:rnPop .2s cubic-bezier(.2,.9,.25,1)}
+#setBox{width:min(1140px,97vw);max-height:92vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 30px 90px rgba(20,20,50,.32);text-align:left;animation:rnPop .2s cubic-bezier(.2,.9,.25,1)}
 .set-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border-2);background:linear-gradient(90deg,var(--accent-soft),transparent)}
 .set-h-ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:grid;place-items:center;flex:none}
 .set-h-ic svg{width:19px;height:19px;stroke:#fff}
 .set-h-t{flex:1;min-width:0}.set-h-t b{font-size:15px;font-weight:800;display:block}.set-h-t small{font-size:12px;color:var(--muted)}
 .set-h-x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:16px}
 .set-h-x:hover{background:var(--accent-soft);color:var(--accent-ink)}
-.set-body{display:grid;grid-template-columns:180px 1fr;min-height:0;flex:1}
+.set-body{display:grid;grid-template-columns:198px minmax(0,1fr) 372px;min-height:0;flex:1}
 .set-nav{border-right:1px solid var(--border-2);padding:12px 10px;display:flex;flex-direction:column;gap:3px;background:var(--panel-2,#fafbfe)}
 .set-nav .sn{padding:9px 12px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:background .12s,color .12s}
 .set-nav .sn:hover{background:var(--accent-soft);color:var(--accent-ink)}
@@ -886,7 +890,102 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .set-btn.go:hover{box-shadow:0 8px 26px rgba(109,40,217,.55)}
 .set-note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6;background:var(--accent-soft);border-radius:11px;padding:11px 13px}
 .set-foot{display:flex;align-items:center;gap:9px;padding:13px 18px;border-top:1px solid var(--border-2);background:var(--panel-2,#fafafe)}
+@media (max-width:980px){.set-body{grid-template-columns:180px minmax(0,1fr)}.set-prev{display:none}}
 @media (max-width:620px){.set-body{grid-template-columns:1fr}.set-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border-2)}}
+/* ---- premium settings additions (v1.2.0) ---- */
+.set-head .set-search{margin-left:14px;flex:1;max-width:420px;display:flex;align-items:center;gap:9px;height:40px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border);border-radius:12px;padding:0 13px}
+.set-head .set-search input{flex:1;border:0;background:transparent;font:inherit;font-size:13px;color:var(--text);outline:none}
+.set-head .set-search .kbd{font-size:10.5px;font-weight:800;color:var(--muted-2);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:2px 7px}
+.set-head .h-links{display:flex;align-items:center;gap:2px}
+.set-head .h-links .hl{font-size:12px;font-weight:700;color:var(--muted);padding:8px 11px;border-radius:9px;cursor:pointer}
+.set-head .h-links .hl:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.set-nav .sn{display:flex;align-items:center;gap:11px}
+.set-nav .sn .ni{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:var(--panel);border:1px solid var(--border-2);flex:none}
+.set-nav .sn.on .ni{background:rgba(255,255,255,.22);border-color:transparent}
+.set-nav .sn.on{background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 8px 20px rgba(109,40,217,.30)}
+.set-nav .nlabel{font-size:10px;font-weight:800;color:var(--muted-2);letter-spacing:1.1px;padding:8px 12px 6px}
+.set-content{display:flex;flex-direction:column;gap:14px}
+.set-pane.on{display:flex;flex-direction:column;gap:14px}
+.set-ctitle{display:flex;align-items:center;gap:10px}
+.set-ctitle h4{font-size:16px;font-weight:800;color:var(--text)}
+.set-ctitle small{font-size:12px;color:var(--muted);font-weight:500}
+.set-card{padding:0}
+.set-chead{display:flex;align-items:center;gap:10px;padding:13px 15px 4px}
+.set-chead .cci{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:14px;flex:none}
+.set-chead b{font-size:13.5px;font-weight:800;color:var(--text)}
+.set-chead small{font-size:11px;color:var(--muted);font-weight:500}
+.set-cbody{padding:6px 15px 14px}
+/* theme tiles */
+.th-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.th-tile{border:2px solid var(--border);border-radius:12px;padding:9px;cursor:pointer;transition:.14s;background:var(--panel)}
+.th-tile.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.th-prev{height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border-2)}
+.th-prev .tb{height:13px;display:flex;align-items:center;gap:3px;padding:0 6px}
+.th-prev .td{width:4px;height:4px;border-radius:50%}
+.th-prev .tl{height:4px;border-radius:3px;margin:5px 7px 0}
+.th-tile .th-nm{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;font-weight:800;color:var(--text)}
+.th-tile .rd{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);flex:none}
+.th-tile.on .rd{border-color:var(--accent);background:radial-gradient(circle at 50% 50%,var(--accent) 0 4px,transparent 4px)}
+.pl-bg{background:#fff}.pl-bg .tb{background:#f3f4f8}.pl-bg .td{background:#d7dae4}.pl-bg .tl{background:#e9ebf2}.pl-bg .tl.a{background:#c9b8ff;width:52%}
+.pd-bg{background:#171826}.pd-bg .tb{background:#222436}.pd-bg .td{background:#3a3d55}.pd-bg .tl{background:#2c2f45}.pd-bg .tl.a{background:#7c5cff;width:52%}
+.pa-bg{background:linear-gradient(105deg,#fff 0 50%,#171826 50%)}.pa-bg .tb{background:linear-gradient(105deg,#f3f4f8 0 50%,#222436 50%)}.pa-bg .td{background:#9aa0b8}.pa-bg .tl{background:linear-gradient(105deg,#e9ebf2 0 50%,#2c2f45 50%)}.pa-bg .tl.a{background:#8b5cf6;width:52%}
+/* accent swatches */
+.acc-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+.acc-dot{width:30px;height:30px;border-radius:50%;cursor:pointer;position:relative;box-shadow:0 2px 6px rgba(0,0,0,.14);transition:transform .12s}
+.acc-dot:hover{transform:scale(1.08)}
+.acc-dot.on{box-shadow:0 0 0 3px var(--panel),0 0 0 5px currentColor}
+.acc-dot.on::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900}
+/* slider */
+.sld-wrap{padding:4px 4px 2px}
+.sld{-webkit-appearance:none;width:100%;height:7px;border-radius:99px;background:var(--border);outline:none;margin:8px 0}
+.sld::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:0 3px 9px rgba(109,40,217,.4);cursor:pointer}
+.sld-stops{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--muted-2);margin-top:2px}
+.sld-stops span.on{color:var(--accent)}
+/* segmented */
+.seg{display:inline-flex;background:var(--panel-2,#f4f5f9);border:1px solid var(--border);border-radius:10px;padding:3px;gap:3px}
+.seg .sg{font-size:12px;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer}
+.seg .sg.on{background:var(--accent);color:#fff;box-shadow:0 3px 9px rgba(109,40,217,.3)}
+/* footer button row extras */
+.set-foot .fgrp{display:flex;align-items:center;gap:7px}
+.set-btn.mini{padding:8px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.set-btn.apply{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+/* ---- live preview panel ---- */
+.set-prev{border-left:1px solid var(--border-2);background:linear-gradient(180deg,var(--panel-2,#f6f5fc),var(--panel));padding:15px;display:flex;flex-direction:column;gap:13px;overflow:auto}
+.pvh{display:flex;align-items:center;gap:8px}
+.pvh b{font-size:13px;font-weight:800;color:var(--text)}
+.pvh .lv{margin-left:auto;font-size:10px;font-weight:800;color:#12b76a;background:#e7f8f0;border-radius:20px;padding:3px 9px;display:flex;align-items:center;gap:5px}
+.pvh .lv .pd{width:6px;height:6px;border-radius:50%;background:#12b76a}
+.pv-mock{background:var(--panel);border:1px solid var(--border);border-radius:13px;overflow:hidden;box-shadow:0 8px 24px rgba(40,30,90,.10)}
+.pv-mock .pvtb{height:32px;display:flex;align-items:center;gap:5px;padding:0 10px;border-bottom:1px solid var(--border-2);background:var(--panel-2,#faf9ff)}
+.pv-mock .pvtb .mt{font-size:10px;font-weight:700;color:var(--muted);padding:4px 8px;border-radius:6px}
+.pv-mock .pvtb .mt.on{background:var(--accent-soft);color:var(--accent-ink)}
+.pv-body{display:grid;grid-template-columns:80px 1fr;min-height:150px}
+.pv-tree{border-right:1px solid var(--border-2);padding:8px 6px;background:var(--panel-2,#fbfbfe);display:flex;flex-direction:column;gap:2px}
+.pv-tree .tr{font-size:9.5px;font-weight:700;color:var(--muted);padding:5px 7px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-tree .tr.on{background:var(--accent-soft);color:var(--accent-ink)}
+.pv-grid{padding:9px;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start}
+.pv-th{border:1px solid var(--border-2);border-radius:8px;background:var(--panel);position:relative;overflow:hidden;transition:.14s}
+.pv-th.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.pv-th .pnum{position:absolute;top:4px;left:4px;background:var(--accent);color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:9px}
+.pv-th.nonum .pnum{display:none}
+.pv-th i{display:block;height:2.5px;background:#e9ebf2;margin:6px 8px 0;border-radius:2px}
+.pv-th i:first-child{margin-top:13px;width:56%;height:3.5px;background:#d3d7e4}
+[data-theme="dark"] .pv-th i{background:#2c2f45}[data-theme="dark"] .pv-th i:first-child{background:#3a3d55}
+.pv-stat{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:12px;box-shadow:0 6px 16px rgba(40,30,90,.07)}
+.pv-stat.off{display:none}
+.pv-srow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.pv-srow .sv{font-size:16px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums}
+.pv-srow .sv small{font-size:9px}
+.pv-srow .sk{font-size:8.5px;font-weight:700;color:var(--muted-2);margin-top:2px;letter-spacing:.3px}
+.pv-scan{margin-top:11px;display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;background:var(--panel-2,#f4f5f9);border:1px solid var(--border-2)}
+.pv-scan.on{background:#e7f8f0;border-color:#cdeede}
+.pv-scan .si{width:28px;height:28px;border-radius:8px;background:var(--panel);display:grid;place-items:center;font-size:14px;border:1px solid var(--border-2);flex:none}
+.pv-scan b{font-size:11.5px;font-weight:800;color:var(--text);display:block}
+.pv-scan small{font-size:10px;color:var(--muted);font-weight:600}
+.pv-scan.on b{color:#0f7a4d}.pv-scan.on small{color:#3aa574}
+.pv-scan .dk{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--muted-2);flex:none}
+.pv-scan.on .dk{background:#12b76a;box-shadow:0 0 0 4px #d6f3e4}
+.set-hide{display:none!important}
 .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .tool-card{display:flex;gap:11px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:11px;cursor:pointer}
 .tool-card:hover{border-color:#dcd6f5;box-shadow:var(--shadow)}
@@ -1329,28 +1428,79 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   <div id="setBox">
     <div class="set-head">
       <div class="set-h-ic"><svg class="ic"><use href="#i-settings"/></svg></div>
-      <div class="set-h-t"><b>Settings</b><small>Personalise ApneScan — scanning, interface &amp; folder memory</small></div>
+      <div class="set-h-t"><b>Settings</b><small>Customize ApneScan to match your workflow</small></div>
+      <div class="set-search"><span>🔍</span><input id="setSearch" type="text" placeholder="Search settings…"><span class="kbd">Ctrl K</span></div>
+      <div class="h-links">
+        <div class="hl" id="setHelp">❔ Help</div>
+        <div class="hl" id="setDocs">📖 Docs</div>
+        <div class="hl" id="setAbout">ⓘ About</div>
+      </div>
       <div class="set-h-x" id="setCancel2" title="Close (Esc)">✕</div>
     </div>
     <div class="set-body">
       <nav class="set-nav" id="setNav">
-        <div class="sn on" data-sec="interface">🎨 Interface</div>
-        <div class="sn" data-sec="scanning">🖨 Scanning</div>
-        <div class="sn" data-sec="folder">📁 Folder View</div>
-        <div class="sn" data-sec="application">⚙ Application</div>
-        <div class="sn" data-sec="support">💬 Support</div>
+        <div class="nlabel">SETTINGS</div>
+        <div class="sn on" data-sec="interface"><span class="ni">🎨</span>Interface</div>
+        <div class="sn" data-sec="scanning"><span class="ni">🖨</span>Scanning</div>
+        <div class="sn" data-sec="folder"><span class="ni">📁</span>Folder View</div>
+        <div class="sn" data-sec="application"><span class="ni">⚙</span>Application</div>
+        <div class="sn" data-sec="advanced"><span class="ni">🧩</span>Advanced</div>
+        <div class="sn" data-sec="support"><span class="ni">💬</span>Support</div>
       </nav>
       <div class="set-content">
         <section class="set-pane on" data-pane="interface">
+          <div class="set-ctitle"><h4>Interface</h4><small>Appearance, layout &amp; behaviour</small></div>
+          <!-- Theme -->
           <div class="set-card">
-            <div class="set-row"><div class="sl"><b>Theme</b><small>Light, dark or follow the system</small></div>
-              <select id="setThemeSel"><option value="default">Default (Light)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+            <div class="set-chead"><span class="cci">🎨</span><div><b>Theme</b> <small>&nbsp;Light, dark or follow the system</small></div></div>
+            <div class="set-cbody">
+              <div class="th-tiles" id="setThemeTiles">
+                <div class="th-tile" data-th="light"><div class="th-prev pl-bg"><div class="tb"><span class="td"></span><span class="td"></span><span class="td"></span></div><div class="tl a"></div><div class="tl"></div><div class="tl" style="width:68%"></div></div><div class="th-nm"><span class="rd"></span>Light</div></div>
+                <div class="th-tile" data-th="dark"><div class="th-prev pd-bg"><div class="tb"><span class="td"></span><span class="td"></span><span class="td"></span></div><div class="tl a"></div><div class="tl"></div><div class="tl" style="width:68%"></div></div><div class="th-nm"><span class="rd"></span>Dark</div></div>
+                <div class="th-tile" data-th="default"><div class="th-prev pa-bg"><div class="tb"><span class="td"></span><span class="td"></span><span class="td"></span></div><div class="tl a"></div><div class="tl"></div><div class="tl" style="width:68%"></div></div><div class="th-nm"><span class="rd"></span>Auto</div></div>
+              </div>
+              <select id="setThemeSel" class="set-hide"><option value="default">Default (Light)</option><option value="light">Light</option><option value="dark">Dark</option></select>
+            </div>
+          </div>
+          <!-- Accent -->
+          <div class="set-card">
+            <div class="set-chead"><span class="cci">🌈</span><div><b>Accent Color</b> <small>&nbsp;Recolours buttons, highlights &amp; selection</small></div></div>
+            <div class="set-cbody"><div class="acc-row" id="setAccent">
+              <span class="acc-dot" data-acc="purple" style="background:#6d28d9;color:#6d28d9" title="Purple"></span>
+              <span class="acc-dot" data-acc="blue" style="background:#2563eb;color:#2563eb" title="Blue"></span>
+              <span class="acc-dot" data-acc="green" style="background:#059669;color:#059669" title="Green"></span>
+              <span class="acc-dot" data-acc="orange" style="background:#ea580c;color:#ea580c" title="Orange"></span>
+              <span class="acc-dot" data-acc="red" style="background:#dc2626;color:#dc2626" title="Red"></span>
+              <span class="acc-dot" data-acc="pink" style="background:#db2777;color:#db2777" title="Pink"></span>
+              <span class="acc-dot" data-acc="slate" style="background:#475569;color:#475569" title="Graphite"></span>
+            </div></div>
+          </div>
+          <!-- Thumbnail size + density -->
+          <div class="set-card">
+            <div class="set-chead"><span class="cci">🖼</span><div><b>Thumbnail Size</b> <small>&nbsp;Drag — the preview updates live</small></div></div>
+            <div class="set-cbody sld-wrap">
+              <input type="range" id="setThumb" class="sld" min="0" max="3" step="1" value="1">
+              <div class="sld-stops" id="setThumbStops"><span>Small</span><span>Medium</span><span>Large</span><span>Extra Large</span></div>
+            </div>
+          </div>
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Layout density</b><small>Comfortable spacing or a denser grid</small></div>
+              <div class="seg" id="setDensity"><span class="sg" data-den="comfortable">Comfortable</span><span class="sg" data-den="dense">Compact</span></div></div>
+            <div class="set-row"><div class="sl"><b>Default startup</b><small>What ApneScan opens to on launch</small></div>
+              <select id="setStartup"><option value="home">Open Home</option><option value="lastFolder">Open Last Folder</option><option value="scan">Start Scanning</option><option value="blank">Blank Workspace</option></select></div>
+          </div>
+          <!-- Toggles -->
+          <div class="set-card">
+            <div class="set-chead"><span class="cci">🎚</span><div><b>Interface Toggles</b> <small>&nbsp;Fine-tune what's shown</small></div></div>
             <div class="set-row"><div class="sl"><b>Show page numbers</b></div><label class="sw-wrap"><input type="checkbox" id="setNumsChk"><span class="sw"></span></label></div>
             <div class="set-row"><div class="sl"><b>Show “Profiles” button</b></div><label class="sw-wrap"><input type="checkbox" id="setProfChk"><span class="sw"></span></label></div>
-            <div class="set-row"><div class="sl"><b>“Save” button default</b></div>
-              <select id="setSaveSel"><option value="ask">Ask (PDF / JPG / PNG)</option><option value="pdf">Save as PDF</option><option value="jpg">Save as JPG</option><option value="png">Save as PNG</option></select></div>
-            <div class="set-row"><div class="sl"><b>Keyboard shortcuts</b><small>Customise every hotkey</small></div><div class="set-btn" id="setShortcuts">⌨ Open</div></div>
+            <div class="set-row"><div class="sl"><b>Animations</b><small>Card hovers &amp; transitions</small></div><label class="sw-wrap"><input type="checkbox" id="setAnimChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Smooth scrolling</b></div><label class="sw-wrap"><input type="checkbox" id="setSmoothChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Show scanner status bar</b><small>The live scanner details under Scan</small></div><label class="sw-wrap"><input type="checkbox" id="setScannerStatChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Show scan statistics</b><small>Library totals in Settings preview</small></div><label class="sw-wrap"><input type="checkbox" id="setStatsChk"><span class="sw"></span></label></div>
           </div>
+          <!-- Shortcuts -->
+          <div class="set-card"><div class="set-row"><div class="sl"><b>Keyboard shortcuts</b><small>Customise every hotkey — scan, save, rotate, OCR &amp; more</small></div><div class="set-btn go" id="setShortcuts">⌨ Manage Shortcuts</div></div></div>
         </section>
         <section class="set-pane" data-pane="scanning">
           <div class="set-card">
@@ -1377,26 +1527,71 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <div class="set-note">These control the per-folder memory used by <b>My Files → Sort</b>. Turn a switch off and that part is no longer restored. Use <b>Forget folder</b> in the Sort popup to clear one folder.</div>
         </section>
         <section class="set-pane" data-pane="application">
+          <div class="set-ctitle"><h4>Application</h4><small>Saving, output &amp; privacy</small></div>
           <div class="set-card">
+            <div class="set-row"><div class="sl"><b>“Save” button default</b><small>What the Save button does first</small></div>
+              <select id="setSaveSel"><option value="ask">Ask (PDF / JPG / PNG)</option><option value="pdf">Save as PDF</option><option value="jpg">Save as JPG</option><option value="png">Save as PNG</option></select></div>
             <div class="set-row"><div class="sl"><b>PDF compression</b><small>Smaller files, slightly lower quality</small></div>
               <select id="setCompressSel"><option value="0">Off (best quality)</option><option value="20">Light — 20%</option><option value="40">Medium — 40%</option><option value="60">High — 60%</option><option value="75">Max — 75%</option></select></div>
             <div class="set-row"><div class="sl"><b>Clear pages after saving</b></div><label class="sw-wrap"><input type="checkbox" id="setClearChk"><span class="sw"></span></label></div>
             <div class="set-row"><div class="sl"><b>Send anonymous usage stats</b><small>No documents or personal data — just feature counts</small></div><label class="sw-wrap"><input type="checkbox" id="setTelemetryChk"><span class="sw"></span></label></div>
           </div>
         </section>
-        <section class="set-pane" data-pane="support">
+        <section class="set-pane" data-pane="advanced">
+          <div class="set-ctitle"><h4>Advanced</h4><small>Configuration &amp; data</small></div>
           <div class="set-card">
-            <div class="set-row"><div class="sl"><b>Feedback &amp; support</b><small>Suggestion or bug? It goes straight to the developer</small></div><div class="set-btn" id="setFeedback">💬 Send feedback</div></div>
+            <div class="set-row"><div class="sl"><b>OCR language</b><small>Text recognition language for searchable PDFs</small></div>
+              <select id="setOcrLang" disabled><option>English (installed)</option></select></div>
+            <div class="set-row"><div class="sl"><b>Your footer details</b><small>Name, phone, address shown on the workspace footer</small></div><div class="set-btn" id="setEditFooter">✎ Edit</div></div>
+            <div class="set-row"><div class="sl"><b>Configuration file</b><small>Import, export or back up all settings as JSON</small></div>
+              <div class="fgrp"><div class="set-btn mini" id="setImport2">⭳ Import</div><div class="set-btn mini" id="setExport2">⭱ Export</div></div></div>
+          </div>
+          <div class="set-note">More OCR languages (Hindi &amp; other Indic scripts) are not bundled yet — English is the only installed recognition language, so it's the only real option shown here.</div>
+        </section>
+        <section class="set-pane" data-pane="support">
+          <div class="set-ctitle"><h4>Support</h4><small>Help, feedback &amp; about</small></div>
+          <div class="set-card">
+            <div class="set-row"><div class="sl"><b>Feedback &amp; support</b><small>Suggestion or bug? It goes straight to the developer</small></div><div class="set-btn go" id="setFeedback">💬 Send feedback</div></div>
+            <div class="set-row"><div class="sl"><b>Documentation</b><small>Guides &amp; help on GitHub</small></div><div class="set-btn" id="setDocs2">📖 Open</div></div>
+            <div class="set-row"><div class="sl"><b>About ApneScan</b><small id="setVer">Version —</small></div><div class="set-btn" id="setAbout2">ⓘ Details</div></div>
           </div>
         </section>
       </div>
+      <!-- LIVE PREVIEW -->
+      <aside class="set-prev">
+        <div class="pvh"><b>Live Preview</b><span class="lv"><span class="pd"></span>Updating live</span></div>
+        <div class="pv-mock">
+          <div class="pvtb"><span class="mt on">▦ Thumbnails</span><span class="mt">🗂 Preview</span><span class="mt">🔤 OCR</span></div>
+          <div class="pv-body">
+            <div class="pv-tree"><div class="tr on">📁 My Files</div><div class="tr">📁 Recent</div><div class="tr">⭐ Starred</div><div class="tr">🖨 Scan</div></div>
+            <div class="pv-grid" id="pvGrid">
+              <div class="pv-th sel"><span class="pnum">1</span><i></i><i></i><i></i><i></i></div>
+              <div class="pv-th"><span class="pnum">2</span><i></i><i></i><i></i></div>
+              <div class="pv-th"><span class="pnum">3</span><i></i><i></i><i></i><i></i></div>
+              <div class="pv-th"><span class="pnum">4</span><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="pv-stat" id="pvStat">
+          <div class="pv-srow">
+            <div><div class="sv" id="pvDocs">—</div><div class="sk">DOCUMENTS</div></div>
+            <div><div class="sv" id="pvPages">—</div><div class="sk">PAGES</div></div>
+            <div><div class="sv" id="pvStorage">—</div><div class="sk">STORAGE</div></div>
+          </div>
+          <div class="pv-scan" id="pvScan"><span class="si">🖨</span><div><b id="pvScanName">No scanner</b><small id="pvScanState">Not connected</small></div><span class="dk"></span></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted-2);text-align:center;line-height:1.5">Documents &amp; storage are counted from your Documents, Desktop,<br>Pictures &amp; Downloads folders — real numbers, nothing estimated.</div>
+      </aside>
     </div>
     <div class="set-foot">
-      <div class="set-btn ghost" id="setRestore">Restore Defaults</div>
+      <div class="set-btn ghost" id="setRestore">↺ Restore Defaults</div>
+      <div class="fgrp"><div class="set-btn mini" id="setImport">⭳ Import</div><div class="set-btn mini" id="setExport">⭱ Export</div><div class="set-btn mini" id="setBackup">🗄 Backup</div></div>
       <div style="flex:1"></div>
       <div class="set-btn no" id="setCancel">Cancel</div>
-      <div class="set-btn go" id="setSave">Save changes</div>
+      <div class="set-btn apply" id="setApply">Apply</div>
+      <div class="set-btn go" id="setSave">✓ Save Changes</div>
     </div>
+    <input type="file" id="setImportFile" accept="application/json,.json" style="display:none">
   </div>
 </div>
 
@@ -1948,8 +2143,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var st=byId('scanStat'); if(st){ st.className='sstat '+state; st.textContent=text||labels[state]||''; st.title=text||labels[state]||''; }
   }
   function renderDevice(){
-    var e=byId('deviceName'); if(!e) return;
-    e.textContent = devices.length ? devices[selectedDevice] : 'No scanner found';
+    var e=byId('deviceName');
+    if(e) e.textContent = devices.length ? devices[selectedDevice] : 'No scanner found';
+    if(typeof pvRefresh==='function') pvRefresh();
   }
   // When the scanner list arrives, keep the remembered scanner selected if it's
   // still present; otherwise fall back to the first one.
@@ -2977,6 +3173,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
       else if(m.type==='history'){ histItems=m.items||[]; renderRecent(histItems); }
       else if(m.type==='settings'){ applySettings(m); }
+      else if(m.type==='libStats'){ setLibStats(m); }
       else if(m.type==='text'){ var txt=(m.text&&m.text.length)?m.text:'No text found on this page.'; var tp=byId('textPanel'); if(tp) tp.textContent=txt; var fo=byId('fsOcrText'); if(fo) fo.textContent=txt; splitRawText=txt; var stx=byId('splitText'); if(stx){ var ss=byId('splitSearch'); if(ss&&ss.value.trim()) splitHighlight(ss.value); else stx.textContent=txt; } }
       else if(m.type==='analytics'){ setTimeout(fetchWorldActivity, 2500); /* widget mirrors admin world data; re-pull after own action */ }
       else if(m.type==='profiles'){ renderProfiles(m.items); }
@@ -3170,16 +3367,51 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'', telemetry:true };
-  function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); }
-  function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); }
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'', telemetry:true,
+    accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true };
+  // Accent palettes — each recolours the token system (accent, soft & ink) for
+  // both light and dark. These drive every token-based accent surface for real.
+  var ACCENTS={
+    purple:{a:'#6d28d9',a2:'#7c3aed',ls:'#efeafe',li:'#5b21b6',ds:'#282142',di:'#cbbdf9'},
+    blue:{a:'#2563eb',a2:'#3b82f6',ls:'#e6effe',li:'#1e40af',ds:'#16233f',di:'#bcd3fb'},
+    green:{a:'#059669',a2:'#10b981',ls:'#e3f7ef',li:'#065f46',ds:'#12291f',di:'#9ff0cd'},
+    orange:{a:'#ea580c',a2:'#f97316',ls:'#fdeee3',li:'#9a3412',ds:'#2c1c12',di:'#fbcfa8'},
+    red:{a:'#dc2626',a2:'#ef4444',ls:'#fde8e8',li:'#991b1b',ds:'#2e1616',di:'#f7bcbc'},
+    pink:{a:'#db2777',a2:'#ec4899',ls:'#fce7f1',li:'#9d174d',ds:'#2d1620',di:'#f9c2dc'},
+    slate:{a:'#475569',a2:'#64748b',ls:'#eef1f5',li:'#334155',ds:'#1e2430',di:'#c7d0dd'}
+  };
+  var THUMB_PX=[112,158,212,282];
+  function applyTheme(t){ ui.theme=t||'default'; document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light'); applyAccent(ui.accent); syncThemeTiles(); }
+  function applyShowNums(v){ ui.showNums=!!v; document.body.classList.toggle('hidenums', !v); pvRefresh(); }
   function applyShowProfiles(v){ ui.showProfiles=!!v; var b=byId('btnProfiles'); if(b) b.style.display=v?'':'none'; }
+  function applyAccent(k){ var a=ACCENTS[k]||ACCENTS.purple; ui.accent=(ACCENTS[k]?k:'purple'); var dark=document.documentElement.getAttribute('data-theme')==='dark'; var r=document.documentElement.style;
+    r.setProperty('--accent',a.a); r.setProperty('--accent-2',a.a2); r.setProperty('--accent-soft',dark?a.ds:a.ls); r.setProperty('--accent-ink',dark?a.di:a.li);
+    var wrap=byId('setAccent'); if(wrap) wrap.querySelectorAll('.acc-dot').forEach(function(d){ d.classList.toggle('on', d.getAttribute('data-acc')===ui.accent); }); }
+  function applyThumb(n){ n=Math.max(0,Math.min(3, n|0)); ui.thumb=n; document.documentElement.style.setProperty('--thumb-h', THUMB_PX[n]+'px');
+    var st=byId('setThumbStops'); if(st){ var sp=st.querySelectorAll('span'); sp.forEach(function(x,i){ x.classList.toggle('on', i===n); }); }
+    var sl=byId('setThumb'); if(sl && +sl.value!==n) sl.value=n; }
+  function applyDensity(d){ ui.density=(d==='dense'?'dense':'comfortable'); document.body.classList.toggle('dense', ui.density==='dense');
+    var seg=byId('setDensity'); if(seg) seg.querySelectorAll('.sg').forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-den')===ui.density); }); }
+  function applyAnim(v){ ui.animations=!!v; document.body.classList.toggle('no-anim', !v); }
+  function applySmooth(v){ ui.smoothScroll=!!v; document.documentElement.style.scrollBehavior=v?'smooth':'auto'; }
+  function applyScannerStat(v){ ui.showScannerStat=!!v; document.body.classList.toggle('hide-scanstat', !v); }
+  function applyStats(v){ ui.showStats=!!v; var e=byId('pvStat'); if(e) e.classList.toggle('off', !v); }
+  function syncThemeTiles(){ var w=byId('setThemeTiles'); if(!w) return; w.querySelectorAll('.th-tile').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-th')===ui.theme); }); }
+  function applyStartup(){ try{ if(ui.startup==='scan'){ var b=byId('scanBtn'); if(b) b.scrollIntoView({block:'center'}); } else if(ui.startup==='lastFolder'){ var r=byId('navRecent'); if(r) r.click(); } }catch(e){} }
+  // Live preview reflects page-numbers, scanner, density & accent in real time.
+  function pvRefresh(){ document.querySelectorAll('#pvGrid .pv-th').forEach(function(t){ t.classList.toggle('nonum', !ui.showNums); });
+    var nm=(devices&&devices.length?(devices[selectedDevice]||savedScanner):savedScanner)||''; var chip=byId('pvScan'), nEl=byId('pvScanName'), stEl=byId('pvScanState');
+    if(chip){ chip.classList.toggle('on', !!nm); if(nEl) nEl.textContent=nm||'No scanner'; if(stEl) stEl.textContent=nm?'Connected · Ready':'Not connected'; } }
+  function fmtBytes(b){ b=+b||0; if(b>=1073741824) return (b/1073741824).toFixed(2)+'<small> GB</small>'; if(b>=1048576) return (b/1048576).toFixed(1)+'<small> MB</small>'; if(b>=1024) return (b/1024).toFixed(0)+'<small> KB</small>'; return b+'<small> B</small>'; }
+  function fmtNum(n){ n=+n||0; return n.toLocaleString('en-US'); }
+  function setLibStats(m){ var d=byId('pvDocs'),p=byId('pvPages'),s=byId('pvStorage'); if(d) d.textContent=fmtNum(m.documents); if(p) p.textContent=fmtNum(m.pages); if(s) s.innerHTML=fmtBytes(m.storageBytes); }
   function persistSettings(){ if(bridge) send({cmd:'saveSettings',
     dpi:settings.dpi, color:settings.color, source:settings.source, pageSize:settings.pageSize, on:ocrOn,
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry }); }
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry,
+    uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -3201,9 +3433,27 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     ui.compressPercent=s.compressPercent||0;
     ui.footerText=s.footerText||'';
     renderFooter();
-    applyTheme(s.theme||'default');
+    // extra interface prefs (accent / thumb / density / toggles) live in uiExtra
+    if(s.uiExtra){ try{ var x=JSON.parse(s.uiExtra)||{};
+      if(x.accent) ui.accent=x.accent;
+      if(typeof x.thumb==='number') ui.thumb=x.thumb;
+      if(x.density) ui.density=x.density;
+      if(x.startup) ui.startup=x.startup;
+      ui.animations=(x.animations!==false);
+      ui.smoothScroll=(x.smoothScroll!==false);
+      ui.showScannerStat=(x.showScannerStat!==false);
+      ui.showStats=(x.showStats!==false);
+    }catch(e){} }
+    applyTheme(s.theme||'default');   // also applies accent + syncs tiles
+    applyThumb(ui.thumb);
+    applyDensity(ui.density);
+    applyAnim(ui.animations);
+    applySmooth(ui.smoothScroll);
+    applyScannerStat(ui.showScannerStat);
+    applyStats(ui.showStats);
     applyShowNums(s.showNums!==false);
     applyShowProfiles(s.showProfiles!==false);
+    applyStartup();
   }
   // ---- Custom footer bar ----
   function renderFooter(){
@@ -3262,6 +3512,19 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var f3=byId('setFvView'); if(f3) f3.checked=fo.view;
     var f4=byId('setFvFilter'); if(f4) f4.checked=fo.filter;
     if(typeof fvSubDim==='function') fvSubDim();
+    // new premium controls
+    syncThemeTiles();
+    applyAccent(ui.accent);
+    applyThumb(ui.thumb);
+    applyDensity(ui.density);
+    var stp=byId('setStartup'); if(stp) stp.value=ui.startup;
+    var an2=byId('setAnimChk'); if(an2) an2.checked=ui.animations;
+    var sm2=byId('setSmoothChk'); if(sm2) sm2.checked=ui.smoothScroll;
+    var ss2=byId('setScannerStatChk'); if(ss2) ss2.checked=ui.showScannerStat;
+    var st2=byId('setStatsChk'); if(st2) st2.checked=ui.showStats;
+    var vr=byId('setVer'); if(vr && window.APP_VERSION) vr.textContent='Version '+window.APP_VERSION;
+    applyStats(ui.showStats); pvRefresh();
+    if(bridge) send({cmd:'getLibraryStats'});
     var ov=byId('setOverlay'); if(ov) ov.classList.add('on');
   }
   function closeSettings(){ var ov=byId('setOverlay'); if(ov) ov.classList.remove('on'); }
@@ -3274,6 +3537,53 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('#setNav .sn').forEach(function(x){ x.classList.toggle('on', x===t); });
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
+  // ---- premium settings controls wiring (v1.2.0) ----
+  var APP_VER='1.2.0'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  (function(){
+    var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
+    var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
+    var sl=byId('setThumb'); if(sl) sl.addEventListener('input', function(){ applyThumb(+sl.value); });
+    var dsg=byId('setDensity'); if(dsg) dsg.querySelectorAll('.sg').forEach(function(s){ s.addEventListener('click', function(){ applyDensity(s.getAttribute('data-den')); }); });
+    var stp=byId('setStartup'); if(stp) stp.addEventListener('change', function(){ ui.startup=stp.value; });
+    var an=byId('setAnimChk'); if(an) an.addEventListener('change', function(){ applyAnim(an.checked); });
+    var sm=byId('setSmoothChk'); if(sm) sm.addEventListener('change', function(){ applySmooth(sm.checked); });
+    var ss=byId('setScannerStatChk'); if(ss) ss.addEventListener('change', function(){ applyScannerStat(ss.checked); });
+    var st=byId('setStatsChk'); if(st) st.addEventListener('change', function(){ applyStats(st.checked); });
+    var nm=byId('setNumsChk'); if(nm) nm.addEventListener('change', function(){ applyShowNums(nm.checked); });
+    // header + support links
+    function ext(u){ if(bridge) send({cmd:'openUrl', path:u}); }
+    var docsUrl='https://github.com/Skaler2015/APNESCAN2#readme';
+    [['setHelp',docsUrl],['setDocs',docsUrl],['setDocs2',docsUrl]].forEach(function(p){ var e=byId(p[0]); if(e) e.addEventListener('click', function(){ ext(p[1]); }); });
+    function aboutMsg(){ setStatus('ApneScan '+APP_VER+' — Smart Scanner by Subhash Kaler'); }
+    ['setAbout','setAbout2'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', aboutMsg); });
+    var ef=byId('setEditFooter'); if(ef) ef.addEventListener('click', function(){ closeSettings(); startFooterEdit(); });
+    // import / export / backup — real JSON of the live configuration
+    function collectCfg(){ return { app:'ApneScan', version:APP_VER, savedAt:new Date().toISOString(),
+      settings:{ dpi:settings.dpi, color:settings.color, source:settings.source, pageSize:settings.pageSize }, ocr:ocrOn, ui:ui }; }
+    function download(name, obj){ try{ var blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500); setStatus('Settings exported'); }catch(e){ setStatus('Export failed'); } }
+    function doExport(){ download('apnescan-settings.json', collectCfg()); }
+    function doBackup(){ var d=new Date(); var stamp=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2); download('apnescan-backup-'+stamp+'.json', collectCfg()); }
+    ['setExport','setExport2'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doExport); });
+    var bk=byId('setBackup'); if(bk) bk.addEventListener('click', doBackup);
+    var fileInp=byId('setImportFile');
+    function importObj(o){ try{ if(o.ui && typeof o.ui==='object'){ Object.keys(o.ui).forEach(function(k){ if(k in ui) ui[k]=o.ui[k]; }); }
+      if(o.settings){ if(o.settings.dpi) settings.dpi=o.settings.dpi; if(o.settings.color) settings.color=o.settings.color; if(o.settings.source) settings.source=o.settings.source; if(o.settings.pageSize) settings.pageSize=o.settings.pageSize; }
+      if(typeof o.ocr==='boolean') setOcr(o.ocr, false);
+      applyTheme(ui.theme); applyThumb(ui.thumb); applyDensity(ui.density); applyAnim(ui.animations); applySmooth(ui.smoothScroll); applyScannerStat(ui.showScannerStat); applyStats(ui.showStats); applyShowNums(ui.showNums); applyShowProfiles(ui.showProfiles);
+      persistSettings(); closeSettings(); openSettings(); setStatus('Settings imported'); }catch(e){ setStatus('Could not import this file'); } }
+    function pickImport(){ if(fileInp) fileInp.click(); }
+    ['setImport','setImport2'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', pickImport); });
+    if(fileInp) fileInp.addEventListener('change', function(){ var f=fileInp.files&&fileInp.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ try{ importObj(JSON.parse(rd.result)); }catch(e){ setStatus('Invalid settings file'); } fileInp.value=''; }; rd.readAsText(f); });
+    // Apply = save without closing
+    var ap=byId('setApply'); if(ap) ap.addEventListener('click', function(){ if(typeof commitSettings==='function') commitSettings(false); });
+    // search filter
+    var sq=byId('setSearch'); if(sq) sq.addEventListener('input', function(){ var q=(sq.value||'').trim().toLowerCase();
+      var panes=document.querySelectorAll('#setBox .set-pane');
+      panes.forEach(function(p){ p.style.display=q?'flex':''; });
+      document.querySelectorAll('#setBox .set-row').forEach(function(r){ r.style.display=(!q||r.textContent.toLowerCase().indexOf(q)>=0)?'':'none'; });
+      document.querySelectorAll('#setBox .set-note, #setBox .set-ctitle').forEach(function(n){ n.style.display=q?'none':''; });
+    });
+  })();
   var setShortcuts=byId('setShortcuts'); if(setShortcuts) setShortcuts.addEventListener('click', function(){ closeSettings(); openShortcuts(); });
   // Feedback dialog
   var setFb=byId('setFeedback'); if(setFb) setFb.addEventListener('click', function(){ closeSettings(); overlay('fbOverlay', true); var t=byId('fbMsg'); if(t){ t.value=''; setTimeout(function(){ t.focus(); },50); } var c=byId('fbContact'); if(c) c.value=''; });
@@ -3328,6 +3638,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
+    ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true;
+    applyTheme('default'); applyThumb(1); applyDensity('comfortable'); applyAnim(true); applySmooth(true); applyScannerStat(true); applyStats(true);
     fvSetOpts({on:true,sort:true,view:true,filter:true});
     openSettings(); fvSubDim(); setStatus('Defaults restored — press Save to apply');
   });
@@ -3335,7 +3647,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   function fvSubDim(){ var on=byId('setFvOn')&&byId('setFvOn').checked; document.querySelectorAll('.set-pane[data-pane="folder"] .set-row.sub').forEach(function(r){ r.style.opacity=on?'1':'.45'; r.style.pointerEvents=on?'':'none'; }); }
   (function(){ var m=byId('setFvOn'); if(m) m.addEventListener('change', fvSubDim); })();
   var setResSelEl=byId('setResSel'); if(setResSelEl) setResSelEl.addEventListener('change', updateResCustomRow);
-  var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){
+  function commitSettings(close){
     var r=byId('setResSel'), c=byId('setColorSel'), s=byId('setSrcSel'), o=byId('setOcrChk');
     if(r){ if(r.value==='custom'){ var cu=byId('setResCustom'); var cv=cu?parseInt(cu.value,10):0; if(cv>=50 && cv<=1200) settings.dpi=cv; } else { settings.dpi=parseInt(r.value,10)||settings.dpi; } }
     if(c) settings.color=c.value;
@@ -3354,9 +3666,16 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
     var tmc=byId('setTelemetryChk'); if(tmc) ui.telemetry=tmc.checked;
     var cps=byId('setCompressSel'); if(cps) ui.compressPercent=parseInt(cps.value,10)||0;
+    // premium interface controls (applied live; captured here so they persist)
+    var stp=byId('setStartup'); if(stp) ui.startup=stp.value;
+    var anm=byId('setAnimChk'); if(anm) applyAnim(anm.checked);
+    var smt=byId('setSmoothChk'); if(smt) applySmooth(smt.checked);
+    var scs=byId('setScannerStatChk'); if(scs) applyScannerStat(scs.checked);
+    var sts=byId('setStatsChk'); if(sts) applyStats(sts.checked);
     fvSetOpts({ on:!!(byId('setFvOn')&&byId('setFvOn').checked), sort:!!(byId('setFvSort')&&byId('setFvSort').checked), view:!!(byId('setFvView')&&byId('setFvView').checked), filter:!!(byId('setFvFilter')&&byId('setFvFilter').checked) });
-    persistSettings(); closeSettings(); setStatus('Settings saved');
-  });
+    persistSettings(); if(close!==false) closeSettings(); setStatus(close===false?'Settings applied':'Settings saved');
+  }
+  var sSave=byId('setSave'); if(sSave) sSave.addEventListener('click', function(){ commitSettings(true); });
   ['scanBtn','scanSm','qcScan'].forEach(function(id){ var e=byId(id); if(e) e.addEventListener('click', doScan); });
   (function(){ var cb=byId('scanCancelBtn'); if(cb) cb.addEventListener('click', cancelScan); })();
   var rf=byId('refreshBtn'); if(rf) rf.addEventListener('click', function(){ setStatus('Looking for scanners…'); send({cmd:'getDevices'}); });
