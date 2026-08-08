@@ -1132,18 +1132,14 @@ public class MainForm : Form
     {
         Driver.Wia => "WIA",
         Driver.Twain => "TWAIN",
-        Driver.Escl => "Network",
+        Driver.Escl => "eSCL",
         Driver.Sane => "SANE",
         _ => d.ToString()
     };
 
-    // Human label for a device — adds the driver tag only when the same scanner
-    // name shows up under more than one driver, so the list stays clean.
-    private string DeviceLabel(ScanDevice d)
-    {
-        bool dup = _devices.Count(x => string.Equals(x.Name, d.Name, StringComparison.OrdinalIgnoreCase)) > 1;
-        return dup ? $"{d.Name} · {DriverTag(d.Driver)}" : d.Name;
-    }
+    // Human label for a device — always shows the connection/driver tag so the
+    // user can tell the entries apart and pick the fastest (e.g. eSCL) one.
+    private string DeviceLabel(ScanDevice d) => $"{d.Name} · {DriverTag(d.Driver)}";
 
     // The WIA API version each discovered WIA device was found under, aligned
     // 1:1 with _devices (Default for non-WIA), so a device enumerated only under
@@ -1189,7 +1185,9 @@ public class MainForm : Form
                 AddAll(await EnumOptsAsync(controller, opts, 12000), wv);
             }
             AddAll(await EnumOptsAsync(controller, new ScanOptions { Driver = Driver.Twain }, 12000), WiaApiVersion.Default);
-            AddAll(await EnumOptsAsync(controller, new ScanOptions { Driver = Driver.Escl }, 6000), WiaApiVersion.Default);
+            // eSCL (AirScan/Mopria) network discovery over mDNS — give it longer
+            // so slower-announcing network scanners are found. Often faster than WIA.
+            AddAll(await EnumOptsAsync(controller, new ScanOptions { Driver = Driver.Escl }, 12000), WiaApiVersion.Default);
 
             _devices = merged.Select(m => m.dev).ToList();
             _deviceWia = merged.Select(m => m.wia).ToList();
