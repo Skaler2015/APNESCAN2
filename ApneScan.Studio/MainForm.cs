@@ -1282,6 +1282,12 @@ public class MainForm : Form
                 options.WiaOptions.WiaApiVersion = _deviceWia[deviceIndex];
 
             var scanSw = Stopwatch.StartNew();
+            // The background page grid is rebuilt (all thumbnails) on each
+            // RefreshAsync, so doing it per page is O(n²) and stalls the ADF
+            // between pages. Throttle it to ~1.2s during the scan — the live
+            // overlay is driven by the lightweight scanPage events below, and a
+            // final RefreshAsync after the loop rebuilds the grid exactly once.
+            var refreshSw = Stopwatch.StartNew();
             await foreach (var image in controller.Scan(options, token))
             {
                 Post(new { type = "scanStage", stage = "capturing", op = "Capturing page…" });
@@ -1297,14 +1303,17 @@ public class MainForm : Form
                 }
                 _pages.Add(proc);
                 added++;
-                // Show the page in the thumbnail strip immediately, and update
-                // the live progress counter shown in the scan hero + overlay.
-                await RefreshAsync(true);
+                _selected = _pages.Count - 1;
+                // Live thumbnail into the overlay strip (cheap, single image) and
+                // the progress counter — this is what the user sees while scanning.
+                var thumb = await PageThumbAsync(proc, 240);
                 ScanStatus("busy", $"Busy · Scanning… {added} page(s)");
                 Post(new { type = "scanProgress", count = added, skipped, done = false });
-                var thumb = await PageThumbAsync(proc, 240);
                 Post(new { type = "scanPage", index = added - 1, page = added, thumb, blank = false, skipped });
                 Post(new { type = "scanStage", stage = "feeding", op = "Ready for next page…" });
+                // Only occasionally refresh the (hidden) main grid so a user who
+                // chose "Continue working" still sees pages appear.
+                if (refreshSw.ElapsedMilliseconds > 1200) { await RefreshAsync(true); refreshSw.Restart(); }
             }
 
             if (added == 0)
