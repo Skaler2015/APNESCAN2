@@ -18,9 +18,13 @@ try {
 
     $all = [];
     foreach ($db->query('SELECT event, SUM(cnt) c FROM events GROUP BY event') as $r) $all[$r['event']] = (int)$r['c'];
+    // "Today" = since local (IST, +5:30) midnight, so the column resets each
+    // night instead of being a rolling 24-hour window.
+    $istOffset = 19800; // +05:30
+    $istMidnight = (int)(floor(($now + $istOffset) / 86400) * 86400 - $istOffset);
     $tod = [];
     $s = $db->prepare('SELECT event, SUM(cnt) c FROM events WHERE ts>=? GROUP BY event');
-    $s->execute([$now - 86400]);
+    $s->execute([$istMidnight]);
     foreach ($s as $r) $tod[$r['event']] = (int)$r['c'];
 
     $groups = [

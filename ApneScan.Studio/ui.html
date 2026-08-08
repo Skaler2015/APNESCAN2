@@ -3261,7 +3261,8 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       else if(m.type==='noupdate'){ showNoUpdate(m.current); }
       else if(m.type==='phone'){ var qr=byId('phoneQr'); if(qr&&m.qr) qr.src=m.qr; var pu=byId('phoneUrl'); if(pu) pu.textContent=m.url||''; }
       else if(m.type==='phoneShare'){ var q2=byId('psQr'); if(q2&&m.qr) q2.src=m.qr; var u2=byId('psUrl'); if(u2) u2.textContent=m.url||''; var nn=byId('psName'); if(nn) nn.textContent=m.name||'file'; overlay('phoneShareOverlay', true); }
-      else if(m.type==='thumb'){ if(m.path && m.dataUrl){ docThumbs[m.path]=m.dataUrl; var el=docCardEls[m.path]; if(el){ var th=el.querySelector('.th'); if(th) th.innerHTML='<img src="'+m.dataUrl+'" alt="">'; } } }
+      else if(m.type==='thumb'){ if(m.path && m.dataUrl){ docThumbs[m.path]=m.dataUrl; var el=docCardEls[m.path]; if(el){ var th=el.querySelector('.th'); if(th) th.innerHTML='<img src="'+m.dataUrl+'" alt="">'; }
+        if(rnFileMode && rnFilePath===m.path){ var rt=byId('rnThumb'), rn=byId('rnNoImg'); if(rt){ rt.src=m.dataUrl; rt.style.display='block'; } if(rn) rn.style.display='none'; } } }
       else if(m.type==='fileInfo'){ showFileInfo(m); }
       else if(m.type==='subfolders'){ treeState[m.path]=m.folders||[]; treeReq[m.path]=0; if(docsView==='tree') renderTree(); }
       else if(m.type==='phonePhoto'){ var lg=byId('phoneLog'); if(lg) lg.textContent='✓ Received — '+m.pages+' page(s) total'; }
@@ -3638,7 +3639,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.16'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.17'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -4338,8 +4339,15 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     if(mb) mb.style.display='none';
     if(hd) hd.textContent='Rename file';
     if(sub) sub.textContent='Give this file a clear, searchable name';
-    if(thumb) thumb.style.display='none';
-    if(noimg){ noimg.style.display='block'; noimg.textContent=(ext?ext.replace('.','').toUpperCase():'FILE'); }
+    // Show a real preview of the file: use the cached docs thumbnail if we have
+    // one, otherwise request it (it arrives via the 'thumb' message and updates).
+    var cachedThumb=(typeof docThumbs!=='undefined' && docThumbs)?docThumbs[path]:null;
+    if(cachedThumb && thumb){ thumb.src=cachedThumb; thumb.style.display='block'; if(noimg) noimg.style.display='none'; }
+    else {
+      if(thumb){ thumb.removeAttribute('src'); thumb.style.display='none'; }
+      if(noimg){ noimg.style.display='block'; noimg.textContent=(ext?ext.replace('.','').toUpperCase():'FILE'); }
+      if(bridge) send({cmd:'getThumb', path:path});
+    }
     if(numRow) numRow.style.display='none';
     var inp=byId('rnInput'); if(inp) inp.value=base;
     if(info) info.innerHTML='<div><b>File</b></div>'+(ext?('<div>'+ext.replace('.','').toUpperCase()+' file</div>'):'');
