@@ -1536,6 +1536,31 @@ public class MainForm : Form
         var colMin = new int[w]; var colMax = new int[w]; var colSum = new long[w];
         for (int y = 0; y < h; y++) { rowMin[y] = 255; }
         for (int x = 0; x < w; x++) { colMin[x] = 255; }
+        // Estimate the background brightness from the four corners (almost always
+        // the scanner backing / margin). This lets auto-crop find a card even when
+        // the flatbed background isn't pure white (a fixed 215 cut-off treated an
+        // off-white flatbed as content everywhere, so nothing ever got cropped).
+        int cw = Math.Max(4, w / 14), ch = Math.Max(4, h / 14);
+        int CornerAvg(int sx, int sy)
+        {
+            long acc = 0; int n = 0;
+            for (int y = sy; y < sy + ch && y < h; y++)
+            {
+                int row = y * stride;
+                for (int x = sx; x < sx + cw && x < w; x++)
+                { int o = row + x * 3; acc += (buf[o] + buf[o + 1] + buf[o + 2]) / 3; n++; }
+            }
+            return n > 0 ? (int)(acc / n) : 245;
+        }
+        int bgLum = Math.Max(Math.Max(CornerAvg(0, 0), CornerAvg(w - cw, 0)),
+                             Math.Max(CornerAvg(0, h - ch), CornerAvg(w - cw, h - ch)));
+        bool darkBg = bgLum < 130;
+        // Content = clearly different from the background (darker on a light
+        // scan, or brighter on a dark one). Clamped so a clean white scan keeps
+        // the old 215 behaviour.
+        int contentThresh = darkBg ? Math.Clamp(bgLum + 45, 60, 240) : Math.Clamp(bgLum - 30, 120, 215);
+        bool IsContent(int lum) => darkBg ? lum > contentThresh : lum < contentThresh;
+
         long dark = 0;
         for (int y = 0; y < h; y++)
         {
@@ -1544,7 +1569,7 @@ public class MainForm : Form
             {
                 int o = row + x * 3;
                 int lum = (buf[o] + buf[o + 1] + buf[o + 2]) / 3;
-                if (lum < 215) { rowCount[y]++; colCount[x]++; dark++; }
+                if (IsContent(lum)) { rowCount[y]++; colCount[x]++; dark++; }
                 if (lum < rowMin[y]) rowMin[y] = lum; if (lum > rowMax[y]) rowMax[y] = lum; rowSum[y] += lum;
                 if (lum < colMin[x]) colMin[x] = lum; if (lum > colMax[x]) colMax[x] = lum; colSum[x] += lum;
             }
