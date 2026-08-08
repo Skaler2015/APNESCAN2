@@ -388,7 +388,16 @@ body.hide-scanstat #scanStatusBar{display:none!important}
 #scanStatusBar .ss.hi b{color:var(--accent-ink)}
 #scanStatusBar .ss.ok{background:#dcfce7;color:#166534}
 /* Scanned-pages toolbar */
-.scan-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 12px}
+.scan-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
+/* compact single-bar toolbar */
+.st-bar{display:flex;flex-wrap:wrap;gap:1px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:2px 3px;flex:1 1 auto;min-width:0}
+.st-bar .st-btn{padding:4px 7px;font-size:11px}
+.st-bar .st-btn svg{width:13px;height:13px}
+.st-more{position:relative}
+.st-more-pop{position:absolute;top:calc(100% + 6px);left:auto;right:0;z-index:30;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 44px rgba(20,20,50,.24);padding:5px;display:none;grid-template-columns:1fr 1fr;gap:1px;min-width:300px;text-align:left}
+.st-more-pop.on{display:grid;animation:rnPop .16s ease}
+.st-more-pop .st-btn{justify-content:flex-start;width:100%;padding:7px 9px;font-size:12px}
+.st-more-pop .mh{grid-column:1/-1;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);padding:6px 8px 3px}
 .st-group{display:flex;gap:3px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px}
 .st-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:7px;font-size:11.5px;font-weight:600;color:#3b4254;cursor:pointer;user-select:none;white-space:nowrap;transition:background .12s,color .12s}
 .st-btn:hover{background:var(--accent-soft);color:var(--accent-ink)}
@@ -1235,38 +1244,42 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           </div>
           <div class="h3" id="scannedHead" style="display:none;align-items:center;gap:8px">Scanned Pages <span class="badge num" id="scannedCount">0</span></div>
           <div class="scan-tools" id="scanTools" style="display:none">
-            <div class="st-group">
+            <div class="st-bar">
               <div class="st-btn" data-op="selall" title="Select all pages (Ctrl+A)"><svg><use href="#i-check"/></svg>All</div>
               <div class="st-btn" data-op="invert" title="Invert selection">Invert</div>
               <div class="st-btn" data-op="none" title="Deselect all">None</div>
-            </div>
-            <div class="st-group">
+              <span class="st-sep"></span>
               <div class="st-btn" data-op="rotL" title="Rotate selected left"><svg><use href="#i-rotate"/></svg>↺</div>
               <div class="st-btn" data-op="rotR" title="Rotate selected right"><svg><use href="#i-rotate"/></svg>↻</div>
               <div class="st-btn" data-op="rot180" title="Rotate selected 180°">180°</div>
               <div class="st-btn" data-op="deskew" title="Auto-straighten (deskew)">Deskew</div>
-            </div>
-            <div class="st-group">
+              <span class="st-sep"></span>
               <div class="st-btn" data-op="auto" title="Auto-enhance">Auto</div>
               <div class="st-btn" data-op="bw" title="Black &amp; white">B&amp;W</div>
               <div class="st-btn" data-op="gray" title="Grayscale">Gray</div>
-              <div class="st-btn" data-op="sharpen" title="Sharpen">Sharpen</div>
-              <div class="st-btn" data-op="brUp" title="Brighter">☀+</div>
-              <div class="st-btn" data-op="brDn" title="Darker">☀−</div>
-              <div class="st-btn" data-op="coUp" title="More contrast">◑+</div>
-              <div class="st-btn" data-op="coDn" title="Less contrast">◑−</div>
-            </div>
-            <div class="st-group">
-              <div class="st-btn" data-op="dup" title="Duplicate selected page">Duplicate</div>
-              <div class="st-btn" data-op="top" title="Move selected to top">⤒ Top</div>
-              <div class="st-btn" data-op="bottom" title="Move selected to bottom">⤓ Bottom</div>
-              <div class="st-btn" data-op="reverse" title="Reverse page order"><svg><use href="#i-swap"/></svg>Reverse</div>
-            </div>
-            <div class="st-group">
-              <div class="st-btn" data-op="detectTypes" title="Auto-detect document type from the page text (OCR)">✨ Detect type</div>
-              <div class="st-btn" data-op="redo" title="Redo (Ctrl+Y)"><svg><use href="#i-refresh"/></svg>Redo</div>
+              <span class="st-sep"></span>
+              <div class="st-btn" data-op="detectTypes" title="Auto-detect document type from the page text (OCR)">✨ Type</div>
               <div class="st-btn" data-op="export" title="Export selected page(s) as image to Desktop"><svg><use href="#i-image"/></svg>Export</div>
               <div class="st-btn" data-op="del" title="Delete selected page(s)"><svg><use href="#i-delete"/></svg>Delete</div>
+              <span class="st-sep"></span>
+              <div class="st-more">
+                <div class="st-btn" id="stMoreBtn" title="More tools">⋯ More</div>
+                <div class="st-more-pop" id="stMorePop">
+                  <div class="mh">Enhance</div>
+                  <div class="st-btn" data-op="sharpen" title="Sharpen">✦ Sharpen</div>
+                  <div class="st-btn" data-op="brUp" title="Brighter">☀ Brighter</div>
+                  <div class="st-btn" data-op="brDn" title="Darker">☀ Darker</div>
+                  <div class="st-btn" data-op="coUp" title="More contrast">◑ More contrast</div>
+                  <div class="st-btn" data-op="coDn" title="Less contrast">◑ Less contrast</div>
+                  <div class="mh">Arrange</div>
+                  <div class="st-btn" data-op="dup" title="Duplicate selected page">⧉ Duplicate</div>
+                  <div class="st-btn" data-op="reverse" title="Reverse page order"><svg><use href="#i-swap"/></svg>Reverse order</div>
+                  <div class="st-btn" data-op="top" title="Move selected to top">⤒ Move to top</div>
+                  <div class="st-btn" data-op="bottom" title="Move selected to bottom">⤓ Move to bottom</div>
+                  <div class="mh">History</div>
+                  <div class="st-btn" data-op="redo" title="Redo (Ctrl+Y)"><svg><use href="#i-refresh"/></svg>Redo</div>
+                </div>
+              </div>
             </div>
             <div class="st-group st-views">
               <div class="st-btn vseg" data-vw="large" title="Large thumbnails">Large</div>
@@ -3047,7 +3060,13 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     detectTypes:function(){ if(!scannedTotal){ setStatus('Scan a page first'); return; } setStatus('Detecting document types…'); if(bridge) send({cmd:'detectTypes'}); }
   };
   var scanToolsEl=byId('scanTools');
-  if(scanToolsEl){ scanToolsEl.addEventListener('click', function(ev){ var b=ev.target.closest('.st-btn'); if(!b) return; var op=b.getAttribute('data-op'); if(scanToolsMap[op]) scanToolsMap[op](); }); }
+  if(scanToolsEl){ scanToolsEl.addEventListener('click', function(ev){ var b=ev.target.closest('.st-btn'); if(!b) return; var op=b.getAttribute('data-op'); if(op && scanToolsMap[op]){ scanToolsMap[op](); var mp=byId('stMorePop'); if(mp) mp.classList.remove('on'); } }); }
+  // Compact toolbar "More" overflow menu
+  (function(){
+    var mb=byId('stMoreBtn'), mp=byId('stMorePop');
+    if(mb) mb.addEventListener('click', function(e){ e.stopPropagation(); if(mp) mp.classList.toggle('on'); });
+    document.addEventListener('click', function(e){ if(mp && mp.classList.contains('on') && !e.target.closest('#stMorePop') && !(mb&&mb.contains(e.target))) mp.classList.remove('on'); });
+  })();
 
   // Full "Edit & enhance" popover for the compact preview toolbar — exposes
   // every Scanned-Pages operation without leaving the preview.
@@ -3558,7 +3577,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.10'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.11'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
