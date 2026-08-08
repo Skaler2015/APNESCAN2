@@ -65,6 +65,64 @@ public class MainForm : Form
             .Where(p => allowed.Contains(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         return parts.Count > 0 ? string.Join("+", parts) : "eng";
     }
+    // OCR engine: "tesseract" (default, fast, printed text) or "paddle"
+    // (offline PaddleOCR PP-OCRv5 AI — stronger on printed & neat handwriting).
+    private string _ocrEngine = "tesseract";
+    private static string SanitizeEngine(string? e) =>
+        string.Equals(e, "paddle", StringComparison.OrdinalIgnoreCase) ? "paddle" : "tesseract";
+    // Lazily-created PaddleOCR pipeline (expensive to build; not thread-safe, so
+    // all access is serialised through _paddleLock). Held as object to avoid
+    // pulling Sdcb/OpenCvSharp namespaces into the rest of the file.
+    private object? _paddleAll;
+    private bool _paddleBroken;                       // set if the native engine failed to load
+    private readonly object _paddleLock = new();
+    private string PaddleOcrTextFromFile(string path)
+    {
+        lock (_paddleLock)
+        {
+            if (_paddleBroken) return "";
+            try
+            {
+                if (_paddleAll is not Sdcb.PaddleOCR.PaddleOcrAll all)
+                {
+                    var model = Sdcb.PaddleOCR.Models.Local.LocalFullModels.EnglishV5;
+                    all = new Sdcb.PaddleOCR.PaddleOcrAll(model, Sdcb.PaddleInference.PaddleDevice.Mkldnn())
+                    {
+                        AllowRotateDetection = true,
+                        Enable180Classification = false
+                    };
+                    _paddleAll = all;
+                }
+                using OpenCvSharp.Mat src = OpenCvSharp.Cv2.ImRead(path, OpenCvSharp.ImreadModes.Color);
+                if (src.Empty()) return "";
+                var res = all.Run(src);
+                return res?.Text ?? "";
+            }
+            catch
+            {
+                // Native failure (e.g. CPU without AVX) — disable and fall back.
+                _paddleBroken = true;
+                return "";
+            }
+        }
+    }
+    // Unified text extraction that honours the selected OCR engine, with a
+    // graceful fall-back to Tesseract when the AI engine yields nothing.
+    private async Task<string> ExtractTextAsync(string tmpPath, CancellationToken token)
+    {
+        if (_ocrEngine == "paddle")
+        {
+            try
+            {
+                var t = await Task.Run(() => PaddleOcrTextFromFile(tmpPath), token);
+                if (!string.IsNullOrWhiteSpace(t)) return t;
+            }
+            catch { /* fall through to Tesseract */ }
+        }
+        if (_ctx.OcrEngine == null) return "";
+        var r = await _ctx.OcrEngine.ProcessImage(_ctx, tmpPath, new OcrParams(_ocrLang), token);
+        return r == null ? "" : string.Join("\n", r.Lines.Select(l => l.Text));
+    }
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
     private readonly List<List<ProcessedImage>> _redo = new();
@@ -504,6 +562,7 @@ public class MainForm : Form
         string footerText = "";
         string uiExtra = "";   // opaque JSON blob of extra interface prefs (accent, thumb size, density, toggles…)
         string ocrLang = "eng";
+        string ocrEngine = "tesseract";
         int amount = 0;
         long target = 0;
         var indices = new List<int>();
@@ -542,6 +601,7 @@ public class MainForm : Form
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
             if (root.TryGetProperty("uiExtra", out var uxEl) && uxEl.ValueKind == JsonValueKind.String) uiExtra = uxEl.GetString() ?? "";
             if (root.TryGetProperty("ocrLang", out var olEl) && olEl.ValueKind == JsonValueKind.String) ocrLang = olEl.GetString() ?? "eng";
+            if (root.TryGetProperty("ocrEngine", out var oeEl) && oeEl.ValueKind == JsonValueKind.String) ocrEngine = oeEl.GetString() ?? "tesseract";
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
@@ -669,9 +729,10 @@ public class MainForm : Form
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
                     FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra,
-                    OcrLang = SanitizeOcrLang(ocrLang)
+                    OcrLang = SanitizeOcrLang(ocrLang), OcrEngine = SanitizeEngine(ocrEngine)
                 });
                 _ocrLang = SanitizeOcrLang(ocrLang);
+                _ocrEngine = SanitizeEngine(ocrEngine);
                 break;
             case "getLibraryStats":
                 await SendLibraryStatsAsync();
@@ -2375,9 +2436,9 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
                 "apnescan_name_" + Guid.NewGuid().ToString("N")[..8] + ".png");
             top.Save(tmp);
-            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
+            var text = await ExtractTextAsync(tmp, CancellationToken.None);
             try { File.Delete(tmp); } catch { /* best-effort */ }
-            return result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
+            return text;
         }
         finally { top.Dispose(); }
     }
@@ -3481,9 +3542,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             {
                 var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_dt_" + Guid.NewGuid().ToString("N")[..8] + ".png");
                 _pages[i].Save(tmp);
-                var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
+                var text = await ExtractTextAsync(tmp, CancellationToken.None);
                 try { File.Delete(tmp); } catch { }
-                var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
                 var (type, conf) = ClassifyDocType(text);
                 Post(new { type = "pageType", index = i, docType = type, conf });
             }
@@ -3523,6 +3583,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public long PagesLifetime { get; set; }
         // OCR recognition language(s): "eng", "hin", or "eng+hin".
         public string OcrLang { get; set; } = "eng";
+        // OCR engine: "tesseract" or "paddle" (offline AI).
+        public string OcrEngine { get; set; } = "tesseract";
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -3553,6 +3615,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _compressPercent = s.CompressPercent;
         _telemetry = s.Telemetry;
         _ocrLang = SanitizeOcrLang(s.OcrLang);
+        _ocrEngine = SanitizeEngine(s.OcrEngine);
         Post(new
         {
             type = "settings",
@@ -3560,7 +3623,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
-            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang
+            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang, ocrEngine = _ocrEngine
         });
     }
 
@@ -3640,6 +3703,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             s.Device ??= "";
             s.UiExtra ??= "";
             s.OcrLang = SanitizeOcrLang(s.OcrLang);
+            s.OcrEngine = SanitizeEngine(s.OcrEngine);
             // The lifetime page counter is owned by the scan pipeline, not the
             // settings dialog — carry the existing value across a settings save.
             s.PagesLifetime = LoadSettings().PagesLifetime;
@@ -3653,6 +3717,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _compressPercent = s.CompressPercent;
             _telemetry = s.Telemetry;
             _ocrLang = SanitizeOcrLang(s.OcrLang);
+            _ocrEngine = SanitizeEngine(s.OcrEngine);
         }
         catch { /* best-effort */ }
     }

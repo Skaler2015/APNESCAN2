@@ -1541,13 +1541,15 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <section class="set-pane" data-pane="advanced">
           <div class="set-ctitle"><h4>Advanced</h4><small>Configuration &amp; data</small></div>
           <div class="set-card">
+            <div class="set-row"><div class="sl"><b>OCR engine</b><small>Tesseract (fast) or PaddleOCR AI (stronger on printed &amp; neat handwriting)</small></div>
+              <select id="setOcrEngine"><option value="tesseract">Tesseract (default)</option><option value="paddle">PaddleOCR — AI (offline)</option></select></div>
             <div class="set-row"><div class="sl"><b>OCR language</b><small>Recognition language for searchable PDFs &amp; auto-naming</small></div>
               <select id="setOcrLang"><option value="eng">English</option><option value="hin">Hindi (हिन्दी)</option><option value="eng+hin">English + Hindi</option></select></div>
             <div class="set-row"><div class="sl"><b>Your footer details</b><small>Name, phone, address shown on the workspace footer</small></div><div class="set-btn" id="setEditFooter">✎ Edit</div></div>
             <div class="set-row"><div class="sl"><b>Configuration file</b><small>Import, export or back up all settings as JSON</small></div>
               <div class="fgrp"><div class="set-btn mini" id="setImport2">⭳ Import</div><div class="set-btn mini" id="setExport2">⭱ Export</div></div></div>
           </div>
-          <div class="set-note">English &amp; Hindi (Devanagari) recognition data are both bundled with ApneScan. “English + Hindi” reads pages that mix both scripts. Other Indic languages aren't installed, so they're not listed.</div>
+          <div class="set-note">English &amp; Hindi (Devanagari) recognition data are both bundled — “English + Hindi” reads pages that mix both scripts (Tesseract engine). <b>PaddleOCR AI</b> is a fully-offline neural engine (English/Latin) that reads printed and <i>neat</i> handwriting better; it's slower and, honestly, still won't reliably read a doctor's scrawled prescription — no offline engine does. Auto-naming &amp; type-detection use the chosen engine; searchable-PDF text always uses Tesseract.</div>
         </section>
         <section class="set-pane" data-pane="support">
           <div class="set-ctitle"><h4>Support</h4><small>Help, feedback &amp; about</small></div>
@@ -3379,7 +3381,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
   var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'', telemetry:true,
-    accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true, ocrLang:'eng' };
+    accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true, ocrLang:'eng', ocrEngine:'tesseract' };
   // Accent palettes — each recolours the token system (accent, soft & ink) for
   // both light and dark. These drive every token-based accent surface for real.
   var ACCENTS={
@@ -3421,7 +3423,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang,
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang, ocrEngine:ui.ocrEngine,
     uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); }
   function applySettings(s){
     if(!s) return;
@@ -3443,6 +3445,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     ui.telemetry=(s.telemetry!==false);
     ui.compressPercent=s.compressPercent||0;
     if(s.ocrLang) ui.ocrLang=s.ocrLang;
+    if(s.ocrEngine) ui.ocrEngine=s.ocrEngine;
     ui.footerText=s.footerText||'';
     renderFooter();
     // extra interface prefs (accent / thumb / density / toggles) live in uiExtra
@@ -3535,6 +3538,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var ss2=byId('setScannerStatChk'); if(ss2) ss2.checked=ui.showScannerStat;
     var st2=byId('setStatsChk'); if(st2) st2.checked=ui.showStats;
     var ol=byId('setOcrLang'); if(ol) ol.value=ui.ocrLang;
+    var oe=byId('setOcrEngine'); if(oe) oe.value=ui.ocrEngine;
     var vr=byId('setVer'); if(vr && window.APP_VERSION) vr.textContent='Version '+window.APP_VERSION;
     applyStats(ui.showStats); pvRefresh();
     if(bridge) send({cmd:'getLibraryStats'});
@@ -3551,7 +3555,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.3'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.5'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -3651,7 +3655,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
-    ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true; ui.ocrLang='eng';
+    ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true; ui.ocrLang='eng'; ui.ocrEngine='tesseract';
     applyTheme('default'); applyThumb(1); applyDensity('comfortable'); applyAnim(true); applySmooth(true); applyScannerStat(true); applyStats(true);
     fvSetOpts({on:true,sort:true,view:true,filter:true});
     openSettings(); fvSubDim(); setStatus('Defaults restored — press Save to apply');
@@ -3686,6 +3690,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var scs=byId('setScannerStatChk'); if(scs) applyScannerStat(scs.checked);
     var sts=byId('setStatsChk'); if(sts) applyStats(sts.checked);
     var olg=byId('setOcrLang'); if(olg) ui.ocrLang=olg.value;
+    var oeg=byId('setOcrEngine'); if(oeg) ui.ocrEngine=oeg.value;
     fvSetOpts({ on:!!(byId('setFvOn')&&byId('setFvOn').checked), sort:!!(byId('setFvSort')&&byId('setFvSort').checked), view:!!(byId('setFvView')&&byId('setFvView').checked), filter:!!(byId('setFvFilter')&&byId('setFvFilter').checked) });
     persistSettings(); if(close!==false) closeSettings(); setStatus(close===false?'Settings applied':'Settings saved');
   }
