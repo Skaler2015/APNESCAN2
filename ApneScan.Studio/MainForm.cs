@@ -1145,15 +1145,20 @@ public class MainForm : Form
         return dup ? $"{d.Name} · {DriverTag(d.Driver)}" : d.Name;
     }
 
-    // Enumerate one driver with a timeout so a slow/hanging backend (e.g. TWAIN
-    // or network discovery) never blocks the whole scan-list refresh.
-    private async Task<List<ScanDevice>> EnumDriverAsync(ScanController controller, Driver driver, int timeoutMs)
+    // The WIA API version each discovered WIA device was found under, aligned
+    // 1:1 with _devices (Default for non-WIA), so a device enumerated only under
+    // WIA 1.0 (often the fast USB path) is also scanned under WIA 1.0.
+    private List<WiaApiVersion> _deviceWia = new();
+
+    // Enumerate with the given options and a timeout so a slow/hanging backend
+    // (TWAIN or network discovery) never blocks the whole scan-list refresh.
+    private async Task<List<ScanDevice>> EnumOptsAsync(ScanController controller, ScanOptions options, int timeoutMs)
     {
         var found = new List<ScanDevice>();
         using var cts = new CancellationTokenSource(timeoutMs);
         try
         {
-            await foreach (var d in controller.GetDevices(new ScanOptions { Driver = driver }, cts.Token))
+            await foreach (var d in controller.GetDevices(options, cts.Token))
                 found.Add(d);
         }
         catch { /* driver unavailable / timed out — return whatever was found */ }
@@ -1166,17 +1171,28 @@ public class MainForm : Form
         {
             Status("Looking for scanners…");
             var controller = new ScanController(_ctx);
-            // Scan every Windows driver so USB (WIA/TWAIN) and network (ESCL)
-            // scanners all show up — not just the default WIA list.
-            var merged = new List<ScanDevice>();
-            foreach (var drv in new[] { Driver.Wia, Driver.Twain, Driver.Escl })
+            // Scan every Windows path so USB (WIA 1.0/2.0, TWAIN) and network
+            // (ESCL) scanners all show up — not just the default WIA 2.0 list.
+            var merged = new List<(ScanDevice dev, WiaApiVersion wia)>();
+            void AddAll(IEnumerable<ScanDevice> list, WiaApiVersion wia)
             {
-                var list = await EnumDriverAsync(controller, drv, drv == Driver.Escl ? 6000 : 12000);
                 foreach (var d in list)
-                    if (!merged.Any(m => m.Driver == d.Driver && m.ID == d.ID))
-                        merged.Add(d);
+                    if (!merged.Any(m => m.dev.Driver == d.Driver && m.dev.ID == d.ID))
+                        merged.Add((d, wia));
             }
-            _devices = merged;
+            // Both WIA versions — the same scanner's USB and network endpoints
+            // often live under different WIA versions.
+            foreach (var wv in new[] { WiaApiVersion.Wia20, WiaApiVersion.Wia10 })
+            {
+                var opts = new ScanOptions { Driver = Driver.Wia };
+                opts.WiaOptions.WiaApiVersion = wv;
+                AddAll(await EnumOptsAsync(controller, opts, 12000), wv);
+            }
+            AddAll(await EnumOptsAsync(controller, new ScanOptions { Driver = Driver.Twain }, 12000), WiaApiVersion.Default);
+            AddAll(await EnumOptsAsync(controller, new ScanOptions { Driver = Driver.Escl }, 6000), WiaApiVersion.Default);
+
+            _devices = merged.Select(m => m.dev).ToList();
+            _deviceWia = merged.Select(m => m.wia).ToList();
             Post(new { type = "devices", devices = _devices.Select(DeviceLabel).ToArray() });
             if (_devices.Count == 0) { Status("No scanner found"); ScanStatus("offline", "No scanner"); }
             else { Status($"{DeviceLabel(_devices[0])} · Ready"); ScanStatus("ready", $"{_devices.Count} scanner(s) · Ready"); }
@@ -1259,6 +1275,11 @@ public class MainForm : Form
                 BitDepth = ParseColor(color),
                 Dpi = dpi > 0 ? dpi : 200
             };
+            // Scan a WIA device under the same WIA version it was discovered on,
+            // so the fast USB (often WIA 1.0) path is used instead of the slower
+            // network one.
+            if (options.Driver == Driver.Wia && deviceIndex >= 0 && deviceIndex < _deviceWia.Count)
+                options.WiaOptions.WiaApiVersion = _deviceWia[deviceIndex];
 
             var scanSw = Stopwatch.StartNew();
             await foreach (var image in controller.Scan(options, token))
