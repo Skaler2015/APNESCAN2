@@ -2394,7 +2394,11 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   function renderDevice(){
     var e=byId('deviceName');
-    if(e) e.textContent = devices.length ? devices[selectedDevice] : 'No scanner found';
+    var nm = devices.length ? devices[selectedDevice] : 'No scanner found';
+    if(e) e.textContent = nm;
+    // Keep the top status pill and the bottom bar in sync with the *selected*
+    // scanner so the same scanner name shows everywhere (no mismatch).
+    if(devices.length) setStatus(nm + ' · Ready');
     if(typeof pvRefresh==='function') pvRefresh();
   }
   // When the scanner list arrives, keep the remembered scanner selected if it's
@@ -4266,7 +4270,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.24'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.25'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });

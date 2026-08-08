@@ -1348,7 +1348,7 @@ public class MainForm : Form
             _capsCache.Clear();   // device list changed → drop cached capabilities
             Post(new { type = "devices", devices = _devices.Select(DeviceLabel).ToArray(), ids = _devices.Select(DeviceIdOf).ToArray() });
             if (_devices.Count == 0) { Status("No scanner found"); ScanStatus("offline", "No scanner"); }
-            else { Status($"{DeviceLabel(_devices[0])} · Ready"); ScanStatus("ready", $"{_devices.Count} scanner(s) · Ready"); }
+            else { ScanStatus("ready", $"{_devices.Count} scanner(s) · Ready"); }   // the UI names the *selected* scanner (renderDevice)
         }
         catch (Exception ex)
         {
