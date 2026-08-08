@@ -1540,13 +1540,13 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
         <section class="set-pane" data-pane="advanced">
           <div class="set-ctitle"><h4>Advanced</h4><small>Configuration &amp; data</small></div>
           <div class="set-card">
-            <div class="set-row"><div class="sl"><b>OCR language</b><small>Text recognition language for searchable PDFs</small></div>
-              <select id="setOcrLang" disabled><option>English (installed)</option></select></div>
+            <div class="set-row"><div class="sl"><b>OCR language</b><small>Recognition language for searchable PDFs &amp; auto-naming</small></div>
+              <select id="setOcrLang"><option value="eng">English</option><option value="hin">Hindi (हिन्दी)</option><option value="eng+hin">English + Hindi</option></select></div>
             <div class="set-row"><div class="sl"><b>Your footer details</b><small>Name, phone, address shown on the workspace footer</small></div><div class="set-btn" id="setEditFooter">✎ Edit</div></div>
             <div class="set-row"><div class="sl"><b>Configuration file</b><small>Import, export or back up all settings as JSON</small></div>
               <div class="fgrp"><div class="set-btn mini" id="setImport2">⭳ Import</div><div class="set-btn mini" id="setExport2">⭱ Export</div></div></div>
           </div>
-          <div class="set-note">More OCR languages (Hindi &amp; other Indic scripts) are not bundled yet — English is the only installed recognition language, so it's the only real option shown here.</div>
+          <div class="set-note">English &amp; Hindi (Devanagari) recognition data are both bundled with ApneScan. “English + Hindi” reads pages that mix both scripts. Other Indic languages aren't installed, so they're not listed.</div>
         </section>
         <section class="set-pane" data-pane="support">
           <div class="set-ctitle"><h4>Support</h4><small>Help, feedback &amp; about</small></div>
@@ -3368,7 +3368,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
   var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, compressPercent:0, footerText:'', telemetry:true,
-    accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true };
+    accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true, ocrLang:'eng' };
   // Accent palettes — each recolours the token system (accent, soft & ink) for
   // both light and dark. These drive every token-based accent surface for real.
   var ACCENTS={
@@ -3410,7 +3410,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry,
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang,
     uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); }
   function applySettings(s){
     if(!s) return;
@@ -3431,6 +3431,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     ui.skipBlank=!!s.skipBlank;
     ui.telemetry=(s.telemetry!==false);
     ui.compressPercent=s.compressPercent||0;
+    if(s.ocrLang) ui.ocrLang=s.ocrLang;
     ui.footerText=s.footerText||'';
     renderFooter();
     // extra interface prefs (accent / thumb / density / toggles) live in uiExtra
@@ -3522,6 +3523,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var sm2=byId('setSmoothChk'); if(sm2) sm2.checked=ui.smoothScroll;
     var ss2=byId('setScannerStatChk'); if(ss2) ss2.checked=ui.showScannerStat;
     var st2=byId('setStatsChk'); if(st2) st2.checked=ui.showStats;
+    var ol=byId('setOcrLang'); if(ol) ol.value=ui.ocrLang;
     var vr=byId('setVer'); if(vr && window.APP_VERSION) vr.textContent='Version '+window.APP_VERSION;
     applyStats(ui.showStats); pvRefresh();
     if(bridge) send({cmd:'getLibraryStats'});
@@ -3638,7 +3640,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
     ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.compressPercent=0; ui.telemetry=true;
-    ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true;
+    ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true; ui.ocrLang='eng';
     applyTheme('default'); applyThumb(1); applyDensity('comfortable'); applyAnim(true); applySmooth(true); applyScannerStat(true); applyStats(true);
     fvSetOpts({on:true,sort:true,view:true,filter:true});
     openSettings(); fvSubDim(); setStatus('Defaults restored — press Save to apply');
@@ -3672,6 +3674,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var smt=byId('setSmoothChk'); if(smt) applySmooth(smt.checked);
     var scs=byId('setScannerStatChk'); if(scs) applyScannerStat(scs.checked);
     var sts=byId('setStatsChk'); if(sts) applyStats(sts.checked);
+    var olg=byId('setOcrLang'); if(olg) ui.ocrLang=olg.value;
     fvSetOpts({ on:!!(byId('setFvOn')&&byId('setFvOn').checked), sort:!!(byId('setFvSort')&&byId('setFvSort').checked), view:!!(byId('setFvView')&&byId('setFvView').checked), filter:!!(byId('setFvFilter')&&byId('setFvFilter').checked) });
     persistSettings(); if(close!==false) closeSettings(); setStatus(close===false?'Settings applied':'Settings saved');
   }

@@ -22,9 +22,9 @@
     <Copyright>Copyright 2026 Subhash Kaler</Copyright>
 
     <!-- ApneScan version. Starts at 1.0.0 and is bumped on every update. -->
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.1</Version>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,8 +44,12 @@
     <None Update="ui.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <!-- OCR language data (English) copied next to the app -->
+    <!-- OCR language data copied next to the app -->
     <None Update="tessdata\eng.traineddata">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Hindi (Devanagari) OCR language data -->
+    <None Update="tessdata\hin.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

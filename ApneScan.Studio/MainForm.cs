@@ -54,6 +54,17 @@ public class MainForm : Form
     private bool _busy;
     private CancellationTokenSource? _scanCts;   // lets the user cancel a scan mid-way
     private bool _ocr;
+    // OCR recognition language passed to Tesseract: "eng", "hin", or "eng+hin".
+    // Only languages with a bundled tessdata file are ever used.
+    private string _ocrLang = "eng";
+    // Keep the language honest — fall back to any part that is actually installed.
+    private static string SanitizeOcrLang(string? lang)
+    {
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "eng", "hin" };
+        var parts = (lang ?? "eng").Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(p => allowed.Contains(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        return parts.Count > 0 ? string.Join("+", parts) : "eng";
+    }
     private int _selected = -1;
     private readonly List<List<ProcessedImage>> _undo = new();
     private readonly List<List<ProcessedImage>> _redo = new();
@@ -492,6 +503,7 @@ public class MainForm : Form
         string op = "";
         string footerText = "";
         string uiExtra = "";   // opaque JSON blob of extra interface prefs (accent, thumb size, density, toggles…)
+        string ocrLang = "eng";
         int amount = 0;
         long target = 0;
         var indices = new List<int>();
@@ -529,6 +541,7 @@ public class MainForm : Form
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
             if (root.TryGetProperty("uiExtra", out var uxEl) && uxEl.ValueKind == JsonValueKind.String) uiExtra = uxEl.GetString() ?? "";
+            if (root.TryGetProperty("ocrLang", out var olEl) && olEl.ValueKind == JsonValueKind.String) ocrLang = olEl.GetString() ?? "eng";
             if (root.TryGetProperty("target", out var tgEl) && tgEl.ValueKind == JsonValueKind.Number) target = tgEl.GetInt64();
             if (root.TryGetProperty("op", out var opEl) && opEl.ValueKind == JsonValueKind.String) op = opEl.GetString() ?? "";
             if (root.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number) amount = amtEl.GetInt32();
@@ -655,8 +668,10 @@ public class MainForm : Form
                     Theme = theme, ShowNums = showNums, ShowProfiles = showProfiles,
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
-                    FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra
+                    FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra,
+                    OcrLang = SanitizeOcrLang(ocrLang)
                 });
+                _ocrLang = SanitizeOcrLang(ocrLang);
                 break;
             case "getLibraryStats":
                 await SendLibraryStatsAsync();
@@ -1401,7 +1416,7 @@ public class MainForm : Form
         try
         {
             Status(_ocr ? "Saving PDF with OCR (this can take a moment)…" : "Saving PDF…");
-            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
             await ExportPdf(sfd.FileName, _pages, ocrParams);
             AddHistory(sfd.FileName, _pages.Count);
             Bump("pdf", 1);
@@ -1450,7 +1465,7 @@ public class MainForm : Form
         {
             Status(_ocr ? "Saving selected page(s) (OCR)…" : "Saving selected page(s)…");
             var pages = sel.Select(i => _pages[i]).ToList();
-            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
             await ExportPdf(sfd.FileName, pages, ocrParams);
             AddHistory(sfd.FileName, pages.Count);
             Bump("pdf", 1);
@@ -1503,7 +1518,7 @@ public class MainForm : Form
             Status("Preparing PDF to share…");
             var path = Path.Combine(Path.GetTempPath(),
                 "ApneScan_" + Guid.NewGuid().ToString("N")[..8] + ".pdf");
-            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
             await ExportPdf(path, _pages, ocrParams);
 
             // Open Explorer with the PDF selected so the user can right-click it
@@ -1544,7 +1559,7 @@ public class MainForm : Form
                     ? SanitizeFileName(_pageNames[idx[0]]) : "scan";
                 file = Path.Combine(Path.GetTempPath(), nm + "_" + Guid.NewGuid().ToString("N")[..6] + ".pdf");
                 var pages = idx.Select(i => _pages[i]).ToList();
-                var ocrParams = _ocr ? new OcrParams("eng") : null;
+                var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
                 Status("Preparing file for WhatsApp…");
                 await ExportPdf(file, pages, ocrParams);
             }
@@ -1609,7 +1624,7 @@ public class MainForm : Form
                     ? SanitizeFileName(_pageNames[idx[0]]) : "scan";
                 file = System.IO.Path.Combine(System.IO.Path.GetTempPath(), nm + "_" + Guid.NewGuid().ToString("N")[..6] + ".pdf");
                 Status("Preparing file to share…");
-                await ExportPdf(file, idx.Select(i => _pages[i]).ToList(), _ocr ? new OcrParams("eng") : null);
+                await ExportPdf(file, idx.Select(i => _pages[i]).ToList(), _ocr ? new OcrParams(_ocrLang) : null);
             }
             if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) { Status("File not found to share"); return; }
 
@@ -2360,7 +2375,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
                 "apnescan_name_" + Guid.NewGuid().ToString("N")[..8] + ".png");
             top.Save(tmp);
-            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
             try { File.Delete(tmp); } catch { /* best-effort */ }
             return result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
         }
@@ -3408,7 +3423,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_ocr_" + Guid.NewGuid().ToString("N")[..8] + ".png");
             _pages[i].Save(tmp);
             var ocrSw = Stopwatch.StartNew();
-            var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
             ocrSw.Stop();
             try { File.Delete(tmp); } catch { /* best-effort */ }
             var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
@@ -3435,17 +3450,17 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         int Score(params string[] kws) { int n = 0; foreach (var k in kws) if (t.Contains(k)) n++; return n; }
         var cands = new List<(string type, int score)>
         {
-            ("Aadhaar",         Score("aadhaar", "aadhar", "uidai", "unique identification")),
-            ("PAN Card",        Score("permanent account number", "income tax department", "पर्मानेंट")),
-            ("Passport",        Score("passport", "republic of india", "given name", "place of issue")),
-            ("Driving Licence", Score("driving licence", "driving license", "transport department", "motor vehicle", "dl no")),
-            ("ECHS Card",       Score("echs", "ex-servicemen", "contributory health", "smart card", "cghs")),
-            ("Prescription",    Score("prescription", "rx ", "tablet", "capsule", " mg ", "dosage", "physician", "diagnosis")),
-            ("Lab Report",      Score("laboratory", "lab report", "haemoglobin", "hemoglobin", "wbc", "rbc", "reference range", "specimen", "pathology")),
-            ("Invoice / Bill",  Score("invoice", "tax invoice", "gstin", " gst ", "total amount", "grand total", "amount payable", "bill no", "receipt")),
-            ("Certificate",     Score("certificate", "this is to certify", "certified that", "hereby certify")),
-            ("Referral",        Score("referral", "referred to", "reference slip", "refer to")),
-            ("Agreement",       Score("agreement", "terms and conditions", "hereby agree", "party of the first")),
+            ("Aadhaar",         Score("aadhaar", "aadhar", "uidai", "unique identification", "आधार", "भारतीय विशिष्ट पहचान")),
+            ("PAN Card",        Score("permanent account number", "income tax department", "पर्मानेंट", "स्थायी खाता संख्या", "आयकर विभाग")),
+            ("Passport",        Score("passport", "republic of india", "given name", "place of issue", "पासपोर्ट", "भारत गणराज्य")),
+            ("Driving Licence", Score("driving licence", "driving license", "transport department", "motor vehicle", "dl no", "ड्राइविंग लाइसेंस", "परिवहन विभाग", "मोटर वाहन")),
+            ("ECHS Card",       Score("echs", "ex-servicemen", "contributory health", "smart card", "cghs", "पूर्व सैनिक", "स्वास्थ्य योजना")),
+            ("Prescription",    Score("prescription", "rx ", "tablet", "capsule", " mg ", "dosage", "physician", "diagnosis", "दवा", "गोली", "कैप्सूल", "खुराक", "चिकित्सक", "रोगी")),
+            ("Lab Report",      Score("laboratory", "lab report", "haemoglobin", "hemoglobin", "wbc", "rbc", "reference range", "specimen", "pathology", "प्रयोगशाला", "रक्त", "जांच", "हीमोग्लोबिन", "मूत्र")),
+            ("Invoice / Bill",  Score("invoice", "tax invoice", "gstin", " gst ", "total amount", "grand total", "amount payable", "bill no", "receipt", "बिल", "चालान", "रसीद", "कुल राशि", "भुगतान", "जीएसटी")),
+            ("Certificate",     Score("certificate", "this is to certify", "certified that", "hereby certify", "प्रमाण पत्र", "प्रमाणपत्र", "प्रमाणित किया जाता")),
+            ("Referral",        Score("referral", "referred to", "reference slip", "refer to", "रेफरल", "संदर्भित", "रेफर")),
+            ("Agreement",       Score("agreement", "terms and conditions", "hereby agree", "party of the first", "अनुबंध", "समझौता", "नियम और शर्तें")),
         };
         var best = cands.OrderByDescending(c => c.score).First();
         if (best.score == 0) return ("Document", 0);
@@ -3466,7 +3481,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             {
                 var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_dt_" + Guid.NewGuid().ToString("N")[..8] + ".png");
                 _pages[i].Save(tmp);
-                var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+                var result = await _ctx.OcrEngine.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
                 try { File.Delete(tmp); } catch { }
                 var text = result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
                 var (type, conf) = ClassifyDocType(text);
@@ -3506,6 +3521,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string UiExtra { get; set; } = "";
         // Lifetime count of pages captured — shown in Settings statistics.
         public long PagesLifetime { get; set; }
+        // OCR recognition language(s): "eng", "hin", or "eng+hin".
+        public string OcrLang { get; set; } = "eng";
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -3535,6 +3552,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _skipBlank = s.SkipBlank;
         _compressPercent = s.CompressPercent;
         _telemetry = s.Telemetry;
+        _ocrLang = SanitizeOcrLang(s.OcrLang);
         Post(new
         {
             type = "settings",
@@ -3542,7 +3560,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
-            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra
+            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang
         });
     }
 
@@ -3621,6 +3639,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             if (s.Dpi <= 0) s.Dpi = 200;
             s.Device ??= "";
             s.UiExtra ??= "";
+            s.OcrLang = SanitizeOcrLang(s.OcrLang);
             // The lifetime page counter is owned by the scan pipeline, not the
             // settings dialog — carry the existing value across a settings save.
             s.PagesLifetime = LoadSettings().PagesLifetime;
@@ -3633,6 +3652,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _skipBlank = s.SkipBlank;
             _compressPercent = s.CompressPercent;
             _telemetry = s.Telemetry;
+            _ocrLang = SanitizeOcrLang(s.OcrLang);
         }
         catch { /* best-effort */ }
     }
@@ -4326,7 +4346,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         try
         {
             page.Save(tmp);
-            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams("eng"), CancellationToken.None);
+            var result = await _ctx.OcrEngine!.ProcessImage(_ctx, tmp, new OcrParams(_ocrLang), CancellationToken.None);
             return result == null ? "" : string.Join("\n", result.Lines.Select(l => l.Text));
         }
         finally { try { File.Delete(tmp); } catch { } }
@@ -4510,7 +4530,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             Status("Merging PDFs…");
             foreach (var p in pdfs) all.AddRange(await ImportPagesAsync(p));
-            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            await ExportPdf(outFile, all, _ocr ? new OcrParams(_ocrLang) : null);
             AddHistory(outFile, all.Count);
             SendFolder(System.IO.Path.GetDirectoryName(outFile)!);
             Status($"Merged {pdfs.Count} PDFs → {System.IO.Path.GetFileName(outFile)}");
@@ -4575,7 +4595,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         {
             Status("Making PDF…");
             foreach (var p in imgs) all.AddRange(await ImportPagesAsync(p));
-            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            await ExportPdf(outFile, all, _ocr ? new OcrParams(_ocrLang) : null);
             AddHistory(outFile, all.Count);
             SendFolder(System.IO.Path.GetDirectoryName(outFile)!);
             Status($"Made a PDF from {imgs.Count} image(s)");
@@ -4598,7 +4618,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             var dir = System.IO.Path.GetDirectoryName(path)!;
             var stem = System.IO.Path.GetFileNameWithoutExtension(path);
             var outFile = UniquePath(System.IO.Path.Combine(dir, $"{stem} (updated).pdf"), false);
-            await ExportPdf(outFile, all, _ocr ? new OcrParams("eng") : null);
+            await ExportPdf(outFile, all, _ocr ? new OcrParams(_ocrLang) : null);
             AddHistory(outFile, all.Count);
             SendFolder(dir);
             Status($"Added {_pages.Count} page(s) → {System.IO.Path.GetFileName(outFile)}");
@@ -5049,7 +5069,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
 
         try
         {
-            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
             int made = 0;
             foreach (var nm in order)
             {
@@ -5165,7 +5185,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
 
             Status(_ocr ? "Saving PDF with OCR…" : "Saving PDF…");
-            var ocrParams = _ocr ? new OcrParams("eng") : null;
+            var ocrParams = _ocr ? new OcrParams(_ocrLang) : null;
             await ExportPdf(file, _pages, ocrParams);
             AddHistory(file, _pages.Count);
             Bump("pdf", 1);
