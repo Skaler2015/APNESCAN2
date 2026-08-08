@@ -22,9 +22,9 @@
     <Copyright>Copyright 2026 Subhash Kaler</Copyright>
 
     <!-- ApneScan version. Starts at 1.0.0 and is bumped on every update. -->
-    <Version>1.2.9</Version>
-    <AssemblyVersion>1.2.9.0</AssemblyVersion>
-    <FileVersion>1.2.9.0</FileVersion>
+    <Version>1.2.10</Version>
+    <AssemblyVersion>1.2.10.0</AssemblyVersion>
+    <FileVersion>1.2.10.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -56,6 +56,10 @@
     </None>
     <!-- Hindi (Devanagari) OCR language data -->
     <None Update="tessdata\hin.traineddata">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Orientation & Script Detection data (for auto-rotate) -->
+    <None Update="tessdata\osd.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

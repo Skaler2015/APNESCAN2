@@ -135,6 +135,7 @@ public class MainForm : Form
     private bool _clearAfter;
     private bool _autoCrop = true;
     private bool _skipBlank;
+    private bool _autoRotate;   // detect page orientation (OSD) and straighten each scan
     private int _compressPercent; // 0 = off; higher = smaller PDFs on save
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
@@ -555,6 +556,7 @@ public class MainForm : Form
         bool showNums = true, showProfiles = true, autoName = true, clearAfter = false;
         bool telemetry = true;
         bool autoCrop = true, skipBlank = false;
+        bool autoRotate = false;
         int compressPercent = 0;
         string data = "";
         string ctx = "";
@@ -596,6 +598,7 @@ public class MainForm : Form
             if (root.TryGetProperty("clearAfter", out var caEl) && (caEl.ValueKind == JsonValueKind.True || caEl.ValueKind == JsonValueKind.False)) clearAfter = caEl.GetBoolean();
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
+            if (root.TryGetProperty("autoRotate", out var arEl) && (arEl.ValueKind == JsonValueKind.True || arEl.ValueKind == JsonValueKind.False)) autoRotate = arEl.GetBoolean();
             if (root.TryGetProperty("telemetry", out var tmEl) && (tmEl.ValueKind == JsonValueKind.True || tmEl.ValueKind == JsonValueKind.False)) telemetry = tmEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
@@ -729,7 +732,8 @@ public class MainForm : Form
                     SaveDefault = saveDefault, AutoName = autoName, ClearAfter = clearAfter,
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
                     FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra,
-                    OcrLang = SanitizeOcrLang(ocrLang), OcrEngine = SanitizeEngine(ocrEngine)
+                    OcrLang = SanitizeOcrLang(ocrLang), OcrEngine = SanitizeEngine(ocrEngine),
+                    AutoRotate = autoRotate
                 });
                 _ocrLang = SanitizeOcrLang(ocrLang);
                 _ocrEngine = SanitizeEngine(ocrEngine);
@@ -1433,7 +1437,71 @@ public class MainForm : Form
                 }
             }
         }
+        if (_autoRotate) p = await AutoRotateAsync(p);
         return (p, false);
+    }
+
+    // Locate the bundled Tesseract executable once (used for OSD orientation).
+    private static string? _tessExe;
+    private static string? FindTesseractExe()
+    {
+        if (_tessExe != null) return _tessExe.Length == 0 ? null : _tessExe;
+        try
+        {
+            var hit = Directory.EnumerateFiles(AppContext.BaseDirectory, "tesseract.exe", SearchOption.AllDirectories).FirstOrDefault();
+            _tessExe = hit ?? "";
+            return hit;
+        }
+        catch { _tessExe = ""; return null; }
+    }
+
+    // Detect the page's orientation with Tesseract OSD (--psm 0) and rotate it
+    // upright. Best-effort: any failure returns the page unchanged.
+    private async Task<ProcessedImage> AutoRotateAsync(ProcessedImage p)
+    {
+        string? tmp = null;
+        try
+        {
+            var exe = FindTesseractExe();
+            if (exe == null) return p;
+            var tessdata = System.IO.Path.Combine(AppContext.BaseDirectory, "tessdata");
+            if (!File.Exists(System.IO.Path.Combine(tessdata, "osd.traineddata"))) return p;
+
+            tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "apnescan_osd_" + Guid.NewGuid().ToString("N")[..8] + ".png");
+            var renderer = new ThumbnailRenderer(_ctx.ImageContext);
+            using (var img = await renderer.Render(p, 1600)) { img.Save(tmp); }
+
+            int rotate = 0;
+            var psi = new ProcessStartInfo
+            {
+                FileName = exe,
+                Arguments = $"\"{tmp}\" stdout --psm 0",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            psi.EnvironmentVariables["TESSDATA_PREFIX"] = tessdata;
+            using (var proc = Process.Start(psi))
+            {
+                if (proc != null)
+                {
+                    string outp = await proc.StandardOutput.ReadToEndAsync();
+                    _ = await proc.StandardError.ReadToEndAsync();
+                    if (!proc.WaitForExit(15000)) { try { proc.Kill(); } catch { } }
+                    var m = System.Text.RegularExpressions.Regex.Match(outp, @"Rotate:\s*(\d+)");
+                    if (m.Success) int.TryParse(m.Groups[1].Value, out rotate);
+                }
+            }
+            rotate = ((rotate % 360) + 360) % 360;
+            if (rotate == 90 || rotate == 180 || rotate == 270)
+            {
+                try { p = p.WithTransform(new RotationTransform(rotate), disposeSelf: true); } catch { }
+            }
+        }
+        catch { /* keep original on any failure */ }
+        finally { if (tmp != null) { try { File.Delete(tmp); } catch { } } }
+        return p;
     }
 
     private static System.Drawing.Bitmap ToBitmap24(IMemoryImage img)
@@ -3658,6 +3726,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string OcrLang { get; set; } = "eng";
         // OCR engine: "tesseract" or "paddle" (offline AI).
         public string OcrEngine { get; set; } = "tesseract";
+        // Auto-rotate each scanned page to its upright orientation (OSD).
+        public bool AutoRotate { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -3689,6 +3759,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _telemetry = s.Telemetry;
         _ocrLang = SanitizeOcrLang(s.OcrLang);
         _ocrEngine = SanitizeEngine(s.OcrEngine);
+        _autoRotate = s.AutoRotate;
         Post(new
         {
             type = "settings",
@@ -3696,7 +3767,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             theme = s.Theme, showNums = s.ShowNums, showProfiles = s.ShowProfiles,
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
-            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang, ocrEngine = _ocrEngine
+            footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang, ocrEngine = _ocrEngine,
+            autoRotate = s.AutoRotate
         });
     }
 
@@ -3791,6 +3863,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _telemetry = s.Telemetry;
             _ocrLang = SanitizeOcrLang(s.OcrLang);
             _ocrEngine = SanitizeEngine(s.OcrEngine);
+            _autoRotate = s.AutoRotate;
         }
         catch { /* best-effort */ }
     }
