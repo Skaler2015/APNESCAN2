@@ -296,7 +296,8 @@ svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;st
 .tool.g{color:var(--good)}
 .pages{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--muted);font-weight:600}
 .content{flex:1;display:flex;min-height:0}
-.center{flex:1;min-width:0;overflow:auto;padding:20px 24px 26px}
+.center{flex:1;min-width:0;overflow:auto;padding:8px 24px 26px}
+#scannedHead{margin-top:6px}
 .scan-card{background:linear-gradient(180deg,#ffffff,#fdfdff);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:38px 20px 30px;text-align:center;position:relative;overflow:hidden}
 .scan-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(180deg,transparent,#f3f0ff)}
 .scan-card h2{margin:0;font-size:27px;font-weight:800;letter-spacing:-.6px}
@@ -3596,7 +3597,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.13'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.14'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });

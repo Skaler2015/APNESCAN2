@@ -22,9 +22,9 @@
     <Copyright>Copyright 2026 Subhash Kaler</Copyright>
 
     <!-- ApneScan version. Starts at 1.0.0 and is bumped on every update. -->
-    <Version>1.2.13</Version>
-    <AssemblyVersion>1.2.13.0</AssemblyVersion>
-    <FileVersion>1.2.13.0</FileVersion>
+    <Version>1.2.14</Version>
+    <AssemblyVersion>1.2.14.0</AssemblyVersion>
+    <FileVersion>1.2.14.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
