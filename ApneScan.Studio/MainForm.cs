@@ -550,7 +550,8 @@ public class MainForm : Form
         "getDevices", "getSettings", "getStorage", "getProfiles", "getAnalytics",
         "getHistory", "getNames", "getFavs", "getShortcuts", "getText", "getRecent",
         "getThumb", "getSubfolders", "listFolder", "previewFile", "select",
-        "checkUpdate", "browseFolder", "cancelScan"
+        "checkUpdate", "browseFolder", "cancelScan",
+        "getScanProfiles", "saveScanProfiles", "getCaps", "connectHistory", "connectClose"
     };
 
     private void TrackAction(string cmd)
@@ -740,6 +741,15 @@ public class MainForm : Form
                 break;
             case "getProfiles":
                 SendProfiles();
+                break;
+            case "getScanProfiles":
+                SendScanProfiles();
+                break;
+            case "saveScanProfiles":
+                SaveScanProfiles(data);
+                break;
+            case "getCaps":
+                await SendCapsAsync(deviceIndex);
                 break;
             case "saveProfile":
                 SaveProfile(name, dpi, color, source, on, deviceName);
@@ -1196,6 +1206,92 @@ public class MainForm : Form
     // user can tell the entries apart and pick the fastest (e.g. eSCL) one.
     private string DeviceLabel(ScanDevice d) => $"{d.Name} · {DriverTag(d.Driver)}";
 
+    // A stable per-device identity so a scan profile can remember exactly which
+    // scanner it belongs to (driver + driver-specific ID), not just the name.
+    private static string DeviceIdOf(ScanDevice d) => $"{d.Driver}:{d.ID}";
+
+    // Cached scanner capabilities, keyed by device identity, so switching back
+    // to a scanner doesn't re-query the (sometimes slow) driver.
+    private readonly Dictionary<string, ScanCaps> _capsCache = new();
+
+    // Detect the real capabilities of a scanner (duplex, DPI range, colour
+    // modes, max page size) via NAPS2's GetCaps and report them to the UI so the
+    // toolbar only offers — and profiles only store — settings the device
+    // actually supports. Best-effort: if a driver can't report caps we say so
+    // (known:false) and the UI keeps the standard option set.
+    private async Task SendCapsAsync(int deviceIndex)
+    {
+        if (deviceIndex < 0 || deviceIndex >= _devices.Count) return;
+        var dev = _devices[deviceIndex];
+        var key = DeviceIdOf(dev);
+        try
+        {
+            if (!_capsCache.TryGetValue(key, out var caps))
+            {
+                var controller = new ScanController(_ctx);
+                var opts = new ScanOptions { Device = dev, Driver = dev.Driver };
+                if (dev.Driver == Driver.Wia && deviceIndex < _deviceWia.Count)
+                    opts.WiaOptions.WiaApiVersion = _deviceWia[deviceIndex];
+                using var cts = new CancellationTokenSource(15000);
+                caps = await controller.GetCaps(opts, cts.Token);
+                _capsCache[key] = caps;
+            }
+
+            var ps = caps.PaperSourceCaps;
+            var perList = new[] { caps.FlatbedCaps, caps.FeederCaps, caps.DuplexCaps }.Where(c => c != null).Select(c => c!).ToList();
+            var per = perList.Count > 0 ? PerSourceCaps.UnionAll(perList) : null;
+            int[]? dpis = per?.DpiCaps?.CommonValues?.Where(d => d > 0).ToArray();
+            var colors = new List<string>();
+            var bd = per?.BitDepthCaps;
+            if (bd == null || bd.SupportsColor) colors.Add("color");
+            if (bd == null || bd.SupportsGrayscale) colors.Add("gray");
+            if (bd == null || bd.SupportsBlackAndWhite) colors.Add("bw");
+
+            Post(new
+            {
+                type = "caps",
+                index = deviceIndex,
+                device = DeviceLabel(dev),
+                deviceId = key,
+                known = ps != null,
+                flatbed = ps?.SupportsFlatbed ?? true,
+                feeder = ps?.SupportsFeeder ?? true,
+                duplex = ps?.SupportsDuplex ?? false,
+                auto = ps?.CanCheckIfFeederHasPaper ?? true,
+                dpis = (dpis != null && dpis.Length > 0) ? dpis : null,
+                colors = colors.ToArray()
+            });
+        }
+        catch
+        {
+            // Driver can't report capabilities — keep the standard options.
+            Post(new { type = "caps", index = deviceIndex, device = DeviceLabel(dev), deviceId = key, known = false });
+        }
+    }
+
+    // ---- Scan-profile persistence (opaque JSON blob owned by the UI) ----
+    private static string ScanProfilesFile => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ApneScan", "scanprofiles.json");
+
+    private void SendScanProfiles()
+    {
+        string data = "";
+        try { if (File.Exists(ScanProfilesFile)) data = File.ReadAllText(ScanProfilesFile); }
+        catch { /* start empty */ }
+        Post(new { type = "scanProfiles", data });
+    }
+
+    private void SaveScanProfiles(string data)
+    {
+        try
+        {
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(ScanProfilesFile)!);
+            File.WriteAllText(ScanProfilesFile, data ?? "");
+        }
+        catch (Exception ex) { Status("Profile save error: " + ex.Message); }
+    }
+
     // The WIA API version each discovered WIA device was found under, aligned
     // 1:1 with _devices (Default for non-WIA), so a device enumerated only under
     // WIA 1.0 (often the fast USB path) is also scanned under WIA 1.0.
@@ -1246,7 +1342,8 @@ public class MainForm : Form
 
             _devices = merged.Select(m => m.dev).ToList();
             _deviceWia = merged.Select(m => m.wia).ToList();
-            Post(new { type = "devices", devices = _devices.Select(DeviceLabel).ToArray() });
+            _capsCache.Clear();   // device list changed → drop cached capabilities
+            Post(new { type = "devices", devices = _devices.Select(DeviceLabel).ToArray(), ids = _devices.Select(DeviceIdOf).ToArray() });
             if (_devices.Count == 0) { Status("No scanner found"); ScanStatus("offline", "No scanner"); }
             else { Status($"{DeviceLabel(_devices[0])} · Ready"); ScanStatus("ready", $"{_devices.Count} scanner(s) · Ready"); }
         }

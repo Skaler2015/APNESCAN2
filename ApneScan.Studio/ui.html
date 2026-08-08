@@ -823,6 +823,38 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 .cn-net{font-size:11px;color:var(--muted-2)}
 .cn-danger{color:#ef4444;border-color:color-mix(in srgb,#ef4444 40%,var(--border))}
 .cn-danger:hover{background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444}
+/* ===== Scan Profiles ===== */
+.prof-mod{color:var(--amber);font-weight:700}
+.prof-warn{color:#ef4444;font-weight:800}
+#profReset{margin-left:6px}
+#profMenu .pm-item{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:flex-start}
+#profMenu .pm-item:hover{background:var(--accent-soft)}
+#profMenu .pm-item .pm-ck{width:14px;flex:none;margin-top:2px;color:var(--accent)}
+#profMenu .pm-item .pm-nm{font-weight:700;font-size:12.5px}
+#profMenu .pm-item .pm-sum{font-size:11px;color:var(--muted);margin-top:1px}
+#profMenu .pm-item.warn .pm-nm{color:#ef4444}
+#profMenu .pm-act{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:center;color:var(--accent-ink)}
+#profMenu .pm-act:hover{background:var(--accent-soft)}
+#profMenu .pm-sep{border-top:1px solid var(--border);margin:5px 2px}
+.pf-form{display:flex;flex-direction:column;gap:2px}
+.pf-l{font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 4px;letter-spacing:.3px}
+.pf-in{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:var(--text);font-size:13px}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.pf-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer}
+.pf-err{color:#ef4444;font-size:11.5px;font-weight:600;min-height:14px;margin-top:3px}
+.pm-list{max-height:60vh;overflow:auto;margin:4px 0 12px}
+.pm-card{border:1px solid var(--border);border-radius:11px;padding:11px 12px;margin-bottom:8px;display:flex;gap:11px;align-items:flex-start}
+.pm-card.active{border-color:var(--accent);background:var(--accent-soft)}
+.pm-card .pm-badge{width:30px;height:30px;border-radius:9px;background:var(--accent-grad);color:#fff;display:grid;place-items:center;font-weight:800;flex:none;font-size:13px}
+.pm-card .pm-body{flex:1;min-width:0}
+.pm-card .pm-t{font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px}
+.pm-card .pm-star{color:var(--amber);font-size:11px;font-weight:700}
+.pm-card .pm-scn{font-size:11.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-card .pm-set{font-size:11px;color:var(--muted-2);margin-top:2px}
+.pm-card .pm-btns{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.pm-card .pm-b{font-size:11px;font-weight:700;padding:5px 9px;border-radius:7px;background:var(--panel);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.pm-card .pm-b:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.pm-card .pm-b.danger{color:#ef4444}
 /* success dialog */
 #cnDoneOverlay{z-index:70}
 .cn-done{width:min(420px,92vw);text-align:center;padding:22px 20px}
@@ -1245,6 +1277,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
           <span class="k">CONNECTED SCANNER</span>
           <span class="v"><span class="dev" id="scanDot"></span><span id="deviceName">Detecting…</span> <span class="sstat" id="scanStat"></span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg> <span class="rf" id="refreshBtn" title="Search for scanners again"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg></span></span>
         </div>
+        <div class="field" id="setProfile" style="cursor:pointer" title="Select a saved scan profile"><span class="k">PROFILE</span><span class="v"><span id="valProfile">Default Profile</span><span id="profMod" class="prof-mod" style="display:none"> • Modified</span><span id="profWarn" class="prof-warn" title="This profile’s scanner is not connected" style="display:none"> ⚠</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg> <span class="rf" id="profReset" title="Reset current settings to the active profile" style="display:none"><svg class="ic" style="width:12px;height:12px"><use href="#i-refresh"/></svg></span></span></div>
         <div class="field" id="setDpi" style="cursor:pointer"><span class="k">RESOLUTION</span><span class="v"><span id="valDpi">200 dpi</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="field" id="setColor" style="cursor:pointer"><span class="k">COLOR</span><span class="v"><span id="valColor">Color</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
         <div class="field" id="setPageSize" style="cursor:pointer"><span class="k">PAGE SIZE</span><span class="v"><span id="valPageSize">Auto (full)</span> <svg class="cv ic" style="width:11px;height:11px"><use href="#i-chevron"/></svg></span></div>
@@ -1561,6 +1594,45 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       <div class="cn-btn pri" id="cnDoneOpen">Open File</div>
       <div class="cn-btn" id="cnDoneFolder">Open Downloads</div>
       <div class="cn-btn" id="cnDoneOk">Done</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCAN PROFILE — CREATE / EDIT ============ -->
+<div class="cam-overlay" id="profEditOverlay">
+  <div class="cam-box" style="width:min(460px,94vw);text-align:left">
+    <h3 id="profEditTitle">Create Scan Profile</h3>
+    <div class="pf-form">
+      <label class="pf-l">Profile Name</label>
+      <input type="text" id="pfName" class="pf-in" maxlength="40" placeholder="e.g. Office Documents" autocomplete="off">
+      <div class="pf-err" id="pfNameErr"></div>
+
+      <label class="pf-l">Scanner</label>
+      <select id="pfScanner" class="pf-in"></select>
+
+      <div class="pf-grid">
+        <div><label class="pf-l">Resolution</label><select id="pfDpi" class="pf-in"></select></div>
+        <div><label class="pf-l">Color Mode</label><select id="pfColor" class="pf-in"></select></div>
+        <div><label class="pf-l">Page Size</label><select id="pfSize" class="pf-in"></select></div>
+        <div><label class="pf-l">Paper Source</label><select id="pfSource" class="pf-in"></select></div>
+      </div>
+      <label class="pf-check"><input type="checkbox" id="pfOcr"> Searchable text (OCR) when saving PDF</label>
+    </div>
+    <div class="cam-actions">
+      <div class="cam-btn" id="pfCancel">Cancel</div>
+      <div class="cam-btn primary" id="pfSave">Create Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCAN PROFILE — MANAGE ============ -->
+<div class="cam-overlay" id="profMngOverlay">
+  <div class="cam-box" style="width:min(560px,95vw);text-align:left">
+    <h3>⚙ Manage Scan Profiles</h3>
+    <div id="pmList" class="pm-list"></div>
+    <div class="cam-actions" style="justify-content:space-between">
+      <div class="cam-btn primary" id="pmNew">+ New Profile</div>
+      <div class="cam-btn" id="pmClose">Close</div>
     </div>
   </div>
 </div>
@@ -2063,6 +2135,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
 
 <!-- Scanner picker dropdown (list of detected scanners) -->
 <div class="menu" id="scannerMenu" style="min-width:240px;max-width:420px"></div>
+<div class="menu" id="profMenu" style="min-width:260px;max-width:340px"></div>
 <div class="menu" id="setMenu" style="min-width:170px"></div>
 <div class="menu" id="printMenu" style="min-width:200px"></div>
 <div class="menu" id="editMenu" style="min-width:210px;max-height:70vh;overflow:auto"></div>
@@ -2326,15 +2399,20 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   // When the scanner list arrives, keep the remembered scanner selected if it's
   // still present; otherwise fall back to the first one.
-  function applyDeviceList(list){
+  var deviceIds = [];       // stable per-device identity, aligned with devices[]
+  function applyDeviceList(list, ids){
     devices = list || [];
+    deviceIds = ids || [];
     selectedDevice = 0;
     if(savedScanner){
       var i = devices.indexOf(savedScanner);
       if(i >= 0) selectedDevice = i;
     }
     renderDevice();
+    try{ if(window.PF){ PF.onDevices(); } }catch(e){}
+    if(bridge && devices.length) send({cmd:'getCaps', device:selectedDevice});
   }
+  function curDeviceId(){ return deviceIds[selectedDevice] || ''; }
   function setPages(n){
     if(typeof n!=='number') return;
     var p1=byId('pageCount'); if(p1) p1.textContent=n+' page'+(n===1?'':'s');
@@ -3391,7 +3469,9 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     window.chrome.webview.addEventListener('message', function(ev){
       var m = ev.data; if(typeof m==='string'){ try{ m=JSON.parse(m); }catch(e){ return; } }
       if(!m || !m.type) return;
-      if(m.type==='devices'){ applyDeviceList(m.devices); }
+      if(m.type==='devices'){ applyDeviceList(m.devices, m.ids); }
+      else if(m.type==='caps'){ try{ if(window.PF) PF.onCaps(m); }catch(e){} }
+      else if(m.type==='scanProfiles'){ try{ if(window.PF) PF.load(m.data); }catch(e){} }
       else if(m.type==='scanStatus'){ setScanStatus(m.state, m.text); }
       else if(m.type==='scanProgress'){
         if(m.done){ scanUI(false); }
@@ -3446,6 +3526,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     send({cmd:'getHistory'});
     send({cmd:'getAnalytics'});
     send({cmd:'getProfiles'});
+    send({cmd:'getScanProfiles'});
     send({cmd:'getNames'});
     send({cmd:'getFavs'});
     send({cmd:'getShortcuts'});
@@ -3555,6 +3636,228 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var sso=byId('setSource'); if(sso) sso.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sso, srcOpts, settings.source, function(v){ settings.source=v; var el=byId('valSource'); if(el) el.textContent=labelFor(srcOpts, v); persistSettings(); }); });
   var sps=byId('setPageSize'); if(sps) sps.addEventListener('click', function(e){ e.stopPropagation(); openSetMenu(sps, pageSizeOpts, settings.pageSize, function(v){ settings.pageSize=v; var el=byId('valPageSize'); if(el) el.textContent=labelFor(pageSizeOpts, v); persistSettings(); }); });
   document.addEventListener('click', function(e){ if(setMenu && setMenu.classList.contains('on') && !setMenu.contains(e.target) && !(setMenu.__anchor && setMenu.__anchor.contains(e.target))){ closeSetMenu(); } });
+
+  // ===================== Scan Profiles =====================
+  var PF=(function(){
+    var list=[], activeId='', capsByDev={}, loaded=false;
+    var C_LBL={color:'Color',gray:'Grayscale',bw:'B&W'};
+    var SZ_LBL={auto:'Auto',a4:'A4',letter:'Letter',legal:'Legal',a5:'A5'};
+    var SRC_LBL={auto:'Auto',flatbed:'Flatbed',feeder:'Feeder',duplex:'Duplex',simplex:'Simplex'};
+    var STD_DPI=[100,150,200,300,600];
+    var pfMode='create', pfEditId='';
+
+    function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+    function byId2(id){ for(var i=0;i<list.length;i++) if(list[i].id===id) return list[i]; return null; }
+    function active(){ return byId2(activeId) || list.filter(function(p){return p.isDefault;})[0] || list[0] || null; }
+    function summary(p){ return p.dpi+' dpi • '+(C_LBL[p.color]||p.color)+' • '+(SZ_LBL[p.pageSize]||p.pageSize)+' • '+(SRC_LBL[p.source]||p.source); }
+    function curCaps(){ return capsByDev[curDeviceId()]||null; }
+    function persist(){ if(bridge) send({cmd:'saveScanProfiles', data:JSON.stringify({profiles:list, activeId:activeId})}); }
+    function scannerAvailable(p){ if(!p||!p.scannerId) return true; return deviceIds.indexOf(p.scannerId)>=0; }
+    function inOpts(opts,v){ for(var i=0;i<opts.length;i++) if(String(opts[i][0])===String(v)) return true; return false; }
+    function uniqName(base){ var n=base,k=2; while(list.some(function(p){return p.name.toLowerCase()===n.toLowerCase();})){ n=base+' '+(k++); } return n; }
+
+    function isModified(){
+      var p=active(); if(!p) return false;
+      if(settings.dpi!=p.dpi || settings.color!==p.color || settings.pageSize!==p.pageSize || settings.source!==p.source) return true;
+      if(p.scannerId && deviceIds.length && curDeviceId() && curDeviceId()!==p.scannerId) return true;
+      return false;
+    }
+    function render(){
+      var p=active();
+      var v=byId('valProfile'); if(v) v.textContent = p? p.name : 'No profile';
+      var mod=isModified();
+      var mEl=byId('profMod'); if(mEl) mEl.style.display=mod?'':'none';
+      var rEl=byId('profReset'); if(rEl) rEl.style.display=mod?'':'none';
+      var wEl=byId('profWarn'); if(wEl) wEl.style.display=(p && !scannerAvailable(p))?'':'none';
+      var f=byId('setProfile'); if(f) f.title = p ? (p.name+(mod?' • Modified':'')+' — '+summary(p)) : 'Select a saved scan profile';
+    }
+    function touch(){ if(loaded) render(); }
+
+    // ---- capabilities → dynamic option lists ----
+    function onCaps(m){
+      if(m && m.deviceId) capsByDev[m.deviceId]=m;
+      rebuildOpts();
+      if(loaded && list.length===0){ createDefault(); }
+      else {
+        var p=active(), c=curCaps();
+        if(p && p.isDefault && !p.capUpgraded && c && c.known){ p.capUpgraded=true; if(p.source==='auto') p.source=defaultSource(); persist(); if(activeId===p.id) applyProfile(p, true); }
+      }
+      render();
+    }
+    function rebuildOpts(){
+      var c=curCaps();
+      dpiOpts = (c && c.known && c.dpis && c.dpis.length) ? c.dpis.slice() : STD_DPI.slice();
+      var allC=[['color','Color'],['gray','Grayscale'],['bw','Black & White']];
+      colorOpts = (c && c.known && c.colors && c.colors.length) ? allC.filter(function(o){ return c.colors.indexOf(o[0])>=0; }) : allC;
+      if(!colorOpts.length) colorOpts=allC;
+      var s=[['auto','Auto']];
+      if(!c || !c.known){ s=[['auto','Auto'],['flatbed','Flatbed'],['feeder','Feeder'],['duplex','Duplex (both sides)']]; }
+      else { if(c.flatbed) s.push(['flatbed','Flatbed']); if(c.feeder) s.push(['feeder','Feeder (ADF)']); if(c.duplex) s.push(['duplex','Duplex (both sides)']); }
+      srcOpts=s;
+      coerce(); refreshLabels();
+    }
+    function coerce(){
+      if(dpiOpts.indexOf(settings.dpi)<0){ var best=dpiOpts[0], bd=1e9; dpiOpts.forEach(function(d){ var x=Math.abs(d-settings.dpi); if(x<bd){bd=x;best=d;} }); settings.dpi=best; }
+      if(!inOpts(colorOpts,settings.color)) settings.color=colorOpts[0]?colorOpts[0][0]:'color';
+      if(!inOpts(srcOpts,settings.source)) settings.source='auto';
+    }
+    function refreshLabels(){
+      var vd=byId('valDpi'); if(vd) vd.textContent=settings.dpi+' dpi';
+      var vc=byId('valColor'); if(vc) vc.textContent=labelFor(colorOpts,settings.color);
+      var vs=byId('valSource'); if(vs) vs.textContent=labelFor(srcOpts,settings.source);
+      var vp=byId('valPageSize'); if(vp) vp.textContent=labelFor(pageSizeOpts,settings.pageSize);
+    }
+    function defaultSource(){ var c=curCaps(); if(c && c.known){ if(c.duplex) return 'duplex'; if(c.feeder) return 'feeder'; return 'flatbed'; } return 'auto'; }
+
+    // ---- default profile ----
+    function createDefault(){
+      var p={ id:uid(), name:'Default Profile', scannerId:curDeviceId(), scannerName:(devices[selectedDevice]||savedScanner||''),
+        dpi:200, color:'color', pageSize:'auto', source:defaultSource(), ocr:!!ocrOn, isDefault:true, capUpgraded:!!(curCaps()&&curCaps().known) };
+      list=[p]; activeId=p.id; applyProfile(p, true); persist();
+    }
+
+    // ---- load / persist ----
+    function load(data){
+      loaded=true;
+      try{ var o=data?JSON.parse(data):null; if(o&&o.profiles){ list=o.profiles; activeId=o.activeId||''; } }catch(e){ list=[]; }
+      list.forEach(function(p){ if(!p.id) p.id=uid(); if(!p.source) p.source='auto'; if(!p.pageSize) p.pageSize='auto'; if(!p.color) p.color='color'; if(!p.dpi) p.dpi=200; });
+      if(!list.length){ createDefault(); }
+      else { var p=active(); if(p){ activeId=p.id; applyProfile(p, true); } }
+      render();
+    }
+
+    // ---- apply / switch / reset ----
+    function applyProfile(p, silent){
+      if(!p) return;
+      activeId=p.id;
+      settings.dpi=p.dpi; settings.color=p.color; settings.pageSize=p.pageSize; settings.source=p.source;
+      if(typeof setOcr==='function' && (!!ocrOn)!==(!!p.ocr)) setOcr(!!p.ocr, false);
+      if(p.scannerId && deviceIds.length){
+        var i=deviceIds.indexOf(p.scannerId);
+        if(i>=0 && i!==selectedDevice){ selectedDevice=i; savedScanner=devices[i]||savedScanner; renderDevice(); if(bridge) send({cmd:'getCaps',device:i}); }
+        else if(i<0 && !silent){ setStatus('⚠ “'+(p.scannerName||'saved scanner')+'” is not connected — using '+(devices[selectedDevice]||'current scanner')); }
+      }
+      refreshLabels();
+      if(bridge) persistSettings();
+      render();
+      if(!silent) setStatus('Profile: '+p.name);
+    }
+    function setActive(id){ var p=byId2(id); if(p) applyProfile(p, false); }
+    function reset(){ var p=active(); if(p){ applyProfile(p, false); setStatus('Reset to “'+p.name+'”'); } }
+    function saveToActive(){ var p=active(); if(!p) return; p.dpi=settings.dpi; p.color=settings.color; p.pageSize=settings.pageSize; p.source=settings.source; p.scannerId=curDeviceId()||p.scannerId; p.scannerName=(devices[selectedDevice]||p.scannerName); p.ocr=!!ocrOn; persist(); render(); setStatus('Saved to “'+p.name+'”'); }
+
+    // ---- dropdown ----
+    function openMenu(){
+      var menu=byId('profMenu'), anchor=byId('setProfile'); if(!menu||!anchor) return;
+      if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closeScannerMenu==='function') closeScannerMenu();
+      if(menu.classList.contains('on')){ menu.classList.remove('on'); return; }
+      menu.innerHTML='';
+      list.forEach(function(p){
+        var it=document.createElement('div'); it.className='pm-item'+(scannerAvailable(p)?'':' warn');
+        it.innerHTML='<span class="pm-ck">'+(p.id===activeId?'✓':'')+'</span><span style="flex:1;min-width:0"><span class="pm-nm">'+esc(p.name)+(p.isDefault?' <span style="color:var(--muted-2);font-weight:600">(default)</span>':'')+'</span><span class="pm-sum">'+esc(summary(p))+'</span></span>';
+        it.addEventListener('click', function(){ setActive(p.id); menu.classList.remove('on'); });
+        menu.appendChild(it);
+      });
+      function sep(){ var s=document.createElement('div'); s.className='pm-sep'; menu.appendChild(s); }
+      function act(txt,fn){ var a=document.createElement('div'); a.className='pm-act'; a.textContent=txt; a.addEventListener('click',function(){ menu.classList.remove('on'); fn(); }); menu.appendChild(a); }
+      sep();
+      if(isModified() && active()){ act('⤓ Save current settings to “'+active().name+'”', saveToActive); }
+      act('＋ Create New Profile', function(){ openEdit('create'); });
+      if(active()) act('✎ Edit Profile', function(){ openEdit('edit', activeId); });
+      act('⚙ Manage Profiles', openManage);
+      var rect=anchor.getBoundingClientRect(); menu.style.left=rect.left+'px'; menu.style.top=(rect.bottom+6)+'px'; menu.classList.add('on');
+    }
+
+    // ---- create / edit modal ----
+    function fillSel(id,opts,val){ var s=byId(id); if(!s) return; s.innerHTML=''; opts.forEach(function(o){ var op=document.createElement('option'); op.value=o[0]; op.textContent=o[1]; if(String(o[0])===String(val)) op.selected=true; s.appendChild(op); }); }
+    function openEdit(mode,id){
+      pfMode=mode; pfEditId=id||'';
+      var p = (mode==='edit') ? byId2(id) : { name:'', scannerId:curDeviceId(), scannerName:(devices[selectedDevice]||''), dpi:settings.dpi, color:settings.color, pageSize:settings.pageSize, source:settings.source, ocr:!!ocrOn };
+      if(!p) return;
+      byId('profEditTitle').textContent = mode==='edit'?'Edit Scan Profile':'Create Scan Profile';
+      byId('pfSave').textContent = mode==='edit'?'Save':'Create Profile';
+      byId('pfName').value=p.name||''; byId('pfNameErr').textContent='';
+      var scn=byId('pfScanner'); scn.innerHTML=''; var haveId=false;
+      devices.forEach(function(nm,i){ var op=document.createElement('option'); op.value=deviceIds[i]||nm; op.textContent=nm; if((deviceIds[i]||nm)===p.scannerId){ op.selected=true; haveId=true; } scn.appendChild(op); });
+      if(p.scannerId && !haveId){ var op=document.createElement('option'); op.value=p.scannerId; op.textContent='⚠ '+(p.scannerName||'Saved scanner')+' (not connected)'; op.selected=true; scn.appendChild(op); }
+      if(!devices.length){ var o2=document.createElement('option'); o2.value=''; o2.textContent='No scanner connected'; scn.appendChild(o2); }
+      fillSel('pfDpi',[75,100,150,200,300,400,600].map(function(n){return [n,n+' dpi'];}), p.dpi);
+      fillSel('pfColor',[['color','Color'],['gray','Grayscale'],['bw','Black & White']], p.color);
+      fillSel('pfSize', pageSizeOpts, p.pageSize);
+      fillSel('pfSource',[['auto','Auto'],['flatbed','Flatbed'],['feeder','Feeder (ADF)'],['duplex','Duplex (both sides)']], p.source);
+      byId('pfOcr').checked=!!p.ocr;
+      overlay('profEditOverlay', true);
+      setTimeout(function(){ try{ byId('pfName').focus(); }catch(e){} },40);
+    }
+    function saveEdit(){
+      var name=(byId('pfName').value||'').trim();
+      if(!name){ byId('pfNameErr').textContent='Please enter a profile name.'; return; }
+      if(list.some(function(p){ return p.name.toLowerCase()===name.toLowerCase() && p.id!==pfEditId; })){ byId('pfNameErr').textContent='A profile with this name already exists.'; return; }
+      var scn=byId('pfScanner'); var scId=scn.value||''; var scName=(scn.options[scn.selectedIndex]?scn.options[scn.selectedIndex].textContent:'').replace(/^⚠ /,'').replace(/ \(not connected\)$/,'');
+      var vals={ scannerId:scId, scannerName:scName, dpi:parseInt(byId('pfDpi').value,10)||200, color:byId('pfColor').value, pageSize:byId('pfSize').value, source:byId('pfSource').value, ocr:byId('pfOcr').checked };
+      if(pfMode==='edit'){ var p=byId2(pfEditId); if(p){ p.name=name; p.scannerId=vals.scannerId; p.scannerName=vals.scannerName; p.dpi=vals.dpi; p.color=vals.color; p.pageSize=vals.pageSize; p.source=vals.source; p.ocr=vals.ocr; } persist(); overlay('profEditOverlay',false); if(activeId===pfEditId) applyProfile(p,true); render(); setStatus('Profile updated successfully'); }
+      else { var np={ id:uid(), name:name, isDefault:(list.length===0) }; for(var k in vals) np[k]=vals[k]; list.unshift(np); persist(); overlay('profEditOverlay',false); setActive(np.id); setStatus('Profile “'+name+'” created'); }
+      if(byId('profMngOverlay').classList.contains('on')) renderManage();
+    }
+
+    // ---- manage window ----
+    function openManage(){ renderManage(); overlay('profMngOverlay', true); }
+    function renderManage(){
+      var box=byId('pmList'); if(!box) return;
+      box.innerHTML = list.map(function(p){
+        var av=scannerAvailable(p);
+        return '<div class="pm-card'+(p.id===activeId?' active':'')+'" data-id="'+p.id+'">'+
+          '<div class="pm-badge">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'+
+          '<div class="pm-body"><div class="pm-t">'+esc(p.name)+(p.isDefault?'<span class="pm-star">★ default</span>':'')+(p.id===activeId?'<span style="color:var(--accent);font-size:11px">● active</span>':'')+'</div>'+
+          '<div class="pm-scn">'+(av?'':'⚠ ')+esc(p.scannerName||'Any connected scanner')+'</div>'+
+          '<div class="pm-set">'+esc(summary(p))+'</div>'+
+          '<div class="pm-btns">'+
+            '<span class="pm-b" data-a="use">Use</span>'+
+            '<span class="pm-b" data-a="edit">Edit</span>'+
+            '<span class="pm-b" data-a="dup">Duplicate</span>'+
+            (p.isDefault?'':'<span class="pm-b" data-a="def">Set Default</span>')+
+            (p.isDefault?'':'<span class="pm-b danger" data-a="del">Delete</span>')+
+          '</div></div></div>';
+      }).join('') || '<div class="cn-empty" style="padding:14px">No profiles.</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('.pm-b'), function(b){
+        b.addEventListener('click', function(){ var card=b.closest('.pm-card'); mngAction(b.getAttribute('data-a'), card.getAttribute('data-id')); });
+      });
+    }
+    function mngAction(a,id){
+      var p=byId2(id); if(!p) return;
+      if(a==='use'){ setActive(id); overlay('profMngOverlay',false); }
+      else if(a==='edit'){ openEdit('edit',id); }
+      else if(a==='dup'){ var np={}; for(var k in p) np[k]=p[k]; np.id=uid(); np.isDefault=false; np.capUpgraded=true; np.name=uniqName(p.name+' copy'); list.unshift(np); persist(); renderManage(); render(); }
+      else if(a==='def'){ list.forEach(function(x){ x.isDefault=(x.id===id); }); persist(); renderManage(); render(); setStatus('“'+p.name+'” is now the default'); }
+      else if(a==='del'){ if(p.isDefault){ setStatus('Set another profile as default first'); return; } list=list.filter(function(x){return x.id!==id;}); if(activeId===id){ var d=list.filter(function(x){return x.isDefault;})[0]||list[0]; if(d){ activeId=d.id; applyProfile(d,true); } else activeId=''; } persist(); renderManage(); render(); }
+    }
+    function onDevices(){ var p=active(); if(p && p.isDefault && !p.scannerId && deviceIds.length){ p.scannerId=curDeviceId(); p.scannerName=devices[selectedDevice]||''; persist(); } render(); }
+
+    return { load:load, onCaps:onCaps, onDevices:onDevices, touch:touch, open:openMenu, reset:reset, openEdit:openEdit, openManage:openManage, saveEdit:saveEdit };
+  })();
+  window.PF=PF;
+  (function(){
+    var f=byId('setProfile'); if(f) f.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('#profReset')) return; e.stopPropagation(); PF.open(); });
+    var rst=byId('profReset'); if(rst) rst.addEventListener('click', function(e){ e.stopPropagation(); PF.reset(); });
+    document.addEventListener('click', function(e){ var menu=byId('profMenu'), f=byId('setProfile'); if(menu&&menu.classList.contains('on') && !menu.contains(e.target) && !(f&&f.contains(e.target))) menu.classList.remove('on'); });
+    var pc=byId('pfCancel'); if(pc) pc.addEventListener('click', function(){ overlay('profEditOverlay',false); });
+    var ps=byId('pfSave'); if(ps) ps.addEventListener('click', function(){ PF.saveEdit(); });
+    var pn=byId('pfName'); if(pn) pn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); PF.saveEdit(); } });
+    var pmN=byId('pmNew'); if(pmN) pmN.addEventListener('click', function(){ PF.openEdit('create'); });
+    var pmC=byId('pmClose'); if(pmC) pmC.addEventListener('click', function(){ overlay('profMngOverlay',false); });
+  })();
+
+  // ENTER on the main scanning workspace = start scan with the current settings.
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Enter' || e.ctrlKey || e.altKey || e.metaKey) return;
+    var t=e.target;
+    if(t){ var tag=(t.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select'||t.isContentEditable) return; }
+    if(typeof modalOverlayOpen==='function' && modalOverlayOpen()) return;
+    var menus=['profMenu','scannerMenu','setMenu','ctxMenu','printMenu','editMenu','saveMenu']; for(var i=0;i<menus.length;i++){ var mm=byId(menus[i]); if(mm&&mm.classList.contains('on')) return; }
+    if(typeof scanRunning!=='undefined' && scanRunning) return;
+    if(!devices.length){ setStatus('No scanner connected'); return; }
+    e.preventDefault(); doScan();
+  });
   // editor — rotate / delete the latest page
   var brt=byId('btnRotate'); if(brt) brt.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
   var brr=byId('btnRotR'); if(brr) brr.addEventListener('click', function(){ if(bridge) send({cmd:'rotateRight'}); });
@@ -3783,7 +4086,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
     autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, autoRotate:ui.autoRotate, autoDeskew:ui.autoDeskew, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang, ocrEngine:ui.ocrEngine,
-    uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); }
+    uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); try{ if(window.PF) PF.touch(); }catch(e){} }
   function applySettings(s){
     if(!s) return;
     if(s.dpi) settings.dpi=s.dpi;
@@ -3918,7 +4221,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.20'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.21'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -5014,7 +5317,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   });
 
   // ---- Customizable keyboard shortcuts ----
-  var MODAL_IDS=['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','connectOverlay','cnDoneOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
+  var MODAL_IDS=['toolsOverlay','profOverlay','profEditOverlay','profMngOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','connectOverlay','cnDoneOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','nfOverlay','friOverlay','docsPopup'];
   function modalOverlayOpen(){ for(var i=0;i<MODAL_IDS.length;i++){ var el=byId(MODAL_IDS[i]); if(el && el.classList.contains('on')) return true; } return false; }
   function anyOverlayOpen(){
     if(modalOverlayOpen()) return true;
@@ -5190,7 +5493,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
       devices.forEach(function(name,i){
         var o=document.createElement('div'); o.className='opt';
         o.innerHTML='<svg class="ic" style="'+(i===selectedDevice?'':'visibility:hidden')+'"><use href="#i-check"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(name)+'</span>';
-        o.addEventListener('click', function(){ selectedDevice=i; savedScanner=name; renderDevice(); persistSettings(); closeScannerMenu(); setStatus(name+' · selected'); });
+        o.addEventListener('click', function(){ selectedDevice=i; savedScanner=name; renderDevice(); if(bridge) send({cmd:'getCaps', device:i}); persistSettings(); closeScannerMenu(); setStatus(name+' · selected'); });
         scannerMenu.appendChild(o);
       });
     }
@@ -5208,7 +5511,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   document.addEventListener('click', function(e){ if(scannerMenu && scannerMenu.classList.contains('on') && !scannerMenu.contains(e.target) && !(setScanner&&setScanner.contains(e.target))){ closeScannerMenu(); } });
 
   // Close any open modal/panel with Escape
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','cnDoneOverlay','connectOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closePrintMenu==='function') closePrintMenu(); closeDocs(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ ['toolsOverlay','profOverlay','profEditOverlay','profMngOverlay','aboutOverlay','histOverlay','setOverlay','fbOverlay','cnDoneOverlay','connectOverlay','fiOverlay','cmpOverlay','camOverlay','fsOverlay','scOverlay','rnOverlay','mnOverlay','docsPopup','nfOverlay','friOverlay'].forEach(function(id){ overlay(id, false); }); var cm=byId('ctxMenu'); if(cm) cm.classList.remove('on'); closeSaveMenu(); closeScannerMenu(); if(typeof closeSetMenu==='function') closeSetMenu(); if(typeof closePrintMenu==='function') closePrintMenu(); closeDocs(); } });
 
   document.querySelectorAll('.nav .item').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.nav .item').forEach(function(i){i.classList.remove('active')});el.classList.add('active');});});
   document.querySelectorAll('.toolbar .tbtn').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.toolbar .tbtn').forEach(function(i){i.classList.remove('on')});el.classList.add('on');});});
