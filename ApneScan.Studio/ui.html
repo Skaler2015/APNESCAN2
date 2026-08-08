@@ -2528,7 +2528,41 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   var fsCropping=false, fsStart=null, fsRect=null;
   function fsImgRect(){ var im=byId('fsImg'); return (im&&im.getAttribute('src'))?im.getBoundingClientRect():null; }
   function fsStageRect(){ var s=byId('fsStage'); return s?s.getBoundingClientRect():null; }
-  function fsStartCrop(){ if(!fsImgRect()){ setStatus('Nothing to crop'); return; } fsZoom=0; fsApplyZoom(); fsCropping=true; var s=byId('fsStage'); if(s) s.classList.add('cropping'); setStatus('Drag on the page to select the area, then Apply crop'); }
+  // Analyse the editor image and return its content bounding box (fractions),
+  // so crop can pre-select the card/document even without a manual drag.
+  function fsDetectContentFrac(){
+    var im=byId('fsImg'); if(!im||!im.getAttribute('src')) return null;
+    var iw=im.naturalWidth||0, ih=im.naturalHeight||0; if(iw<8||ih<8) return null;
+    try{
+      var cw=Math.min(420, iw), sc=cw/iw, chh=Math.max(1,Math.round(ih*sc));
+      var c=document.createElement('canvas'); c.width=cw; c.height=chh;
+      var ctx=c.getContext('2d'); ctx.drawImage(im,0,0,cw,chh);
+      var d=ctx.getImageData(0,0,cw,chh).data;
+      function lum(x,y){ var o=(y*cw+x)*4; return (d[o]+d[o+1]+d[o+2])/3; }
+      var cs=[lum(2,2),lum(cw-3,2),lum(2,chh-3),lum(cw-3,chh-3)];
+      var bg=Math.max(cs[0],cs[1],cs[2],cs[3]); var dark=bg<130;
+      var th=dark?Math.min(240,bg+45):Math.max(120,bg-30);
+      var minX=cw,minY=chh,maxX=0,maxY=0,found=false;
+      for(var y=0;y<chh;y++){ for(var x=0;x<cw;x++){ var l=lum(x,y); var isC=dark?(l>th):(l<th); if(isC){ found=true; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; } } }
+      if(!found || maxX<=minX || maxY<=minY) return null;
+      var m=0.012;
+      return { x0:Math.max(0,minX/cw-m), y0:Math.max(0,minY/chh-m), x1:Math.min(1,(maxX+1)/cw+m), y1:Math.min(1,(maxY+1)/chh+m) };
+    }catch(e){ return null; }
+  }
+  // Draw a suggested crop box around the detected content and arm Apply.
+  function fsSuggestCropBox(){
+    var fr=fsDetectContentFrac(); if(!fr) return false;
+    if((fr.x1-fr.x0)>0.97 && (fr.y1-fr.y0)>0.97) return false;   // basically whole page → nothing to crop
+    var ir=fsImgRect(), sr=fsStageRect(); if(!ir||!sr) return false;
+    var L=ir.left+fr.x0*ir.width, T=ir.top+fr.y0*ir.height, R=ir.left+fr.x1*ir.width, B=ir.top+fr.y1*ir.height;
+    fsRect={x:L,y:T,w:R-L,h:B-T};
+    var box=byId('fsCropBox'); if(box){ box.style.display='block'; box.style.left=(L-sr.left)+'px'; box.style.top=(T-sr.top)+'px'; box.style.width=(R-L)+'px'; box.style.height=(B-T)+'px'; }
+    var bar=byId('fsCropBar'); if(bar) bar.style.display='flex';
+    return true;
+  }
+  function fsStartCrop(){ if(!fsImgRect()){ setStatus('Nothing to crop'); return; } fsZoom=0; fsApplyZoom(); fsCropping=true; var s=byId('fsStage'); if(s) s.classList.add('cropping'); setStatus('Drag to select an area — or just press Apply crop to use the suggested box');
+    setTimeout(function(){ if(fsCropping && !fsRect){ if(fsSuggestCropBox()) setStatus('Suggested crop around the content — adjust the box if needed, then Apply crop'); } }, 90);
+  }
   function fsEndCrop(){ fsCropping=false; fsStart=null; fsRect=null; var s=byId('fsStage'); if(s) s.classList.remove('cropping'); var box=byId('fsCropBox'); if(box) box.style.display='none'; var bar=byId('fsCropBar'); if(bar) bar.style.display='none'; }
   var fsStage=byId('fsStage');
   if(fsStage){
@@ -2537,7 +2571,14 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     window.addEventListener('mousemove', function(e){ if(!fsCropping||!fsStart) return; var rr=fsStageRect(); if(!rr) return; var x=Math.min(e.clientX,fsStart.x), y=Math.min(e.clientY,fsStart.y); var w=Math.abs(e.clientX-fsStart.x), h=Math.abs(e.clientY-fsStart.y); var box=byId('fsCropBox'); if(box){ box.style.left=(x-rr.left)+'px'; box.style.top=(y-rr.top)+'px'; box.style.width=w+'px'; box.style.height=h+'px'; } fsRect={x:x,y:y,w:w,h:h}; });
     window.addEventListener('mouseup', function(){ if(!fsCropping||!fsStart) return; fsStart=null; if(fsRect&&fsRect.w>6&&fsRect.h>6){ var bar=byId('fsCropBar'); if(bar) bar.style.display='flex'; } });
   }
-  var fsCropApply=byId('fsCropApply'); if(fsCropApply) fsCropApply.addEventListener('click', function(){ var ir=fsImgRect(); if(!ir||!fsRect){ fsEndCrop(); return; } var x0=(fsRect.x-ir.left)/ir.width, y0=(fsRect.y-ir.top)/ir.height; var x1=(fsRect.x+fsRect.w-ir.left)/ir.width, y1=(fsRect.y+fsRect.h-ir.top)/ir.height; if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1}); fsEndCrop(); });
+  var fsCropApply=byId('fsCropApply'); if(fsCropApply) fsCropApply.addEventListener('click', function(){
+    if(!fsRect) fsSuggestCropBox();                       // no manual box → use the auto-detected one
+    var ir=fsImgRect(); if(!ir||!fsRect){ setStatus('Draw a box on the page, then Apply crop'); return; }
+    var x0=(fsRect.x-ir.left)/ir.width, y0=(fsRect.y-ir.top)/ir.height;
+    var x1=(fsRect.x+fsRect.w-ir.left)/ir.width, y1=(fsRect.y+fsRect.h-ir.top)/ir.height;
+    if(bridge) send({cmd:'crop', x0:x0, y0:y0, x1:x1, y1:y1});
+    fsEndCrop();
+  });
   var fsCropCancel=byId('fsCropCancel'); if(fsCropCancel) fsCropCancel.addEventListener('click', fsEndCrop);
 
   /* ===== Perspective 4-corner tool ===== */
@@ -3597,7 +3638,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.14'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.15'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
