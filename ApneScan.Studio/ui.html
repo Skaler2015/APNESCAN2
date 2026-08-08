@@ -1531,6 +1531,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
             <div class="set-row"><div class="sl"><b>Auto-detect document names</b></div><label class="sw-wrap"><input type="checkbox" id="setAutoNameChk"><span class="sw"></span></label></div>
             <div class="set-row"><div class="sl"><b>Trim blank borders (auto-crop)</b></div><label class="sw-wrap"><input type="checkbox" id="setAutoCropChk"><span class="sw"></span></label></div>
             <div class="set-row"><div class="sl"><b>Auto-rotate pages (straighten)</b><small>Detect a sideways/upside-down page from its text and turn it upright</small></div><label class="sw-wrap"><input type="checkbox" id="setAutoRotateChk"><span class="sw"></span></label></div>
+            <div class="set-row"><div class="sl"><b>Auto-deskew (fix tilt)</b><small>Straighten a slightly tilted/crooked page automatically</small></div><label class="sw-wrap"><input type="checkbox" id="setAutoDeskewChk"><span class="sw"></span></label></div>
             <div class="set-row"><div class="sl"><b>Skip blank pages</b><small>Don’t keep empty duplex backs</small></div><label class="sw-wrap"><input type="checkbox" id="setSkipBlankChk"><span class="sw"></span></label></div>
           </div>
         </section>
@@ -3462,7 +3463,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   var bocr=byId('btnOcr'); if(bocr) bocr.addEventListener('click', function(){ setOcr(!ocrOn, true); setStatus(ocrOn?'OCR ON — saved PDF will be searchable':'OCR off'); });
   // settings persistence
-  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, autoRotate:false, compressPercent:0, footerText:'', telemetry:true,
+  var ui={ theme:'default', showNums:true, showProfiles:true, saveDefault:'ask', autoName:true, clearAfter:false, autoCrop:true, skipBlank:false, autoRotate:false, autoDeskew:false, compressPercent:0, footerText:'', telemetry:true,
     accent:'purple', thumb:1, density:'comfortable', startup:'home', animations:true, smoothScroll:true, showScannerStat:true, showStats:true, ocrLang:'eng', ocrEngine:'tesseract' };
   // Accent palettes — each recolours the token system (accent, soft & ink) for
   // both light and dark. These drive every token-based accent surface for real.
@@ -3505,7 +3506,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     deviceName:(devices[selectedDevice]||savedScanner||''),
     theme:ui.theme, showNums:ui.showNums, showProfiles:ui.showProfiles,
     saveDefault:ui.saveDefault, autoName:ui.autoName, clearAfter:ui.clearAfter,
-    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, autoRotate:ui.autoRotate, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang, ocrEngine:ui.ocrEngine,
+    autoCrop:ui.autoCrop, skipBlank:ui.skipBlank, autoRotate:ui.autoRotate, autoDeskew:ui.autoDeskew, compressPercent:ui.compressPercent, footerText:ui.footerText, telemetry:ui.telemetry, ocrLang:ui.ocrLang, ocrEngine:ui.ocrEngine,
     uiExtra:JSON.stringify({ accent:ui.accent, thumb:ui.thumb, density:ui.density, startup:ui.startup, animations:ui.animations, smoothScroll:ui.smoothScroll, showScannerStat:ui.showScannerStat, showStats:ui.showStats }) }); }
   function applySettings(s){
     if(!s) return;
@@ -3525,6 +3526,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     ui.autoCrop=(s.autoCrop!==false);
     ui.skipBlank=!!s.skipBlank;
     ui.autoRotate=!!s.autoRotate;
+    ui.autoDeskew=!!s.autoDeskew;
     ui.telemetry=(s.telemetry!==false);
     ui.compressPercent=s.compressPercent||0;
     if(s.ocrLang) ui.ocrLang=s.ocrLang;
@@ -3603,6 +3605,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var acp=byId('setAutoCropChk'); if(acp) acp.checked=ui.autoCrop;
     var skb=byId('setSkipBlankChk'); if(skb) skb.checked=ui.skipBlank;
     var arc=byId('setAutoRotateChk'); if(arc) arc.checked=ui.autoRotate;
+    var adk=byId('setAutoDeskewChk'); if(adk) adk.checked=ui.autoDeskew;
     var tmc=byId('setTelemetryChk'); if(tmc) tmc.checked=ui.telemetry;
     var cps=byId('setCompressSel'); if(cps) cps.value=String(ui.compressPercent);
     var fo=fvOpts();
@@ -3639,7 +3642,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     document.querySelectorAll('.set-pane').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===sec); });
   }); });
   // ---- premium settings controls wiring (v1.2.0) ----
-  var APP_VER='1.2.17'; try{ window.APP_VERSION=APP_VER; }catch(e){}
+  var APP_VER='1.2.18'; try{ window.APP_VERSION=APP_VER; }catch(e){}
   (function(){
     var tw=byId('setThemeTiles'); if(tw) tw.querySelectorAll('.th-tile').forEach(function(t){ t.addEventListener('click', function(){ var v=t.getAttribute('data-th'); var sel=byId('setThemeSel'); if(sel) sel.value=v; applyTheme(v); }); });
     var aw=byId('setAccent'); if(aw) aw.querySelectorAll('.acc-dot').forEach(function(d){ d.addEventListener('click', function(){ applyAccent(d.getAttribute('data-acc')); }); });
@@ -3738,7 +3741,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
   }
   var setRestore=byId('setRestore'); if(setRestore) setRestore.addEventListener('click', function(){
     settings.dpi=200; settings.color='color'; settings.source='auto'; ocrOn=false;
-    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.autoRotate=false; ui.compressPercent=0; ui.telemetry=true;
+    ui.theme='default'; ui.showNums=true; ui.showProfiles=true; ui.saveDefault='ask'; ui.autoName=true; ui.clearAfter=false; ui.autoCrop=true; ui.skipBlank=false; ui.autoRotate=false; ui.autoDeskew=false; ui.compressPercent=0; ui.telemetry=true;
     ui.accent='purple'; ui.thumb=1; ui.density='comfortable'; ui.startup='home'; ui.animations=true; ui.smoothScroll=true; ui.showScannerStat=true; ui.showStats=true; ui.ocrLang='eng'; ui.ocrEngine='tesseract';
     applyTheme('default'); applyThumb(1); applyDensity('comfortable'); applyAnim(true); applySmooth(true); applyScannerStat(true); applyStats(true);
     fvSetOpts({on:true,sort:true,view:true,filter:true});
@@ -3766,6 +3769,7 @@ body.rsz-active{cursor:col-resize!important;user-select:none}
     var acp=byId('setAutoCropChk'); if(acp) ui.autoCrop=acp.checked;
     var skb=byId('setSkipBlankChk'); if(skb) ui.skipBlank=skb.checked;
     var arc2=byId('setAutoRotateChk'); if(arc2) ui.autoRotate=arc2.checked;
+    var adk2=byId('setAutoDeskewChk'); if(adk2) ui.autoDeskew=adk2.checked;
     var tmc=byId('setTelemetryChk'); if(tmc) ui.telemetry=tmc.checked;
     var cps=byId('setCompressSel'); if(cps) ui.compressPercent=parseInt(cps.value,10)||0;
     // premium interface controls (applied live; captured here so they persist)

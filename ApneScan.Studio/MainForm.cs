@@ -136,6 +136,7 @@ public class MainForm : Form
     private bool _autoCrop = true;
     private bool _skipBlank;
     private bool _autoRotate;   // detect page orientation (OSD) and straighten each scan
+    private bool _autoDeskew;   // auto-straighten a slightly tilted page each scan
     private int _compressPercent; // 0 = off; higher = smaller PDFs on save
 
     private int Sel() => (_selected >= 0 && _selected < _pages.Count) ? _selected : _pages.Count - 1;
@@ -557,6 +558,7 @@ public class MainForm : Form
         bool telemetry = true;
         bool autoCrop = true, skipBlank = false;
         bool autoRotate = false;
+        bool autoDeskew = false;
         int compressPercent = 0;
         string data = "";
         string ctx = "";
@@ -599,6 +601,7 @@ public class MainForm : Form
             if (root.TryGetProperty("autoCrop", out var acEl) && (acEl.ValueKind == JsonValueKind.True || acEl.ValueKind == JsonValueKind.False)) autoCrop = acEl.GetBoolean();
             if (root.TryGetProperty("skipBlank", out var sbEl) && (sbEl.ValueKind == JsonValueKind.True || sbEl.ValueKind == JsonValueKind.False)) skipBlank = sbEl.GetBoolean();
             if (root.TryGetProperty("autoRotate", out var arEl) && (arEl.ValueKind == JsonValueKind.True || arEl.ValueKind == JsonValueKind.False)) autoRotate = arEl.GetBoolean();
+            if (root.TryGetProperty("autoDeskew", out var adkEl) && (adkEl.ValueKind == JsonValueKind.True || adkEl.ValueKind == JsonValueKind.False)) autoDeskew = adkEl.GetBoolean();
             if (root.TryGetProperty("telemetry", out var tmEl) && (tmEl.ValueKind == JsonValueKind.True || tmEl.ValueKind == JsonValueKind.False)) telemetry = tmEl.GetBoolean();
             if (root.TryGetProperty("compressPercent", out var cpEl) && cpEl.ValueKind == JsonValueKind.Number) compressPercent = cpEl.GetInt32();
             if (root.TryGetProperty("footerText", out var fxEl) && fxEl.ValueKind == JsonValueKind.String) footerText = fxEl.GetString() ?? "";
@@ -733,7 +736,7 @@ public class MainForm : Form
                     AutoCrop = autoCrop, SkipBlank = skipBlank, CompressPercent = compressPercent,
                     FooterText = footerText, Telemetry = telemetry, UiExtra = uiExtra,
                     OcrLang = SanitizeOcrLang(ocrLang), OcrEngine = SanitizeEngine(ocrEngine),
-                    AutoRotate = autoRotate
+                    AutoRotate = autoRotate, AutoDeskew = autoDeskew
                 });
                 _ocrLang = SanitizeOcrLang(ocrLang);
                 _ocrEngine = SanitizeEngine(ocrEngine);
@@ -1436,6 +1439,16 @@ public class MainForm : Form
                     catch { /* keep original on failure */ }
                 }
             }
+        }
+        if (_autoDeskew)
+        {
+            try
+            {
+                Transform? dt;
+                using (var rendered = p.Render()) { dt = Deskewer.GetDeskewTransform(rendered); }
+                if (dt != null && !dt.IsNull) p = p.WithTransform(dt, disposeSelf: true);
+            }
+            catch { /* keep original on failure */ }
         }
         if (_autoRotate) p = await AutoRotateAsync(p);
         return (p, false);
@@ -3753,6 +3766,8 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         public string OcrEngine { get; set; } = "tesseract";
         // Auto-rotate each scanned page to its upright orientation (OSD).
         public bool AutoRotate { get; set; }
+        // Auto-straighten a slightly tilted page each scan.
+        public bool AutoDeskew { get; set; }
     }
 
     private static string SettingsFile => System.IO.Path.Combine(
@@ -3785,6 +3800,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         _ocrLang = SanitizeOcrLang(s.OcrLang);
         _ocrEngine = SanitizeEngine(s.OcrEngine);
         _autoRotate = s.AutoRotate;
+        _autoDeskew = s.AutoDeskew;
         Post(new
         {
             type = "settings",
@@ -3793,7 +3809,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             saveDefault = s.SaveDefault, autoName = s.AutoName, clearAfter = s.ClearAfter,
             autoCrop = s.AutoCrop, skipBlank = s.SkipBlank, compressPercent = s.CompressPercent,
             footerText = s.FooterText, telemetry = s.Telemetry, uiExtra = s.UiExtra, ocrLang = _ocrLang, ocrEngine = _ocrEngine,
-            autoRotate = s.AutoRotate
+            autoRotate = s.AutoRotate, autoDeskew = s.AutoDeskew
         });
     }
 
@@ -3889,6 +3905,7 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             _ocrLang = SanitizeOcrLang(s.OcrLang);
             _ocrEngine = SanitizeEngine(s.OcrEngine);
             _autoRotate = s.AutoRotate;
+            _autoDeskew = s.AutoDeskew;
         }
         catch { /* best-effort */ }
     }
