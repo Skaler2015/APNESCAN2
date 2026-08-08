@@ -5887,14 +5887,32 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
         }
 
         SyncNames();
-        // Group the chosen pages by name, preserving first-seen order.
-        var order = new List<string>();
-        var map = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var i in idx)
+        // Clone the dragged pages (with their names), then free them from the
+        // thumbnail area immediately — the drag-drop feels instant and ONLY the
+        // dragged pages leave; the rest stay put. The PDF(s) are written from the
+        // clones right after.
+        var picked = idx.Select(i => (
+            page: _pages[i].Clone(),
+            name: (i < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[i])) ? _pageNames[i] : "scan")).ToList();
+
+        PushUndo();
+        foreach (var i in idx.OrderByDescending(x => x))
         {
-            var nm = (i < _pageNames.Count && !string.IsNullOrWhiteSpace(_pageNames[i])) ? _pageNames[i] : "scan";
-            if (!map.TryGetValue(nm, out var lst)) { lst = new List<int>(); map[nm] = lst; order.Add(nm); }
-            lst.Add(i);
+            _pages[i].Dispose();
+            _pages.RemoveAt(i);
+            if (i < _pageNames.Count) _pageNames.RemoveAt(i);
+        }
+        if (_selected >= _pages.Count) _selected = _pages.Count - 1;
+        if (_pages.Count == 0) { Post(new { type = "cleared" }); Status("Saving…"); }
+        else await RefreshAsync(false);
+
+        // Group the saved pages by name (first-seen order) → one PDF each.
+        var order = new List<string>();
+        var map = new Dictionary<string, List<ProcessedImage>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in picked)
+        {
+            if (!map.TryGetValue(item.name, out var lst)) { lst = new List<ProcessedImage>(); map[item.name] = lst; order.Add(item.name); }
+            lst.Add(item.page);
         }
 
         try
@@ -5903,26 +5921,27 @@ for(var i=0;i<files.length;i++){(function(file){fetch('/upload',{method:'POST',b
             int made = 0;
             foreach (var nm in order)
             {
-                var pages = map[nm].Select(i => _pages[i]).ToList();
                 var stem = SanitizeFileName(nm);
                 var file = System.IO.Path.Combine(folder, stem + ".pdf");
                 int k = 1;
                 while (File.Exists(file)) file = System.IO.Path.Combine(folder, $"{stem} ({++k}).pdf");
-                Status($"Saving {stem}.pdf …");
-                await ExportPdf(file, pages, ocrParams);
-                AddHistory(file, pages.Count);
+                await ExportPdf(file, map[nm], ocrParams);
+                AddHistory(file, map[nm].Count);
                 made++;
             }
             Bump("pdf", made);
             SendFolder(folder);
             Status($"Saved {made} PDF(s) to “{System.IO.Path.GetFileName(folder)}”");
             Banner($"Saved {made} PDF(s) to “{System.IO.Path.GetFileName(folder)}”", "ok");
-            // Drag-drop save clears the thumbnail area too when the setting is on.
-            if (_clearAfter) ClearPages();
         }
         catch (Exception ex)
         {
             Status("Save error: " + ex.Message);
+            Banner("Save failed — press Ctrl+Z to restore the pages", "error");
+        }
+        finally
+        {
+            foreach (var item in picked) item.page.Dispose();
         }
     }
 
